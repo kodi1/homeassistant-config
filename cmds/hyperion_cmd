@@ -2,4 +2,3 @@
 source $HOME/.homeassistant/set_env
 
 echo $1 | nc $HYPERION_HOST $HYPERION_PORT
-

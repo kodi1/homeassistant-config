@@ -5,6 +5,9 @@ all_notify:
         message: '{{ msg }}'
         data:
           icon: 'info'
+    - service: script.mail_notify
+      data_template:
+        m: '{{ msg }}'
     - condition: or
       conditions:
         - condition: state
@@ -19,6 +22,16 @@ all_notify:
     - service: persistent_notification.create
       data_template:
         message: '{{ msg }}'
+
+mail_notify:
+  sequence:
+    - condition: template
+      value_template: >-
+        {{states.device_tracker.m4b30x.state != 'home'}}
+    - service: notify.mailbg
+      data_template:
+        message: '{{ m }}'
+        title: 'hass'
 
 tv_keep_wake:
   sequence:
@@ -115,6 +128,8 @@ tomato_smb_restart:
 local_reboot:
   sequence:
     - service: shell_command.local_reboot
+      data_template:
+        value: '{{"now"}}'
 
 tomato_reboot:
   sequence:
@@ -131,7 +146,9 @@ ports_open:
 reboot_all:
   sequence:
     - service: script.minix_reboot
-    - service: script.local_restart
+    - service: shell_command.local_reboot
+      data_template:
+        value: '{{"+4"}}'
     - service: script.tomato_reboot
 
 hass_update:

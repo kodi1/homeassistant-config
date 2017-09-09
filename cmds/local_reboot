@@ -3,4 +3,4 @@ source $HOME/.homeassistant/set_env
 
 SSHPASS=$LOCALPASS sshpass -e \
 ssh -p2222 $LOCALUSER@$LOCALHOST \
-sudo shutdown -r +4 'hass ...'
+sudo shutdown -r $1 'hass ...'

@@ -11,3 +11,5 @@ secrets.yaml
 known_devices.yaml
 set_env
 .HA_VERSION
+mqtt_passwd
+__pycache__
