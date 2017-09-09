@@ -1,0 +1,79 @@
+homeassistant:
+  # Name of the location where Home Assistant is running
+  name: Home
+  # Location required to calculate the time the sun rises and sets
+  latitude: !secret home_latitude
+  longitude: !secret home_longitude  
+  # Impacts weather/sunrise data (altitude above sea level in meters)
+  elevation: !secret home_elevation
+  # metric for Metric, imperial for Imperial
+  unit_system: metric
+  # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  time_zone: Europe/Sofia
+  customize: !include customizations.yaml
+
+zone: !include zones.yaml
+automation: !include automations.yaml
+automation old: !include automations_old.yaml
+device_tracker: !include device_tracker.yaml
+input_boolean: !include input_boolean.yaml
+input_select: !include input_select.yaml
+input_slider: !include input_slider.yaml
+media_player: !include media_player.yaml
+sensor: !include sensors.yaml
+group: !include groups.yaml
+light: !include lights.yaml
+notify: !include notify.yaml
+script: !include scripts.yaml
+switch: !include switches.yaml
+shell_command: !include shell_commands.yaml
+panel_iframe: !include panels.yaml
+camera: !include cams.yaml
+binary_sensor: !include binary_sensor.yaml
+
+# Show links to resources in log and frontend
+#introduction:
+
+# Enables the frontend
+frontend:
+
+# Enables configuration UI
+config:
+
+## Enables UPNP
+#upnp:
+
+http:
+  # Uncomment this to add a password (recommended!)
+  api_password: !secret http_password
+  # Uncomment this if you are using SSL or running in Docker etc
+  # base_url: example.duckdns.org:8123
+  trusted_networks:
+    - 192.168.1.0/24
+
+# Checks for available updates
+updater:
+
+# Discover some devices automatically
+#discovery:
+
+# Allows you to issue voice commands from the frontend in enabled browsers
+#conversation:
+
+# Enables support for tracking state changes over time.
+history:
+
+# Enables support for tracking state changes over time.
+recorder:
+  # Delete events and states older than 1 weeks
+  purge_days: 14
+
+# View all events in a logbook
+logbook:
+
+# Track the sun
+sun:
+
+# Text to speech
+tts:
+  platform: google

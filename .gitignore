@@ -1,0 +1,10 @@
+/deps
+/tts
+.uuid
+home-assistant.log
+home-assistant_v2.db*
+secrets.yaml
+known_devices.yaml
+set_env
+.HA_VERSION
+__pycache__

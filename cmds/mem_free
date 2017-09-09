@@ -1,0 +1,4 @@
+#!/bin/bash
+source $HOME/.homeassistant/set_env
+
+awk '/MemFree/ { printf "%.2f \n", $2/1024 }' /proc/meminfo

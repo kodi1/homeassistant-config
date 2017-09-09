@@ -1,0 +1,4 @@
+kodi_on:
+  name: kodi on
+  initial: off
+  icon: mdi:flash

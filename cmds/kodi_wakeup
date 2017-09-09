@@ -1,0 +1,12 @@
+#!/bin/bash
+source $HOME/.homeassistant/set_env
+
+curl --user $HTTPUSER:$HTTPPASS -s \
+--data-binary '{ "jsonrpc": "2.0", "method": "Input.ExecuteAction", "params": { "action": "volumedown" }, "id": 1 }' \
+-H 'content-type: application/json;' \
+http://minix:80/jsonrpc
+
+curl --user $HTTPUSER:$HTTPPASS -s \
+--data-binary '{ "jsonrpc": "2.0", "method": "Input.ExecuteAction", "params": { "action": "volumeup" }, "id": 1 }' \
+-H 'content-type: application/json;' \
+http://minix:80/jsonrpc

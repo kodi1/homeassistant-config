@@ -1,0 +1,14 @@
+router:
+  title: 'router'
+  icon: mdi:router-wireless
+  url: !secret url_router
+
+hts:
+  title: 'hts'
+  icon: mdi:monitor
+  url: !secret url_hts
+
+transmission:
+  title: 'transmission'
+  icon: mdi:download-network
+  url: !secret url_transmission

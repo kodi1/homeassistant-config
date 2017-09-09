@@ -1,0 +1,166 @@
+in:
+  control: hidden
+  view: false
+  entities:
+  - sensor.bme280_171f93_temperature
+  - sensor.bme280_171f93_humidity
+  - sensor.bme280_171f93_pressure
+out:
+  control: hidden
+  view: false
+  entities:
+  - sensor.dht22_176e41_temperature
+  - sensor.dht22_176e41_humidity
+  - sensor.sea_level_pressure
+  - sensor.dht22_176e41_feels
+batts:
+  control: hidden
+  view: false
+  entities:
+  - sensor.dht22_176e41_battery
+  - sensor.bme280_171f93_battery
+  - sensor.root_battery
+system:
+  control: hidden
+  view: false
+  entities:
+  - sensor.cpu_usage
+  - sensor.cpu_temp
+  - sensor.mem_free
+  - sensor.disk_free
+  - sensor.ping_isp
+media:
+  control: hidden
+  view: false
+  entities:
+  - input_select.select_radio
+  - script.media_start
+  - script.media_stop
+  - script.bravia_vol_up
+  - script.bravia_vol_down
+  - media_player.kodi
+weather_dark_sky:
+  control: hidden
+  view: false
+  name: weather
+  entities:
+  - sensor.dark_sky_temperature
+  - sensor.dark_sky_pressure
+  - sensor.dark_sky_humidity
+  - sensor.dark_sky_wind_speed
+  - sensor.dark_sky_precip_intensity
+hyperion_effect:
+  control: hidden
+  view: false
+  entities:
+  - input_select.select_effect
+  - input_slider.slider_effect_time
+  - input_slider.slider_effect_priority
+hyperion_color:
+  control: hidden
+  view: false
+  entities:
+  - input_slider.slider_r
+  - input_slider.slider_g
+  - input_slider.slider_b
+  - input_slider.slider_rgb_priority
+  - script.hyperion_clear_rgb
+other:
+  control: hidden
+  view: false
+  entities:
+  - device_tracker.minix
+  - device_tracker.pi3
+  - device_tracker.sgs4
+  - sensor.pressure_history_mean
+  - binary_sensor.kodi_screen_saver
+  - binary_sensor.tomato_smb_online
+  - binary_sensor.isp_conn
+script:
+  control: hidden
+  view: false
+  entities:
+  - script.bravia_vol_down
+  - script.bravia_vol_up
+  - script.kodi_keep_wake
+  - script.media_restart
+  - script.media_start
+  - script.media_stop
+  - script.tv_keep_wake
+  - script.tomato_smb_restart
+  - script.local_reboot
+  - script.minix_reboot
+  - script.tomato_reboot
+  - script.reboot_all
+  - script.ports_open
+  - script.hass_update
+
+auto:
+  view: false
+  entities:
+  - automation.auto_reboot_all
+  - automation.cec_off
+  - automation.cec_on
+  - automation.change_pressure
+  - automation.mydelay
+  - automation.kodi_keep_alive
+  - automation.kodi_online_radio
+  - automation.kodi_paly_not_music
+  - automation.kodi_pause_not_music
+  - automation.kodi_radio_off_pc
+  - automation.kodi_radio_off_phone
+  - automation.kodi_radio_on
+  - automation.kodi_sleep_timer
+  - automation.light_keep_alive
+  - automation.picture_off
+  - automation.picture_on
+  - automation.send_effect_hyperion
+  - automation.send_rgb_hyperion
+  - automation.start_hyperion
+  - automation.stop_hyperion
+  - automation.tv_keep_alive
+  - automation.tomato_smb_restart
+  - automation.updates_notify
+  - automation.weather_alert
+default_view:
+  view: true
+  control: hidden
+  entities:
+  - device_tracker.m4b30x
+  - device_tracker.n0ll
+  - sun.sun
+  - sensor.change_pressure
+  - sensor.pws_alerts
+  - sensor.pws_weather
+  - group.weather_dark_sky
+  - group.out
+  - group.in
+  - group.media
+status:
+  view: true
+  entities:
+  - group.batts
+  - group.other
+  - group.system
+settings:
+  view: true
+  entities:
+  - switch.tv_picture_off
+  - switch.hyperion_enable
+  - switch.tv_cec
+  - group.hyperion_effect
+  - group.hyperion_color
+  name: settings
+weather:
+  view: true
+  entities:
+  - camera.24sat_image
+  - camera.meteo_sat
+  - camera.rain_map
+  - camera.temp_map
+  - camera.weathermod
+automations:
+  view: true
+  entities:
+  - group.auto
+  - group.script

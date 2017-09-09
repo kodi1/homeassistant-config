@@ -1,0 +1,51 @@
+select_radio:
+  name: kodi online radio
+  options: 
+    - 1Mix Radio
+    - Nova Bg
+    - Digital Impulse
+    - State Of Trance
+    - 1FM Amsterdam
+    - Dj Zone
+    - Traffic
+    - Ocean Radio
+    - Costa Del Mar
+    - 1FM Lounge Radio
+    - Lounge FM
+    - Absolute Chillout
+    - Eilo Ambient
+    - Milano Lounge
+  icon: mdi:radio
+
+select_effect:
+  name: hyperion effect
+  options:
+    - Cinema brighten lights
+    - Cinema dim lights
+    - Knight rider
+    - Blue mood blobs
+    - Cold mood blobs
+    - Full color mood blobs
+    - Green mood blobs
+    - Red mood blobs
+    - Warm mood blobs
+    - Police Lights Single
+    - Police Lights Solid
+    - Rainbow mood
+    - Rainbow swirl fast
+    - Rainbow swirl
+    - Random
+    - Running dots
+    - System Shutdown
+    - Snake
+    - Sparks Color
+    - Sparks
+    - Strobe blue
+    - Strobe Raspbmc
+    - Strobe white
+    - Color traces
+    - trails
+    - trails_color
+    - X-Mas
+    - 'None'
+  icon: mdi:led-on

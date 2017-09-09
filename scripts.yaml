@@ -1,0 +1,164 @@
+all_notify:
+  sequence:
+    - service: notify.kodi
+      data_template:
+        message: '{{ msg }}'
+        data:
+          icon: 'info'
+    - condition: or
+      conditions:
+        - condition: state
+          entity_id: binary_sensor.kodi_screen_saver
+          state: 'on'
+        - condition: state
+          entity_id: media_player.kodi
+          state: 'idle'
+        - condition: template
+          value_template: >-
+            {{is_state_attr('media_player.kodi', 'media_content_type', 'music')}}
+    - service: persistent_notification.create
+      data_template:
+        message: '{{ msg }}'
+
+tv_keep_wake:
+  sequence:
+    #- wait_template: "{{states.binary_sensor.kodi_screen_saver.state == 'on'}}"
+      #timeout: '00:10:00'
+    - delay:
+        seconds: 10
+    - service: switch.toggle
+      entity_id: switch.tv_picture_off
+    - delay:
+        seconds: 1
+    - service: switch.toggle
+      entity_id: switch.tv_picture_off
+
+kodi_keep_wake:
+  sequence:
+    - service: shell_command.kodi_home
+    - service: shell_command.kodi_voldown
+    - service: shell_command.kodi_volup
+    - delay:
+        seconds: 1
+    - service: shell_command.kodi_screensaver
+
+media_start:
+  sequence:
+    - service: shell_command.kodi_home
+    - service: shell_command.kodi_voldown
+    - service: shell_command.kodi_volup
+    - service: shell_command.kodi_home
+    - service: shell_command.tv_hdmi1
+    - delay:
+       seconds: 3
+    - service: automation.trigger
+      entity_id: automation.kodi_online_radio
+
+media_stop:
+  sequence:
+    - service: shell_command.kodi_home
+    - service: shell_command.kodi_voldown
+    - service: shell_command.kodi_volup
+    - service: media_player.media_stop
+      entity_id: media_player.kodi
+    - delay:
+       seconds: 1
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.select_effect
+        option: "None"
+    - service: script.hyperion_clear_rgb
+    - delay:
+        seconds: 1
+    - service: shell_command.kodi_screensaver
+
+media_restart:
+  sequence:
+    - delay:
+       seconds: 5
+    - service: script.kodi_keep_wake
+    - delay:
+       seconds: 5
+    - service: script.media_stop
+    - delay:
+       seconds: 5
+    - service: switch.turn_off
+      entity_id: switch.tv_cec
+    - service: switch.turn_off
+      entity_id: switch.tv_picture_off
+    - condition: state
+      entity_id: device_tracker.n0ll
+      state: 'home'
+    - delay:
+       seconds: 5
+    - service: script.media_start
+
+hyperion_clear_rgb:
+  sequence:
+    - service: shell_command.hyperion_cmd
+      data_template:
+        value: >-
+          '{"command": "clear", "priority": {{ states.input_slider.slider_rgb_priority.state | int }}}'
+
+bravia_vol_up:
+  sequence:
+    - service: shell_command.tv_volup
+
+bravia_vol_down:
+  sequence:
+    - service: shell_command.tv_voldown
+
+tomato_smb_restart:
+  sequence:
+    - service: shell_command.tomato_smb_restart
+
+local_reboot:
+  sequence:
+    - service: shell_command.local_reboot
+
+tomato_reboot:
+  sequence:
+     - service: shell_command.tomato_reboot
+
+minix_reboot:
+  sequence:
+    - service: shell_command.minix_reboot
+
+ports_open:
+  sequence:
+    - service: shell_command.port_open
+
+reboot_all:
+  sequence:
+    - service: script.minix_reboot
+    - service: script.local_restart
+    - service: script.tomato_reboot
+
+hass_update:
+  sequence:
+     - service: shell_command.ha_update
+     - service: homeassistant.check_config
+     - service: homeassistant.restart
+
+
+hyperion_cmd_x:
+  sequence:
+    - service: shell_command.hyperion_cmd
+      data_template:
+        value: >-
+          {%- if is_state("input_select.select_effect", "None") -%}
+            '{"command": "clear", "priority": {{ states.input_slider.slider_effect_priority.state | int }}}'
+          {%- else -%}
+            '{
+                "command": "effect",
+                "priority": {{ states.input_slider.slider_effect_priority.state | int }},
+                "duration": {{ states.input_slider.slider_effect_time.state | int * 60000 }},
+                "effect": { "name" : "{{ states.input_select.select_effect.state }}"}
+              }'
+          {%- endif %}
+    - condition: template
+      value_template: '{{is_state("input_select.select_effect", "None")}}'
+    - service: shell_command.hyperion_cmd
+      data_template:
+        value: >-
+          '{"command": "clear", "priority": {{ states.input_slider.slider_effect_priority.state | int }}}'

@@ -1,0 +1,23 @@
+- platform: generic
+  name: 'meteo sat'
+  still_image_url: http://www.meteo.bg/sites/storm.cfd.meteo.bg.meteo/files/meteoImages/IR.gif
+
+- platform: generic
+  name: '24sat image'
+  still_image_url: https://api.sat24.com/crop?type=visual5hdcomplete&lat=42.657&lon=23.3381&width=300&height=300&zoom=0.60&continent=eu
+
+#- platform: generic
+  #name: '24sat animated'
+  #still_image_url: https://api.sat24.com/animated/EU/visual
+
+- platform: generic
+  name: 'rain map'
+  still_image_url: http://weather.bg/images/gif/0/Precip.gif
+
+- platform: generic
+  name: 'temp map'
+  still_image_url: http://weather.bg/images/gif/0/Temp.gif
+
+- platform: generic
+  name: 'weathermod'
+  still_image_url: http://cap.weathermod-bg.eu/KZNCAP_G.jpg

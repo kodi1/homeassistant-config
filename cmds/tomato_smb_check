@@ -1,0 +1,4 @@
+#!/bin/bash
+source $HOME/.homeassistant/set_env
+
+smbclient -L $TOMATOHOST -U $TOMATOSMBLOGIN > /dev/null 2>&1 && echo success || echo fail

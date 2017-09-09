@@ -1,0 +1,6 @@
+#!/bin/bash
+source $HOME/.homeassistant/set_env
+
+SSHPASS=$TOMATOPASS sshpass -e \
+ssh $TOMATOUSER@$TOMATOHOST \
+'service samba restart'

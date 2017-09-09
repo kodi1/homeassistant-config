@@ -1,0 +1,48 @@
+slider_r:
+  name: red
+  #initial: 60
+  min: 25
+  max: 150
+  step: 5
+  icon: mdi:invert-colors
+
+slider_g:
+  name: green
+  #initial: 90
+  min: 25
+  max: 150
+  step: 5
+  icon: mdi:invert-colors
+
+slider_b:
+  name: blue
+  #initial: 80
+  min: 25
+  max: 150
+  step: 5
+  icon: mdi:invert-colors
+
+slider_effect_priority:
+  name: effect priority
+  #initial: 90
+  min: 50
+  max: 120
+  step: 10
+  icon: mdi:checkbox-multiple-blank-outline
+
+slider_rgb_priority:
+  name: rgb priority
+  #initial: 100
+  min: 50
+  max: 120
+  step: 10
+  icon: mdi:checkbox-multiple-blank-outline
+
+slider_effect_time:
+  name: effect time
+  #initial: 1
+  min: 0
+  max: 30
+  step: 1
+  icon: mdi:timer-sand
+

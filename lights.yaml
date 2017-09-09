@@ -1,0 +1,4 @@
+#- platform: hyperion
+  #name: leds
+  #host: !secret kodi_host
+  #default_color: [100, 100, 100]

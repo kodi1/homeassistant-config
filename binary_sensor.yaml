@@ -1,0 +1,21 @@
+- platform: command_line
+  command: '/home/hass/.homeassistant/cmds/tomato_smb_check'
+  name: 'smb online'
+  device_class: connectivity
+  payload_on: "success"
+  payload_off: "fail"
+  scan_interval: 600
+
+- platform: template
+  sensors:
+    isp_conn:
+      entity_id:
+        - sensor.ping_isp
+      device_class: connectivity
+      value_template: >-
+        {%- if states.sensor.ping_isp.state == 'n/a' or
+          states.sensor.ping_isp.state | float > 150 -%}
+          False
+        {%- else -%}
+          True
+        {%- endif %}

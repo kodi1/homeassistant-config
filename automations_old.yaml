@@ -1,0 +1,457 @@
+- alias: updates notify
+  trigger:
+    platform: state
+    entity_id: updater.updater
+  action:
+  - service: script.all_notify
+    data:
+      msg: Update for Home Assistant is available.
+
+- alias: stop hyperion
+  trigger:
+  - platform: sun
+    event: sunrise
+    offset: '-00:15:00'
+  action:
+  - service: switch.turn_off
+    entity_id: switch.hyperion_enable
+  - service: input_select.select_option
+    data:
+      entity_id: input_select.select_effect
+      option: None
+
+- alias: start hyperion
+  trigger:
+  - platform: sun
+    event: sunset
+    offset: '00:15:00'
+  action:
+  - service: switch.turn_on
+    entity_id: switch.hyperion_enable
+  - service: input_select.select_option
+    data:
+      entity_id: input_select.select_effect
+      option: Color traces
+  - delay: '00:00:30'
+  - service: input_select.select_option
+    data:
+      entity_id: input_select.select_effect
+      option: None
+
+- alias: kodi online radio
+  trigger:
+    platform: state
+    entity_id: input_select.select_radio
+  action:
+  - service: media_player.play_media
+    data_template:
+      entity_id: media_player.kodi
+      media_content_type: 'music'
+      media_content_id: >-
+        {%-
+            set play=
+            {
+            "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
+            "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
+            "Digital Impulse": "http://orion.shoutca.st:8922",
+            "State Of Trance": "http://de-hz-fal-stream07.rautemusik.fm/trance",
+            "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
+            "Traffic": "http://212.25.58.203:8002",
+            "Dj Zone": "http://80.83.123.210:9986",
+            "Ocean Radio": "http://philae.shoutca.st:8446/stream",
+            "Costa Del Mar": "http://sc-costadelmar.1.fm:10156",
+            "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
+            "Lounge FM": "http://cast.loungefm.com.ua/chillout128",
+            "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
+            "Eilo Ambient": "http://eilo.org:8000/ambient",
+            "Milano Lounge": "http://178.32.62.154:9739/stream",
+            }
+        -%}
+        {{ play[states("input_select.select_radio")] }}
+
+- alias: auto reboot all
+  trigger:
+    platform: state
+    entity_id: binary_sensor.isp_conn
+    to: 'off'
+    for:
+      minutes: 16
+  condition:
+    - condition: template
+      value_template: '{{(as_timestamp(now()) - as_timestamp(states.automation.mydelay.attributes.last_triggered)) / 60 > 90 }}'
+  action:
+  - service: script.all_notify
+    data:
+      msg: >-
+        {%- if is_state("sensor.ping_isp", "n/a") -%}
+          Cant ping isp
+        {%- else -%}
+          Isp ping {{states("sensor.ping_isp") }} ms high
+        {%- endif -%}
+        {{" - rebooting."}}
+  - service: script.reboot_all
+
+- alias: tomato smb restart
+  trigger:
+    platform: state
+    entity_id: binary_sensor.tomato_smb_online
+    to: 'off'
+    for:
+      minutes: 11
+  action:
+  - service: script.all_notify
+    data:
+      msg: tomato smb restart
+  - service: script.tomato_smb_restart
+
+- alias: mydelay
+  trigger:
+    platform: homeassistant
+    # Event can also be 'shutdown'
+    event: start
+  action:
+  - service: script.media_restart
+  - delay: '00:04:30'
+  - service: script.ports_open
+  - service: script.all_notify
+    data:
+      msg: HA start.
+
+- alias: kodi sleep timer
+  trigger:
+    platform: event
+    event_type: kodi_sleep_timer
+  action:
+  - service: script.media_stop
+
+- alias: tv keep alive
+  trigger:
+  - platform: time
+    hours: '/2'
+    minutes: 0
+    seconds: 0
+  condition:
+    condition: and
+    conditions:
+    - condition: template
+      value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music")}}'
+    - condition: state
+      entity_id: binary_sensor.kodi_screen_saver
+      state: 'on'
+    - condition: state
+      entity_id: switch.tv_picture_off
+      state: 'on'
+  action:
+  - service: script.tv_keep_wake
+
+- alias: kodi keep alive
+  trigger:
+  - platform: time
+    minutes: '/30'
+    seconds: 0
+  - platform: state
+    entity_id: input_select.select_radio
+  condition:
+    condition: and
+    conditions:
+    - condition: template
+      value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music")}}'
+    - condition: state
+      entity_id: binary_sensor.kodi_screen_saver
+      state: 'on'
+    - condition: state
+      entity_id: device_tracker.n0ll
+      state: home
+  action:
+  - service: script.kodi_keep_wake
+
+- alias: light keep alive
+  trigger:
+  - platform: time
+    minutes: '/10'
+    seconds: 0
+  condition:
+    condition: and
+    conditions:
+    - condition: template
+      value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music")}}'
+    - condition: state
+      entity_id: binary_sensor.kodi_screen_saver
+      state: 'on'
+    - condition: state
+      entity_id: device_tracker.n0ll
+      state: home
+  action:
+  - service: automation.trigger
+    entity_id: automation.send_rgb_hyperion
+
+- alias: kodi radio off phone
+  trigger:
+  - platform: state
+    entity_id: device_tracker.m4b30x
+    from: home
+    to: not_home
+  action:
+  - service: script.media_stop
+
+- alias: kodi radio off pc
+  trigger:
+  - platform: state
+    entity_id: device_tracker.n0ll
+    to: not_home
+    for:
+      minutes: 2
+  condition:
+    condition: template
+    value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music")}}'
+  action:
+  - service: script.media_stop
+  - delay: '00:00:05'
+  - service: input_select.select_option
+    data:
+      entity_id: input_select.select_effect
+      option: Sparks Color
+
+- alias: kodi radio on
+  trigger:
+  - platform: state
+    entity_id: device_tracker.m4b30x
+    from: not_home
+    to: home
+  - platform: state
+    entity_id: device_tracker.n0ll
+    from: not_home
+    to: home
+  condition:
+    condition: and
+    conditions:
+    - condition: state
+      entity_id: media_player.kodi
+      state: idle
+    - condition: or
+      conditions:
+      - condition: time
+        after: '18:30:00'
+        before: '00:05:00'
+      - condition: time
+        weekday:
+        - sat
+        - sun
+        after: '11:00:00'
+        before: '01:30:00'
+  action:
+  - service: script.media_start
+  - service: input_select.select_option
+    data:
+      entity_id: input_select.select_effect
+      option: trails
+
+- alias: picture on
+  trigger:
+  - platform: state
+    entity_id: binary_sensor.kodi_screen_saver
+    to: 'off'
+  condition:
+    condition: and
+    conditions:
+    - condition: template
+      value_template: >-
+        {%- if (as_timestamp(now()) - as_timestamp(states.script.kodi_keep_wake.attributes.last_triggered)) > 5 and
+          (as_timestamp(now()) - as_timestamp(states.script.media_stop.attributes.last_triggered)) > 5 -%}
+          True
+        {%- else -%}
+          False
+        {%- endif -%}
+    - condition: state
+      entity_id: switch.tv_picture_off
+      state: 'on'
+  action:
+  - service: switch.turn_off
+    entity_id: switch.tv_picture_off
+  - service: input_select.select_option
+    data:
+      entity_id: input_select.select_effect
+      option: trails
+
+- alias: picture off
+  trigger:
+  - platform: state
+    entity_id: binary_sensor.kodi_screen_saver
+    to: 'on'
+  condition:
+    condition: and
+    conditions:
+    - condition: template
+      value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music")}}'
+    - condition: state
+      entity_id: switch.tv_picture_off
+      state: 'off'
+  action:
+  - service: switch.turn_on
+    entity_id: switch.tv_picture_off
+  - service: input_select.select_option
+    data:
+      entity_id: input_select.select_effect
+      option: trails_color
+
+- alias: cec off
+  trigger:
+  - platform: state
+    entity_id: binary_sensor.kodi_screen_saver
+    to: 'on'
+  condition:
+    condition: and
+    conditions:
+      - condition: state
+        entity_id: media_player.kodi
+        state: idle
+      - condition: state
+        entity_id: switch.tv_cec
+        state: 'on'
+  action:
+  - service: switch.turn_off
+    entity_id: switch.tv_cec
+  - service: switch.turn_off
+    entity_id: switch.tv_picture_off
+
+- alias: cec on
+  trigger:
+  - platform: state
+    entity_id: binary_sensor.kodi_screen_saver
+    to: 'off'
+  condition:
+    condition: and
+    conditions:
+      - condition: state
+        entity_id: media_player.kodi
+        state: idle
+      - condition: state
+        entity_id: switch.tv_cec
+        state: 'off'
+    - condition: template
+      value_template: >-
+        {%- if (as_timestamp(now()) - as_timestamp(states.script.media_stop.attributes.last_triggered)) > 5 and
+            (as_timestamp(now()) - as_timestamp(states.script.kodi_keep_wake.attributes.last_triggered)) > 5 -%}
+          True
+        {%- else -%}
+          False
+        {%- endif -%}
+  action:
+  - service: switch.turn_on
+    entity_id: switch.tv_cec
+
+- alias: send rgb hyperion
+  trigger:
+  - platform: state
+    entity_id: input_slider.slider_r
+  - platform: state
+    entity_id: input_slider.slider_g
+  - platform: state
+    entity_id: input_slider.slider_b
+  action:
+  - service: shell_command.hyperion_cmd
+    data_template:
+      value: >-
+              '{
+              "color": [
+                          {{ states.input_slider.slider_r.state | int - 5 }},
+                          {{ states.input_slider.slider_g.state | int - 5 }},
+                          {{ states.input_slider.slider_b.state | int - 5 }}
+                        ],
+              "command" : "color",
+              "priority": {{ states.input_slider.slider_rgb_priority.state | int }}
+              }'
+  - service: shell_command.hyperion_cmd
+    data_template:
+      value: >-
+              '{
+                "color": [
+                            {{ states.input_slider.slider_r.state | int }},
+                            {{ states.input_slider.slider_g.state | int }},
+                            {{ states.input_slider.slider_b.state | int }}],
+                "command": "color",
+                "priority": {{ states.input_slider.slider_rgb_priority.state | int }}
+              }'
+
+- alias: send effect hyperion
+  trigger:
+  - platform: state
+    entity_id: input_select.select_effect
+  action:
+  - service: script.hyperion_cmd_x
+
+- alias: kodi paly not music
+  trigger:
+  - platform: state
+    entity_id: media_player.kodi
+    to: playing
+  condition:
+    condition: template
+    value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music") != True}}'
+  action:
+  - service: input_select.select_option
+    data:
+      entity_id: input_select.select_effect
+      option: None
+  - service: script.hyperion_clear_rgb
+
+- alias: kodi pause not music
+  trigger:
+  - platform: state
+    entity_id: media_player.kodi
+    to: idle
+  - platform: state
+    entity_id: media_player.kodi
+    to: paused
+  condition:
+    condition: template
+    value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music") != True}}'
+  action:
+  - service: input_select.select_option
+    data:
+      entity_id: input_select.select_effect
+      option: trails
+
+- alias: change pressure
+  trigger:
+  - platform: state
+    entity_id: sensor.change_pressure
+  condition:
+    condition: and
+    conditions:
+      - condition: template
+        value_template: >-
+          {%- if states.sensor.change_pressure.state | float > 0 -%}
+            {{states.sensor.change_pressure.state | float > states.input_number.pressure_speed.state | float}}
+          {%- else -%}
+            {{states.sensor.change_pressure.state | float * -1 > states.input_number.pressure_speed.state | float}}
+          {%- endif -%}
+      - condition: template
+        value_template: >-
+          {%- if states.automation.change_pressure.attributes.last_triggered != None -%}
+            {{(as_timestamp(now()) - as_timestamp(states.automation.change_pressure.attributes.last_triggered))/60 > 60}}
+          {%- else -%}
+            True
+          {%- endif -%}
+  action:
+  - service: script.all_notify
+    data_template:
+      msg: pressure change {{states.sensor.change_pressure.state}}
+
+- alias: weather alert
+  trigger:
+  - platform: state
+    entity_id: sensor.pws_alerts
+  action:
+  - service: script.all_notify
+    data_template:
+      msg: >-
+        {% if states.sensor.pws_alerts.state != '0'-%}
+          {% for k, v  in states.sensor.pws_alerts.attributes.items() %}
+            {%-if 'Description' in k%}
+              {{v}}.
+            {% endif %}
+          {%- endfor %}
+        {%else %}
+          weather alert expired
+        {% endif %}

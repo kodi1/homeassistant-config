@@ -1,0 +1,7 @@
+#!/bin/bash
+source $HOME/virt_env/bin/activate
+
+echo "Processing update"
+pip3 install --upgrade homeassistant
+
+exit
