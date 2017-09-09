@@ -76,6 +76,7 @@ other:
   - binary_sensor.kodi_screen_saver
   - binary_sensor.tomato_smb_online
   - binary_sensor.isp_conn
+  - binary_sensor.x1
 script:
   control: hidden
   view: false
@@ -122,6 +123,7 @@ auto:
   - automation.tomato_smb_restart
   - automation.updates_notify
   - automation.weather_alert
+  - automation.esp_x1
 default_view:
   view: true
   control: hidden

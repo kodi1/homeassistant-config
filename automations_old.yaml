@@ -464,3 +464,32 @@
         {%else %}
           weather alert expired
         {% endif %}
+
+- alias: esp x1
+  trigger:
+  - platform: numeric_state
+    entity_id: binary_sensor.esp_mega_x1
+    value_template: '{{state.attributes.mtime}}'
+    below: 10
+  #- platform: numeric_state
+    #entity_id: input_slider.slider_effect_time
+    ##value_template: {{states.input_slider.slider_effect_time.state |int }}
+    #below: 3
+  action:
+  - service: script.all_notify
+    data_template:
+      msg: >-
+        {{states.binary_sensor.esp_mega_x1.attributes.friendly_name }}
+        boot count: {{states.binary_sensor.esp_mega_x1.attributes.boot_count }}
+        rssi: {{states.binary_sensor.esp_mega_x1.attributes.rssi }}
+        time: {{now().strftime('%H:%M:%S')}}
+        {{states.binary_sensor.esp_mega_x1.attributes.boot_cause }}
+  #- service: notify.mailbg
+    #data_template:
+      #title: 'hass'
+      #message: >-
+        #{{states.binary_sensor.esp_mega_x1.attributes.friendly_name }}
+        #boot count: {{states.binary_sensor.esp_mega_x1.attributes.boot_count }}
+        #rssi: {{states.binary_sensor.esp_mega_x1.attributes.rssi }}
+        #time: {{now().strftime('%H:%M:%S')}}
+        #{{states.binary_sensor.esp_mega_x1.attributes.boot_cause }}

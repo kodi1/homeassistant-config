@@ -19,3 +19,8 @@
         {%- else -%}
           True
         {%- endif %}
+
+- platform: esp_wd
+  name: x1
+  host: !secret esp_host_x1
+  scan_interval: 300
