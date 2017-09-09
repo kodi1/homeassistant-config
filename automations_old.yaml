@@ -117,6 +117,15 @@
     data:
       msg: HA start.
 
+- alias: transmission_notify
+  trigger:
+    platform: event
+    event_type: transmission
+  action:
+  - service: script.all_notify
+    data_template:
+      msg: '{{trigger.event.data.file}} finished'
+
 - alias: kodi sleep timer
   trigger:
     platform: event
