@@ -111,7 +111,14 @@
     event: start
   action:
   - service: script.media_restart
-  - delay: '00:04:30'
+  - service_template: >
+      {% if is_state("sun.sun", "above_horizon") %}
+        switch.turn_off
+      {% else %}
+        switch.turn_on
+      {% endif %}
+    entity_id: switch.hyperion_enable
+  - delay: '00:01:00'
   - service: script.ports_open
   - service: script.all_notify
     data:
