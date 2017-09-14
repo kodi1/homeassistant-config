@@ -29,6 +29,7 @@ system:
   - sensor.mem_free
   - sensor.disk_free
   - sensor.ping_isp
+  - sensor.tomato_disk_free
 media:
   control: hidden
   view: false

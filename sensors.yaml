@@ -137,6 +137,12 @@
   unit_of_measurement: "ms"
   scan_interval: 300
 
+- platform: command_line
+  name: tomato disk free
+  command: "/home/hass/.homeassistant/cmds/tomato_disk_free"
+  unit_of_measurement: "MB"
+  scan_interval: 600
+
 - platform: statistics
   name: pressure history
   entity_id: sensor.bme280_171f93_pressure
