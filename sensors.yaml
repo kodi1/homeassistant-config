@@ -46,9 +46,6 @@
           {% else %}
               {{ states.sensor.root_battery.state }}
           {%- endif %}
-
-- platform: template
-  sensors:
     sea_level_pressure:
       entity_id:
         - sensor.pressure_history_mean
@@ -65,32 +62,6 @@
           {% else %}
               {{ states.sensor.sea_level_pressure.state }}
           {%- endif %}
-
-#- platform: template
-  #sensors:
-    #change_pressure:
-      #entity_id:
-        #- sensor.pressure_history_mean
-      #friendly_name: 'pressure change'
-      #unit_of_measurement: 'hPa'
-      #value_template: >-
-        #{% set p_mean = states.sensor.pressure_history_mean.state|float %}
-        #{% if p_mean == 0.0 %}
-          #{{0.00|float}}
-        #{% else %}
-          #{{(states.sensor.sea_level_pressure.state|float - p_mean) | round (2)}}
-        #{% endif %}
-      #icon_template: >-
-        #{%if states.sensor.change_pressure.state|float > 1.5 %}
-          #{{'mdi:trending-up'}}
-        #{% elif states.sensor.change_pressure.state|float < -1.5 %}
-          #{{'mdi:trending-down'}}
-        #{% else %}
-          #{{'mdi:trending-neutral'}}
-        #{% endif %}
-
-- platform: template
-  sensors:
     change_pressure:
       entity_id:
         - sensor.pressure_history_mean

@@ -125,6 +125,7 @@ auto:
   - automation.updates_notify
   - automation.weather_alert
   - automation.esp_x1
+
 default_view:
   view: true
   control: hidden
