@@ -20,6 +20,13 @@ batts:
   - sensor.dht22_176e41_battery
   - sensor.bme280_171f93_battery
   - sensor.root_battery
+battslevel:
+  name: batt level
+  control: hidden
+  view: false
+  entities:
+  - input_slider.slider_batt_level_p
+  - input_slider.slider_batt_level_v
 system:
   control: hidden
   view: false
@@ -78,6 +85,7 @@ other:
   - binary_sensor.tomato_smb_online
   - binary_sensor.isp_conn
   - binary_sensor.x1
+  - binary_sensor.batts_low
 script:
   control: hidden
   view: false
@@ -96,8 +104,12 @@ script:
   - script.reboot_all
   - script.ports_open
   - script.hass_update
-
-auto:
+alerts:
+  control: hidden
+  view: false
+  entities:
+  - alert.low_battery
+autos:
   view: false
   entities:
   - automation.auto_reboot_all
@@ -140,6 +152,7 @@ default_view:
   - group.out
   - group.in
   - group.media
+  - group.alerts
 status:
   view: true
   entities:
@@ -154,7 +167,7 @@ settings:
   - switch.tv_cec
   - group.hyperion_effect
   - group.hyperion_color
-  name: settings
+  - group.battslevel
 weather:
   view: true
   entities:
@@ -166,5 +179,5 @@ weather:
 automations:
   view: true
   entities:
-  - group.auto
+  - group.autos
   - group.script

@@ -1,0 +1,14 @@
+low_battery:
+  name: Battery is Low
+  done_message: Battery is Ok
+  entity_id: binary_sensor.batts_low
+  state: 'on'
+  repeat:
+    - 60
+    - 120
+    - 360
+  #can_acknowledge: True
+  #skip_first: True
+  notifiers:
+    - kodi
+    - mailbg

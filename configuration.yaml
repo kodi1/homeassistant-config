@@ -30,6 +30,7 @@ shell_command: !include shell_commands.yaml
 panel_iframe: !include panels.yaml
 camera: !include cams.yaml
 binary_sensor: !include binary_sensor.yaml
+alert: !include alerts.yaml
 
 # Show links to resources in log and frontend
 #introduction:

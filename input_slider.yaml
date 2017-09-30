@@ -46,3 +46,16 @@ slider_effect_time:
   step: 1
   icon: mdi:timer-sand
 
+slider_batt_level_v:
+  name: 'V'
+  min: 2.5
+  max: 3.2
+  step: 0.05
+  icon: mdi:battery-alert
+
+slider_batt_level_p:
+  name: '%'
+  min: 1
+  max: 20
+  step: 1
+  icon: mdi:battery-alert

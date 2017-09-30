@@ -19,6 +19,28 @@
         {%- else -%}
           True
         {%- endif %}
+    batts_low:
+      entity_id:
+        - sensor.dht22_176e41_battery
+        - sensor.bme280_171f93_battery
+        - sensor.root_battery
+        #- input_slider.slider_batt_level_p
+        #- input_slider.slider_batt_level_v
+      device_class: power
+      value_template: >-
+        {%- if states.sensor.dht22_176e41_battery.state and
+                states.sensor.bme280_171f93_battery.state -%}
+          {%- if
+            states.sensor.dht22_176e41_battery.state|float <= states.input_slider.slider_batt_level_v.state|float or
+            states.sensor.bme280_171f93_battery.state|float <= states.input_slider.slider_batt_level_v.state|float or
+            states.sensor.root_battery.state|float <= states.input_slider.slider_batt_level_p.state|float -%}
+            True
+          {%- else -%}
+            False
+          {%- endif %}
+        {%- else -%}
+          True
+        {%- endif %}
 
 - platform: esp_wd
   name: x1
