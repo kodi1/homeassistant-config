@@ -427,6 +427,9 @@
     data:
       entity_id: input_select.select_effect
       option: trails
+  - service: shell_command.tv_volup
+  #- delay: '00:00:03'
+  - service: shell_command.tv_voldown
 
 - alias: change pressure
   trigger:
