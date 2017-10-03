@@ -49,3 +49,14 @@ select_effect:
     - X-Mas
     - 'None'
   icon: mdi:led-on
+
+current_theme:
+  options:
+    - default
+    - dark_theme
+    - midnight
+    - dark_teal
+    - dark_cyan
+    - light_beach
+  initial: default
+  icon: mdi:palette

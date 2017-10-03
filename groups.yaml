@@ -130,8 +130,8 @@ autos:
   - automation.picture_on
   - automation.send_effect_hyperion
   - automation.send_rgb_hyperion
-  - automation.start_hyperion
-  - automation.stop_hyperion
+  - automation.sun_set
+  - automation.sun_rise
   - automation.tv_keep_alive
   - automation.tomato_smb_restart
   - automation.updates_notify
@@ -168,6 +168,7 @@ settings:
   - group.hyperion_effect
   - group.hyperion_color
   - group.battslevel
+  - input_select.current_theme
 weather:
   view: true
   entities:

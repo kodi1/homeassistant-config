@@ -37,7 +37,8 @@ alert: !include alerts.yaml
 
 # Enables the frontend
 frontend:
-
+  themes: !include themes.yaml
+  extra_html_url: !include extra_url.yaml
 # Enables configuration UI
 config:
 

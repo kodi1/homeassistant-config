@@ -7,7 +7,7 @@
     data:
       msg: Update for Home Assistant is available.
 
-- alias: stop hyperion
+- alias: sun rise
   trigger:
   - platform: sun
     event: sunrise
@@ -19,8 +19,12 @@
     data:
       entity_id: input_select.select_effect
       option: None
+  - service: input_select.select_option
+    data:
+      entity_id: input_select.current_theme
+      option: default
 
-- alias: start hyperion
+- alias: sun set
   trigger:
   - platform: sun
     event: sunset
@@ -32,6 +36,10 @@
     data:
       entity_id: input_select.select_effect
       option: Color traces
+  - service: input_select.select_option
+    data:
+      entity_id: input_select.current_theme
+      option: midnight
   - delay: '00:00:30'
   - service: input_select.select_option
     data:
@@ -111,14 +119,10 @@
     event: start
   action:
   - service: script.media_restart
-  - service_template: >
-      {% if is_state("sun.sun", "above_horizon") %}
-        switch.turn_off
-      {% else %}
-        switch.turn_on
-      {% endif %}
-    entity_id: switch.hyperion_enable
-  - delay: '00:01:00'
+  - delay: '00:00:30'
+  - service: script.sun_above
+  - service: script.sun_below
+  - delay: '00:00:30'
   - service: script.ports_open
   - service: script.all_notify
     data:
@@ -503,3 +507,12 @@
         #rssi: {{states.binary_sensor.esp_mega_x1.attributes.rssi }}
         #time: {{now().strftime('%H:%M:%S')}}
         #{{states.binary_sensor.esp_mega_x1.attributes.boot_cause }}
+
+- alias: change_current_theme
+  trigger:
+    - platform: state
+      entity_id: input_select.current_theme
+  action:
+    - service: frontend.set_theme
+      data_template:
+        name: '{{states.input_select.current_theme.state}}'

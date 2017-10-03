@@ -157,6 +157,19 @@ hass_update:
      - service: homeassistant.check_config
      - service: homeassistant.restart
 
+sun_above:
+  sequence:
+    - condition: template
+      value_template: '{{is_state("sun.sun", "above_horizon")}}'
+    - service: automation.trigger
+      entity_id: automation.sun_rise
+
+sun_below:
+  sequence:
+    - condition: template
+      value_template: '{{is_state("sun.sun", "below_horizon")}}'
+    - service: automation.trigger
+      entity_id: automation.sun_set
 
 hyperion_cmd_x:
   sequence:
