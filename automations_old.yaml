@@ -123,6 +123,8 @@
   - service: script.sun_above
   - service: script.sun_below
   - delay: '00:00:30'
+  - service: automation.trigger
+    entity_id: automation.send_settings_hyperion
   - service: script.ports_open
   - service: script.all_notify
     data:
@@ -399,6 +401,36 @@
     entity_id: input_select.select_effect
   action:
   - service: script.hyperion_cmd_x
+
+- alias: send settings hyperion
+  trigger:
+  - platform: state
+    entity_id: input_slider.gamma_r
+  - platform: state
+    entity_id: input_slider.gamma_g
+  - platform: state
+    entity_id: input_slider.gamma_b
+  - platform: state
+    entity_id: input_slider.brightness
+  - platform: state
+    entity_id: input_slider.saturation
+  action:
+  - service: shell_command.hyperion_cmd
+    data_template:
+      value: >-
+              '{
+              "command":"transform",
+              "transform":
+                  {
+                    "gamma":
+                        [
+                            {{ states.input_slider.gamma_r.state | float }},
+                            {{ states.input_slider.gamma_g.state | float }},
+                            {{ states.input_slider.gamma_b.state | float }}
+                        ],
+                    "luminanceGain":{{ states.input_slider.brightness.state | float }},
+                    "saturationLGain":{{ states.input_slider.saturation.state | float }}}
+              }'
 
 - alias: kodi paly not music
   trigger:

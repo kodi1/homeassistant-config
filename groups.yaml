@@ -73,6 +73,14 @@ hyperion_color:
   - input_slider.slider_b
   - input_slider.slider_rgb_priority
   - script.hyperion_clear_rgb
+hyperion_settings:
+  view: false
+  entities:
+  - input_slider.brightness
+  - input_slider.saturation
+  - input_slider.gamma_r
+  - input_slider.gamma_g
+  - input_slider.gamma_b
 other:
   control: hidden
   view: false
@@ -130,6 +138,7 @@ autos:
   - automation.picture_on
   - automation.send_effect_hyperion
   - automation.send_rgb_hyperion
+  - automation.send_settings_hyperion
   - automation.sun_set
   - automation.sun_rise
   - automation.tv_keep_alive
@@ -169,6 +178,7 @@ settings:
   - group.hyperion_color
   - group.battslevel
   - input_select.current_theme
+  - group.hyperion_settings
 weather:
   view: true
   entities:

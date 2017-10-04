@@ -59,5 +59,8 @@ group.hyperion_color:
 group.alerts:
   order: 12
 
-group.battslevel:
+group.hyperion_settings:
   order: 13
+
+group.battslevel:
+  order: 14
