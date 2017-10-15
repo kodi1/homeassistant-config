@@ -56,6 +56,9 @@ mqtt:
   password: !secret mqtt_pass
   discovery: True
 
+# Show device on map
+map:
+
 # Show links to resources in log and frontend
 #introduction:
 
