@@ -1,66 +1,45 @@
 sensor.pressure_history_mean:
-  icon: 'mdi:gauge'
-  friendly_name: 'pressure stats'
-
+  icon: mdi:gauge
+  friendly_name: pressure stats
 sensor.pws_weather:
-  friendly_name: 'weather'
-
+  friendly_name: weather
 sensor.cpu_usage:
-  icon: 'mdi:percent'
-
+  icon: mdi:percent
 sensor.cpu_temp:
-  icon: 'mdi:oil-temperature'
-
+  icon: mdi:oil-temperature
 sensor.disk_free:
-  icon: 'mdi:harddisk'
-
+  icon: mdi:harddisk
 sensor.tomato_disk_free:
-  icon: 'mdi:cloud-sync'
-
+  icon: mdi:cloud-sync
 sensor.mem_free:
-  icon: 'mdi:memory'
-
+  icon: mdi:memory
 sensor.ping_isp:
-  icon: 'mdi:earth'
-
+  icon: mdi:earth
 group.out:
   order: 1
-
 group.in:
   order: 2
-
 group.weather_dark_sky:
   order: 3
-
 group.media:
   order: 4
-
 group.batts:
   order: 5
-
 group.other:
   order: 6
-
 group.system:
   order: 7
-
 group.autos:
   order: 8
-
 group.script:
   order: 9
-
 group.hyperion_effect:
   order: 10
-
 group.hyperion_color:
   order: 11
-
 group.alerts:
   order: 12
-
 group.hyperion_settings:
   order: 13
-
 group.battslevel:
   order: 14

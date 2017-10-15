@@ -365,34 +365,34 @@
 - alias: send rgb hyperion
   trigger:
   - platform: state
-    entity_id: input_slider.slider_r
+    entity_id: input_number.slider_r
   - platform: state
-    entity_id: input_slider.slider_g
+    entity_id: input_number.slider_g
   - platform: state
-    entity_id: input_slider.slider_b
+    entity_id: input_number.slider_b
   action:
   - service: shell_command.hyperion_cmd
     data_template:
       value: >-
               '{
               "color": [
-                          {{ states.input_slider.slider_r.state | int - 5 }},
-                          {{ states.input_slider.slider_g.state | int - 5 }},
-                          {{ states.input_slider.slider_b.state | int - 5 }}
+                          {{ states.input_number.slider_r.state | int - 5 }},
+                          {{ states.input_number.slider_g.state | int - 5 }},
+                          {{ states.input_number.slider_b.state | int - 5 }}
                         ],
               "command" : "color",
-              "priority": {{ states.input_slider.slider_rgb_priority.state | int }}
+              "priority": {{ states.input_number.slider_rgb_priority.state | int }}
               }'
   - service: shell_command.hyperion_cmd
     data_template:
       value: >-
               '{
                 "color": [
-                            {{ states.input_slider.slider_r.state | int }},
-                            {{ states.input_slider.slider_g.state | int }},
-                            {{ states.input_slider.slider_b.state | int }}],
+                            {{ states.input_number.slider_r.state | int }},
+                            {{ states.input_number.slider_g.state | int }},
+                            {{ states.input_number.slider_b.state | int }}],
                 "command": "color",
-                "priority": {{ states.input_slider.slider_rgb_priority.state | int }}
+                "priority": {{ states.input_number.slider_rgb_priority.state | int }}
               }'
 
 - alias: send effect hyperion
@@ -405,15 +405,15 @@
 - alias: send settings hyperion
   trigger:
   - platform: state
-    entity_id: input_slider.gamma_r
+    entity_id: input_number.gamma_r
   - platform: state
-    entity_id: input_slider.gamma_g
+    entity_id: input_number.gamma_g
   - platform: state
-    entity_id: input_slider.gamma_b
+    entity_id: input_number.gamma_b
   - platform: state
-    entity_id: input_slider.brightness
+    entity_id: input_number.brightness
   - platform: state
-    entity_id: input_slider.saturation
+    entity_id: input_number.saturation
   action:
   - service: shell_command.hyperion_cmd
     data_template:
@@ -424,12 +424,12 @@
                   {
                     "gamma":
                         [
-                            {{ states.input_slider.gamma_r.state | float }},
-                            {{ states.input_slider.gamma_g.state | float }},
-                            {{ states.input_slider.gamma_b.state | float }}
+                            {{ states.input_number.gamma_r.state | float }},
+                            {{ states.input_number.gamma_g.state | float }},
+                            {{ states.input_number.gamma_b.state | float }}
                         ],
-                    "luminanceGain":{{ states.input_slider.brightness.state | float }},
-                    "saturationLGain":{{ states.input_slider.saturation.state | float }}}
+                    "luminanceGain":{{ states.input_number.brightness.state | float }},
+                    "saturationLGain":{{ states.input_number.saturation.state | float }}}
               }'
 
 - alias: kodi paly not music
@@ -513,23 +513,33 @@
 
 - alias: esp x1
   trigger:
+  - platform: state
+    entity_id: binary_sensor.esp_mega_x1
+    to: 'off'
+    for:
+      minutes:  6
   - platform: numeric_state
     entity_id: binary_sensor.esp_mega_x1
     value_template: '{{state.attributes.mtime}}'
     below: 10
   #- platform: numeric_state
-    #entity_id: input_slider.slider_effect_time
-    ##value_template: {{states.input_slider.slider_effect_time.state |int }}
+    #entity_id: input_number.slider_effect_time
+    ##value_template: {{states.input_number.slider_effect_time.state |int }}
     #below: 3
   action:
   - service: script.all_notify
     data_template:
       msg: >-
-        {{states.binary_sensor.esp_mega_x1.attributes.friendly_name }}
-        boot count: {{states.binary_sensor.esp_mega_x1.attributes.boot_count }}
-        rssi: {{states.binary_sensor.esp_mega_x1.attributes.rssi }}
-        time: {{now().strftime('%H:%M:%S')}}
-        {{states.binary_sensor.esp_mega_x1.attributes.boot_cause }}
+        {%- if is_state("binary_sensor.esp_mega_x1", "on") -%}
+          {{states.binary_sensor.esp_mega_x1.attributes.friendly_name }}
+          boot count: {{states.binary_sensor.esp_mega_x1.attributes.boot_count }}
+          rssi: {{states.binary_sensor.esp_mega_x1.attributes.rssi }}
+          {{states.binary_sensor.esp_mega_x1.attributes.boot_cause }}
+          uptime: {{states.binary_sensor.esp_mega_x1.attributes.uptime }}
+          time: {{now().strftime('%H:%M:%S')}}
+        {%- else -%}
+          {{states.binary_sensor.esp_mega_x1.attributes.friendly_name }} is down
+        {%- endif -%}
   #- service: notify.mailbg
     #data_template:
       #title: 'hass'

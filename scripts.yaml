@@ -111,7 +111,7 @@ hyperion_clear_rgb:
     - service: shell_command.hyperion_cmd
       data_template:
         value: >-
-          '{"command": "clear", "priority": {{ states.input_slider.slider_rgb_priority.state | int }}}'
+          '{"command": "clear", "priority": {{ states.input_number.slider_rgb_priority.state | int }}}'
 
 bravia_vol_up:
   sequence:
@@ -177,12 +177,12 @@ hyperion_cmd_x:
       data_template:
         value: >-
           {%- if is_state("input_select.select_effect", "None") -%}
-            '{"command": "clear", "priority": {{ states.input_slider.slider_effect_priority.state | int }}}'
+            '{"command": "clear", "priority": {{ states.input_number.slider_effect_priority.state | int }}}'
           {%- else -%}
             '{
                 "command": "effect",
-                "priority": {{ states.input_slider.slider_effect_priority.state | int }},
-                "duration": {{ states.input_slider.slider_effect_time.state | int * 60000 }},
+                "priority": {{ states.input_number.slider_effect_priority.state | int }},
+                "duration": {{ states.input_number.slider_effect_time.state | int * 60000 }},
                 "effect": { "name" : "{{ states.input_select.select_effect.state }}"}
               }'
           {%- endif %}
@@ -191,4 +191,4 @@ hyperion_cmd_x:
     - service: shell_command.hyperion_cmd
       data_template:
         value: >-
-          '{"command": "clear", "priority": {{ states.input_slider.slider_effect_priority.state | int }}}'
+          '{"command": "clear", "priority": {{ states.input_number.slider_effect_priority.state | int }}}'

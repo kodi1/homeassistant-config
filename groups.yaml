@@ -20,13 +20,14 @@ batts:
   - sensor.dht22_176e41_battery
   - sensor.bme280_171f93_battery
   - sensor.root_battery
-battslevel:
-  name: batt level
+warninglevel:
+  name: warn levels
   control: hidden
   view: false
   entities:
-  - input_slider.slider_batt_level_p
-  - input_slider.slider_batt_level_v
+  - input_number.slider_batt_level_p
+  - input_number.slider_batt_level_v
+  - input_number.pressure_speed
 system:
   control: hidden
   view: false
@@ -62,25 +63,25 @@ hyperion_effect:
   view: false
   entities:
   - input_select.select_effect
-  - input_slider.slider_effect_time
-  - input_slider.slider_effect_priority
+  - input_number.slider_effect_time
+  - input_number.slider_effect_priority
 hyperion_color:
   control: hidden
   view: false
   entities:
-  - input_slider.slider_r
-  - input_slider.slider_g
-  - input_slider.slider_b
-  - input_slider.slider_rgb_priority
+  - input_number.slider_r
+  - input_number.slider_g
+  - input_number.slider_b
+  - input_number.slider_rgb_priority
   - script.hyperion_clear_rgb
 hyperion_settings:
   view: false
   entities:
-  - input_slider.brightness
-  - input_slider.saturation
-  - input_slider.gamma_r
-  - input_slider.gamma_g
-  - input_slider.gamma_b
+  - input_number.brightness
+  - input_number.saturation
+  - input_number.gamma_r
+  - input_number.gamma_g
+  - input_number.gamma_b
 other:
   control: hidden
   view: false
@@ -176,7 +177,7 @@ settings:
   - switch.tv_cec
   - group.hyperion_effect
   - group.hyperion_color
-  - group.battslevel
+  - group.warninglevel
   - input_select.current_theme
   - group.hyperion_settings
 weather:
