@@ -31,6 +31,30 @@ panel_iframe: !include panels.yaml
 camera: !include cams.yaml
 binary_sensor: !include binary_sensor.yaml
 alert: !include alerts.yaml
+mqtt:
+  embedded:
+    listeners:
+      default:
+        type: tcp
+        max-connections: 1000
+      #internal_tcp_1:
+        #bind: 127.0.0.1:1882
+      external_tcp_1:
+        bind: 0.0.0.0:1883
+      ws-1:
+        bind: 0.0.0.0:8080
+        type: ws
+    timeout-disconnect-delay: 5
+    auth:
+      #plugins: ['auth_anonymous']
+      allow-anonymous: False
+      password-file: /home/hass/.homeassistant/mqtt_passwd
+  broker: 127.0.0.1
+  port: 1883
+  client_id: master
+  username: !secret mqtt_user
+  password: !secret mqtt_pass
+  discovery: True
 
 # Show links to resources in log and frontend
 #introduction:

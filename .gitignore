@@ -4,6 +4,7 @@
 home-assistant.log
 home-assistant_v2.db*
 secrets.yaml
+mqtt_passwd
 known_devices.yaml
 set_env
 .HA_VERSION
