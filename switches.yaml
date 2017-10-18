@@ -9,3 +9,13 @@
     tv_cec:
       command_on: "/home/hass/.homeassistant/cmds/cec_on"
       command_off: "/home/hass/.homeassistant/cmds/cec_off"
+
+- platform: mqtt
+  name: "mqtt 1"
+  state_topic: "/test/relay/state"
+  command_topic: "/test/gpio/2"
+  payload_on: "0"
+  payload_off: "1"
+  availability_topic: "/test/status"
+  payload_available: "Connected"
+  payload_not_available: "Connection Lost"

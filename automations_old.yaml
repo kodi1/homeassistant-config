@@ -558,3 +558,15 @@
     - service: frontend.set_theme
       data_template:
         name: '{{states.input_select.current_theme.state}}'
+
+#- alias: tetst_tab
+  #trigger:
+  #- platform: state
+    #entity_id: switch.mqtt_1
+  #action:
+  #- service: persistent_notification.create
+    #data_template:
+      #message: '{{is_state("switch.mqtt_1", "unavailable") != True}}'
+  #- service: group.set_visibility
+    #data_template:
+      #visible: '{{is_state("switch.mqtt_1", "unavailable") != True}}'

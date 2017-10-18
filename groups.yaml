@@ -93,7 +93,6 @@ other:
   - binary_sensor.kodi_screen_saver
   - binary_sensor.tomato_smb_online
   - binary_sensor.isp_conn
-  - binary_sensor.x1
   - binary_sensor.batts_low
 script:
   control: hidden
@@ -193,3 +192,10 @@ automations:
   entities:
   - group.autos
   - group.script
+test:
+  view: true
+  icon: mdi:nuke
+  entities:
+  - binary_sensor.test_1
+  - binary_sensor.x1
+  - switch.mqtt_1

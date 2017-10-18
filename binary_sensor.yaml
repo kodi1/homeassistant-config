@@ -46,3 +46,8 @@
   name: x1
   host: !secret esp_host_x1
   scan_interval: 300
+
+- platform: esp_wd
+  name: test_1
+  host: !secret test_host_1
+  scan_interval: 300
