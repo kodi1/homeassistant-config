@@ -192,3 +192,72 @@ hyperion_cmd_x:
       data_template:
         value: >-
           '{"command": "clear", "priority": {{ states.input_number.slider_effect_priority.state | int }}}'
+
+set_settings_video:
+  sequence:
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.gamma_r
+        value: '{{states.input_number.video_gamma.state}}'
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.gamma_g
+        value: '{{states.input_number.video_gamma.state}}'
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.gamma_b
+        value: '{{states.input_number.video_gamma.state}}'
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.saturation
+        value: '{{states.input_number.video_saturation.state}}'
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.brightness
+        value: '{{states.input_number.video_brightness.state}}'
+
+set_settings_light:
+  sequence:
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.gamma_r
+        value: '{{states.input_number.light_gamma.state}}'
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.gamma_g
+        value: '{{states.input_number.light_gamma.state}}'
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.gamma_b
+        value: '{{states.input_number.light_gamma.state}}'
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.saturation
+        value: '{{states.input_number.light_saturation.state}}'
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.brightness
+        value: '{{states.input_number.light_brightness.state}}'
+
+set_settings_effect:
+  sequence:
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.gamma_r
+        value: '{{states.input_number.effect_gamma.state}}'
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.gamma_g
+        value: '{{states.input_number.effect_gamma.state}}'
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.gamma_b
+        value: '{{states.input_number.effect_gamma.state}}'
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.saturation
+        value: '{{states.input_number.effect_saturation.state}}'
+    - service: input_number.set_value
+      data_template:
+        entity_id: input_number.brightness
+        value: '{{states.input_number.effect_brightness.state}}'

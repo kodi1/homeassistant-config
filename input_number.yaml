@@ -73,28 +73,82 @@ slider_batt_level_p:
 gamma_r:
   min: 1.0
   max: 2.5
-  step: 0.1
+  step: 0.05
   icon: mdi:chart-bar-stacked
 
 gamma_g:
   min: 1.0
   max: 2.5
-  step: 0.1
+  step: 0.05
   icon: mdi:chart-bar-stacked
 
 gamma_b:
   min: 1.0
   max: 2.5
-  step: 0.1
+  step: 0.05
   icon: mdi:chart-bar-stacked
 
 brightness:
+  min: 0.1
+  max: 0.8
+  step: 0.01
+  icon: mdi:brightness-6
+
+saturation:
+  min: 0.5
+  max: 1.0
+  step: 0.01
+  icon: mdi:palette-advanced
+
+video_gamma:
+  min: 1.0
+  max: 2.5
+  step: 0.05
+  icon: mdi:chart-bar-stacked
+
+video_brightness:
+  min: 0.1
+  max: 0.4
+  step: 0.01
+  icon: mdi:brightness-6
+
+video_saturation:
+  min: 0.5
+  max: 1.0
+  step: 0.01
+  icon: mdi:palette-advanced
+
+light_gamma:
+  min: 1.0
+  max: 2.5
+  step: 0.05
+  icon: mdi:chart-bar-stacked
+
+light_brightness:
   min: 0.1
   max: 0.6
   step: 0.01
   icon: mdi:brightness-6
 
-saturation:
+light_saturation:
+  min: 0.5
+  max: 1.0
+  step: 0.01
+  icon: mdi:palette-advanced
+
+effect_gamma:
+  min: 1.0
+  max: 2.5
+  step: 0.05
+  icon: mdi:chart-bar-stacked
+
+effect_brightness:
+  min: 0.1
+  max: 0.8
+  step: 0.01
+  icon: mdi:brightness-6
+
+effect_saturation:
   min: 0.5
   max: 1.0
   step: 0.01

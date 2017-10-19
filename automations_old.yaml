@@ -383,6 +383,7 @@
               "command" : "color",
               "priority": {{ states.input_number.slider_rgb_priority.state | int }}
               }'
+  - service: script.set_settings_light
   - service: shell_command.hyperion_cmd
     data_template:
       value: >-
@@ -400,6 +401,7 @@
   - platform: state
     entity_id: input_select.select_effect
   action:
+  - service: script.set_settings_effect
   - service: script.hyperion_cmd_x
 
 - alias: send settings hyperion
@@ -446,6 +448,7 @@
       entity_id: input_select.select_effect
       option: None
   - service: script.hyperion_clear_rgb
+  - service: script.set_settings_video
 
 - alias: kodi pause not music
   trigger:

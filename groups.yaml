@@ -147,6 +147,39 @@ autos:
   - automation.weather_alert
   - automation.esp_x1
 
+scene_settings_video:
+  view: false
+  control: hidden
+  icon: mdi:movie
+  name: video
+  entities:
+  - input_number.video_brightness
+  - input_number.video_saturation
+  - input_number.video_gamma
+  - script.set_settings_video
+
+scene_settings_light:
+  view: false
+  control: hidden
+  icon: mdi:lamp
+  name: light
+  entities:
+  - input_number.light_brightness
+  - input_number.light_saturation
+  - input_number.light_gamma
+  - script.set_settings_light
+
+scene_settings_effect:
+  view: false
+  control: hidden
+  icon: mdi:lava-lamp
+  name: effect
+  entities:
+  - input_number.effect_brightness
+  - input_number.effect_saturation
+  - input_number.effect_gamma
+  - script.set_settings_effect
+
 default_view:
   view: true
   control: hidden
@@ -192,6 +225,13 @@ automations:
   entities:
   - group.autos
   - group.script
+scenes_settings:
+  view: true
+  icon: mdi:led-strip
+  entities:
+  - group.scene_settings_video
+  - group.scene_settings_effect
+  - group.scene_settings_light
 test:
   view: true
   icon: mdi:nuke
