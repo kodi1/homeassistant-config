@@ -182,6 +182,7 @@ scene_settings_effect:
 
 default_view:
   view: true
+  icon: mdi:home-variant
   control: hidden
   entities:
   - device_tracker.m4b30x
@@ -197,12 +198,14 @@ default_view:
   - group.alerts
 status:
   view: true
+  icon: mdi:newspaper
   entities:
   - group.batts
   - group.other
   - group.system
 settings:
   view: true
+  icon: mdi:developer-board
   entities:
   - switch.tv_picture_off
   - switch.hyperion_enable
@@ -214,6 +217,7 @@ settings:
   - group.hyperion_settings
 weather:
   view: true
+  icon: mdi:image-filter-hdr
   entities:
   - camera.24sat_image
   - camera.meteo_sat
@@ -222,6 +226,7 @@ weather:
   - camera.weathermod
 automations:
   view: true
+  icon: mdi:chemical-weapon
   entities:
   - group.autos
   - group.script
