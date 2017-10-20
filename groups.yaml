@@ -90,6 +90,7 @@ other:
   - device_tracker.pi3
   - device_tracker.sgs4
   - sensor.pressure_history_mean
+  - binary_sensor.bravia
   - binary_sensor.kodi_screen_saver
   - binary_sensor.tomato_smb_online
   - binary_sensor.isp_conn

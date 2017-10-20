@@ -6,6 +6,13 @@
   payload_off: "fail"
   scan_interval: 600
 
+- platform: command_line
+  command: '/home/hass/.homeassistant/cmds/bravia_check'
+  name: 'bravia'
+  payload_on: "success"
+  payload_off: "fail"
+  scan_interval: 300
+
 - platform: template
   sensors:
     isp_conn:
