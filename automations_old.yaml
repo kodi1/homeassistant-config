@@ -34,17 +34,10 @@
     entity_id: switch.hyperion_enable
   - service: input_select.select_option
     data:
-      entity_id: input_select.select_effect
-      option: Color traces
-  - service: input_select.select_option
-    data:
       entity_id: input_select.current_theme
       option: midnight
-  - delay: '00:00:30'
-  - service: input_select.select_option
-    data:
-      entity_id: input_select.select_effect
-      option: None
+  - delay: '00:00:03'
+  - service: script.hyperion_startup
 
 - alias: kodi online radio
   trigger:
