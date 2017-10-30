@@ -1,0 +1,25 @@
+include:
+  #domains:
+  entities:
+    - sensor.bme280_171f93_battery
+    - sensor.bme280_171f93_humidity
+    - sensor.bme280_171f93_temperature
+    - sensor.change_pressure
+    - sensor.cpu_temp
+    - sensor.cpu_usage
+    - sensor.dark_sky_humidity
+    - sensor.dark_sky_precip_intensity
+    - sensor.dark_sky_pressure
+    - sensor.dark_sky_temperature
+    - sensor.dark_sky_wind_speed
+    - sensor.dht22_176e41_battery
+    - sensor.dht22_176e41_humidity
+    - sensor.dht22_176e41_temperature
+    - sensor.disk_free
+    - sensor.hum_b
+    - sensor.mem_free
+    - sensor.ping_isp
+    - sensor.pws_weather
+    - sensor.root_battery
+    - sensor.sea_level_pressure
+    - sensor.temp_b

@@ -1,0 +1,15 @@
+purge_interval: 1
+purge_keep_days: 7
+
+exclude:
+  domains:
+    - automation
+    - weblink
+    - updater
+    - notify
+    - group
+    - persistent_notification
+    - camera
+    - script
+  entities:
+    - automation.send_settings_hyperion
