@@ -289,7 +289,21 @@ test_loop_min:
       data:
         brightness: 75
         transition: 10
+    - service: light.turn_on
+      entity_id: light.bed_led
+      data:
+        rgb_color: [0,255,0]
+        transition: 10
     - delay: '00:00:15'
+    - service: light.turn_on
+      entity_id: light.bed_led
+      data:
+        effect: cycle
+    - delay: '00:00:15'
+    - service: light.turn_off
+      entity_id: light.bed_led
+      data:
+        transition: 3
     - service: light.turn_off
       entity_id: light.test_led
       data:
