@@ -48,6 +48,37 @@
         {%- else -%}
           True
         {%- endif %}
+    bedlight:
+      entity_id:
+        - sun.sun
+        - device_tracker.m4b30x
+        - device_tracker.n0ll
+        - media_player.kodi
+      value_template: >-
+        {%-if is_state("sun.sun", "below_horizon") and
+             is_state("device_tracker.m4b30x", "home") -%}
+          {%-if is_state("device_tracker.n0ll", "home") -%}
+            False
+          {%- else -%}
+            {%- set  t =  now().minute + now().hour * 60 -%}
+            {%- set  tb =  45 + 21 * 60 -%}
+            {%- set  te =  15 + 4 * 60 -%}
+            {%- set stamp = states.script.media_start.attributes.last_triggered -%}
+            {%- if not stamp -%}
+              {%- set stamp = now() -%}
+            {%- endif -%}
+            {%-if (is_state("media_player.kodi", "idle") and
+                  (tb < t or t < te) or
+                  (as_timestamp(now()) - as_timestamp(stamp)) < 600)
+            -%}
+              True
+            {%- else -%}
+              False
+            {%- endif -%}
+          {%- endif -%}
+        {%- else -%}
+          False
+        {%- endif -%}
 
 - platform: esp_wd
   name: x1
@@ -63,3 +94,25 @@
   name: bedroom
   host: !secret bedroom
   scan_interval: 300
+
+#- platform: bayesian
+#  name: bedlight
+#  prior: 0.2
+#  probability_threshold: 0.85
+#  observations:
+#    - entity_id: sensor.sun
+#      prob_given_true: 0.8
+#      platform: state
+#      to_state: below_horizon
+#    - entity_id: device_tracker.m4b30x
+#      prob_given_true: 0.6
+#      platform: state
+#      to_state: home
+#    - entity_id: device_tracker.n0ll
+#      prob_given_true: 0.7
+#      platform: state
+#      to_state: not_home
+#    - entity_id: media_player.kodi
+#      prob_given_true: 0.9
+#      platform: state
+#      to_state: idle
