@@ -160,3 +160,10 @@ bed_cycle_duration:
   max: 180
   step: 5
   icon: mdi:av-timer
+
+#bed_ligh_duration:
+  #name: 'time'
+  #min: 1
+  #max: 30
+  #step: 1
+  #icon: mdi:timer-sand

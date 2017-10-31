@@ -555,6 +555,47 @@
       data_template:
         name: '{{states.input_select.current_theme.state}}'
 
+- alias: bed_turn_off
+  trigger:
+  - platform: state
+    entity_id: binary_sensor.bedlight
+    to: 'off'
+  - platform: state
+    entity_id: light.bed_led
+    to: 'on'
+    for:
+      minutes: 10
+  #trigger:
+    #- platform: template
+      #value_template: >-
+        #{%- if ((as_timestamp(now()) - as_timestamp(states.light.bed_led.last_updated)) / 60) | int >=
+          #states.input_number.bed_ligh_duration.state | int and
+          #states.light.bed_led.state == 'on' -%}
+          #True
+        #{%- endif -%}
+  action:
+    service: light.turn_off
+    entity_id: light.bed_led
+    data:
+      transition: 60
+
+- alias: bed_turn_on
+  trigger:
+  - platform: state
+    entity_id: binary_sensor.bedlight
+    to: 'on'
+  action:
+  - service: light.turn_on
+    entity_id: light.bed_led
+    data:
+      brightness: 150
+      transition: 15
+  - delay: '00:00:15'
+  - service: light.turn_on
+    entity_id: light.bed_led
+    data:
+      effect: cycle
+
 - alias: minutes_loop
   initial_state: 'off'
   trigger:
