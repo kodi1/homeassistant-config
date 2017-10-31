@@ -1,4 +1,36 @@
-#- platform: hyperion
-  #name: leds
-  #host: !secret kodi_host
-  #default_color: [100, 100, 100]
+- platform: mqtt_template
+  name: 'test led'
+  effect_list:
+    - cycle
+    - none
+  command_topic: "/test/cmd"
+  state_topic: "/test/status/led"
+  command_on_template: >-
+    {{"rgb_json,{'state':'on'"}}
+    {%- if brightness is defined -%}
+    ,'brightness':{{brightness}}
+    {%- endif -%}
+    {%- if red is defined and green is defined and blue is defined -%}
+      ,'r':{{red}},'g':{{green}},'b':{{blue}}
+    {%- endif -%}
+    {%- if transition is defined -%}
+      ,'transition':{{transition |int * 1000}}
+    {%- endif -%}
+    {%- if effect is defined -%}
+      ,'eff':'{{effect}}','eff_time':{{states.input_number.bed_cycle_duration.state|int}}
+    {%- endif -%}
+    {{"}"}}
+
+  command_off_template: >-
+    {{"rgb_json,{'state':'off'"}}
+    {%- if transition is defined -%}
+    ,'transition':{{transition |int * 1000}}
+    {%- endif -%}
+    {{"}"}}
+
+  state_template: '{{ value_json.state }}'
+  brightness_template: '{{ value_json.brightness }}'
+  red_template: '{{ value_json.r }}'
+  green_template: '{{ value_json.g }}'
+  blue_template: '{{ value_json.b }}'
+  effect_template: '{{ value_json.eff }}'

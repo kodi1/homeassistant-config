@@ -248,3 +248,4 @@ test:
   - binary_sensor.x1
   - binary_sensor.bedroom
   - switch.mqtt_1
+  - light.test_led

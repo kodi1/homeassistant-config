@@ -555,6 +555,15 @@
       data_template:
         name: '{{states.input_select.current_theme.state}}'
 
+- alias: minutes_loop
+  initial_state: 'off'
+  trigger:
+  - platform: time
+    minutes: '/10'
+    seconds: 0
+  action:
+  - service: script.test_loop_min
+
 #- alias: tetst_tab
   #trigger:
   #- platform: state
