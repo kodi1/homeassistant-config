@@ -5,6 +5,8 @@ in:
   - sensor.bme280_171f93_temperature
   - sensor.bme280_171f93_humidity
   - sensor.bme280_171f93_pressure
+  - sensor.temp_b
+  - sensor.hum_b
 out:
   control: hidden
   view: false
@@ -244,4 +246,5 @@ test:
   entities:
   - binary_sensor.test_1
   - binary_sensor.x1
+  - binary_sensor.bedroom
   - switch.mqtt_1

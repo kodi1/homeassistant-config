@@ -119,6 +119,18 @@
   entity_id: sensor.bme280_171f93_pressure
   sampling_size: 6
 
+- platform: mqtt
+  name: "hum b"
+  state_topic: "/bedroom_led/env/humidity"
+  unit_of_measurement: "%"
+  expire_after: 660
+
+- platform: mqtt
+  name: "temp b"
+  state_topic: "/bedroom_led/env/temperature"
+  unit_of_measurement: "°C"
+  expire_after: 660
+
 #- platform: snmp
   #name: 'router load 1m'
   #host: !secret snmp_router

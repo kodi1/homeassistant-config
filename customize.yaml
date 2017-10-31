@@ -45,3 +45,5 @@ group.hyperion_settings:
   order: 13
 group.battslevel:
   order: 14
+sensor.hum_b:
+  icon: mdi:water-percent
