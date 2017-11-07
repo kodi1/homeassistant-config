@@ -209,9 +209,9 @@ default_view:
   - sensor.change_pressure
   - sensor.pws_alerts
   - sensor.pws_weather
-  - group.weather_dark_sky
   - group.out
   - group.in
+  - group.weather_dark_sky
   - group.media
   - group.alerts
 status:
