@@ -163,15 +163,17 @@ effect_saturation:
   icon: mdi:palette-advanced
 
 bed_cycle_duration:
-  name: 'duration'
+  name: 'effect time'
+  unit_of_measurement: 'sec'
   min: 30
   max: 180
   step: 5
   icon: mdi:av-timer
 
-#bed_ligh_duration:
-  #name: 'time'
-  #min: 1
-  #max: 30
-  #step: 1
-  #icon: mdi:timer-sand
+bed_light_duration:
+  name: 'light time'
+  unit_of_measurement: 'min'
+  min: 1
+  max: 30
+  step: 1
+  icon: mdi:timer-sand

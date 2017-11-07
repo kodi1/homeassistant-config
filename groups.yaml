@@ -195,11 +195,12 @@ bedroom_light:
   - binary_sensor.bedlight
   - light.bed_led
   - input_number.bed_cycle_duration
+  - input_number.bed_light_duration
   - automation.minutes_loop
   - automation.bed_turn_off
   - automation.bed_turn_on
+  - automation.bed_auto_off
   - script.test_loop_min
-  #- input_number.bed_ligh_duration
   - timer.bed_light_timer
 
 default_view:

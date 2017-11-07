@@ -581,19 +581,10 @@
   - platform: state
     entity_id: binary_sensor.bedlight
     to: 'off'
-  - platform: state
-    entity_id: light.bed_led
-    to: 'on'
-    for:
-      minutes: 10
-  #trigger:
-    #- platform: template
-      #value_template: >-
-        #{%- if ((as_timestamp(now()) - as_timestamp(states.light.bed_led.last_updated)) / 60) | int >=
-          #states.input_number.bed_ligh_duration.state | int and
-          #states.light.bed_led.state == 'on' -%}
-          #True
-        #{%- endif -%}
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.bed_light_timer
   action:
     service: light.turn_off
     entity_id: light.bed_led
@@ -606,16 +597,30 @@
     entity_id: binary_sensor.bedlight
     to: 'on'
   action:
+  - service: automation.trigger
+    entity_id: automation.bed_auto_off
   - service: light.turn_on
     entity_id: light.bed_led
-    data:
-      brightness: 150
-      transition: 15
+    data_template:
+      rgb_color: ['{{(range(0, 100)|random)}}','{{(range(150, 200)|random)}}','{{(range(0, 100)|random)}}']
+      #brightness: '{{150}}'
+      transition: '{{15}}'
   - delay: '00:00:15'
   - service: light.turn_on
     entity_id: light.bed_led
     data:
       effect: cycle
+
+- alias: bed_auto_off
+  trigger:
+  - platform: state
+    entity_id: light.bed_led
+    to: 'on'
+  action:
+  - service: timer.start
+    entity_id: timer.bed_light_timer
+    data_template:
+      duration: '00:{{states.input_number.bed_light_duration.state|int}}:00'
 
 - alias: minutes_loop
   initial_state: 'off'
