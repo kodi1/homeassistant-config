@@ -67,6 +67,7 @@ hyperion_effect:
   - input_select.select_effect
   - input_number.slider_effect_time
   - input_number.slider_effect_priority
+  - timer.hyperion_effect_timer
 hyperion_color:
   control: hidden
   view: false
@@ -74,8 +75,10 @@ hyperion_color:
   - input_number.slider_r
   - input_number.slider_g
   - input_number.slider_b
+  - input_number.slider_rgb_time
   - input_number.slider_rgb_priority
   - script.hyperion_clear_rgb
+  - timer.hyperion_rgb_timer
 hyperion_settings:
   view: false
   entities:
@@ -197,6 +200,7 @@ bedroom_light:
   - automation.bed_turn_on
   - script.test_loop_min
   #- input_number.bed_ligh_duration
+  - timer.bed_light_timer
 
 default_view:
   view: true
@@ -265,3 +269,4 @@ test:
   - switch.mqtt_1
   - light.test_led
   - group.bedroom_light
+  - timer.test_timer

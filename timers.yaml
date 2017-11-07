@@ -1,0 +1,12 @@
+bed_light_timer:
+  icon: mdi:camera-timer
+test_timer:
+  icon: mdi:timer-sand
+hyperion_effect_timer:
+  name: 'effect time'
+  icon: mdi:timer
+  duration: '00:00:05'
+hyperion_rgb_timer:
+  name: 'rgb time'
+  icon: mdi:timer
+  duration: '00:00:05'

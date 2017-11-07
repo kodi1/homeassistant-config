@@ -31,6 +31,7 @@ panel_iframe: !include panels.yaml
 camera: !include cams.yaml
 binary_sensor: !include binary_sensor.yaml
 alert: !include alerts.yaml
+timer: !include timers.yaml
 mqtt:
   embedded:
     listeners:

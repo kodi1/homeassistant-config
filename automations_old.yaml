@@ -355,6 +355,27 @@
   - service: switch.turn_on
     entity_id: switch.tv_cec
 
+- alias: hyperion_clear_effcts
+  trigger:
+    - platform: event
+      event_type: timer.finished
+      event_data:
+        entity_id: timer.hyperion_effect_timer
+  action:
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.select_effect
+        option: None
+
+- alias: hyperion_clear_rgb
+  trigger:
+    - platform: event
+      event_type: timer.finished
+      event_data:
+        entity_id: timer.hyperion_rgb_timer
+  action:
+    - service: script.hyperion_clear_rgb
+
 - alias: send rgb hyperion
   trigger:
   - platform: state

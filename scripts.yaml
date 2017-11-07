@@ -113,6 +113,16 @@ hyperion_clear_rgb:
         value: >-
           '{"command": "clear", "priority": {{ states.input_number.slider_rgb_priority.state | int }}}'
 
+# Workaround celear twice to diasble effects
+hyperion_clear_effects_if_none:
+  sequence:
+    - condition: template
+      value_template: '{{is_state("input_select.select_effect", "None")}}'
+    - service: shell_command.hyperion_cmd
+      data_template:
+        value: >-
+          '{"command": "clear", "priority": {{ states.input_number.slider_effect_priority.state | int }}}'
+
 hyperion_startup:
   sequence:
     - condition: or
@@ -206,12 +216,13 @@ hyperion_cmd_x:
                 "effect": { "name" : "{{ states.input_select.select_effect.state }}"}
               }'
           {%- endif %}
+    - service: script.hyperion_clear_effects_if_none
     - condition: template
-      value_template: '{{is_state("input_select.select_effect", "None")}}'
-    - service: shell_command.hyperion_cmd
+      value_template: '{{is_state("input_select.select_effect", "None") == False}}'
+    - service: timer.start
+      entity_id: timer.hyperion_effect_timer
       data_template:
-        value: >-
-          '{"command": "clear", "priority": {{ states.input_number.slider_effect_priority.state | int }}}'
+        duration: '{{states.input_number.slider_effect_time.state|int * 60}}'
 
 set_settings_video:
   sequence:

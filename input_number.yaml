@@ -49,8 +49,16 @@ slider_rgb_priority:
 slider_effect_time:
   name: effect time
   #initial: 1
-  min: 0
-  max: 30
+  min: 1
+  max: 15
+  step: 1
+  icon: mdi:timer-sand
+
+slider_rgb_time:
+  name: color time
+  #initial: 1
+  min: 1
+  max: 10
   step: 1
   icon: mdi:timer-sand
 

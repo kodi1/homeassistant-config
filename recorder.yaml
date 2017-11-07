@@ -11,5 +11,6 @@ exclude:
     - persistent_notification
     - camera
     - script
+    - timer
   entities:
     - automation.send_settings_hyperion
