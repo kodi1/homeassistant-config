@@ -4,3 +4,7 @@
   username: !secret kodi_user
   password: !secret kodi_pass
 
+- platform: cast
+  host: !secret cast_bedroom
+- platform: cast
+  host: !secret cast_sound_bar

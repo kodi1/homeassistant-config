@@ -47,3 +47,5 @@ group.battslevel:
   order: 14
 sensor.hum_b:
   icon: mdi:water-percent
+media_player.htmt500501_b34d6a:
+  friendly_name: Sound Bar

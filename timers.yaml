@@ -1,5 +1,9 @@
 bed_light_timer:
   icon: mdi:camera-timer
+bed_music:
+  icon: mdi:timer-sand
+sound_bar:
+  icon: mdi:timer-sand
 test_timer:
   icon: mdi:timer-sand
 hyperion_effect_timer:

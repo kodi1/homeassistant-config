@@ -177,3 +177,19 @@ bed_light_duration:
   max: 30
   step: 1
   icon: mdi:timer-sand
+
+bed_music_timer:
+  name: 'music time'
+  unit_of_measurement: 'min'
+  min: 20
+  max: 60
+  step: 10
+  icon: mdi:av-timer
+
+sound_bar_music_timer:
+  name: 'music time'
+  unit_of_measurement: 'min'
+  min: 30
+  max: 120
+  step: 10
+  icon: mdi:av-timer

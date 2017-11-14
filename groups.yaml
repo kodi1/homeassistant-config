@@ -203,6 +203,32 @@ bedroom_light:
   - script.test_loop_min
   - timer.bed_light_timer
 
+bedroom_music:
+  view: false
+  control: hidden
+  icon: mdi:speaker-wireless
+  name: bedroom music
+  entities:
+  - input_select.select_radio_bed
+  - media_player.bedroom_speaker
+  - automation.bed_music_on
+  - automation.bed_music_off
+  - input_number.bed_music_timer
+  - timer.bed_music
+
+sound_bar_music:
+  view: false
+  control: hidden
+  icon: mdi:speaker-wireless
+  name: sound bar music
+  entities:
+  - input_select.select_sound_bar
+  - media_player.htmt500501_b34d6a
+  - automation.sound_bar_music_on
+  - automation.sound_bar_music_off
+  - input_number.sound_bar_music_timer
+  - timer.sound_bar
+
 default_view:
   view: true
   icon: mdi:home-variant
@@ -271,3 +297,5 @@ test:
   - light.test_led
   - group.bedroom_light
   - timer.test_timer
+  - group.bedroom_music
+  - group.sound_bar_music

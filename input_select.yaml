@@ -17,6 +17,38 @@ select_radio:
     - Milano Lounge
   icon: mdi:radio
 
+select_radio_bed:
+  name: bed online radio
+  options:
+    - 1Mix Radio
+    - Nova Bg
+    - State Of Trance
+    - 1FM Amsterdam
+    - Ocean Radio
+    - Costa Del Mar
+    - 1FM Lounge Radio
+    - Lounge FM
+    - Absolute Chillout
+    - Eilo Ambient
+    - Milano Lounge
+  icon: mdi:radio
+
+select_sound_bar:
+  name: sound bar radio
+  options:
+    - 1Mix Radio
+    - Nova Bg
+    - State Of Trance
+    - 1FM Amsterdam
+    - Ocean Radio
+    - Costa Del Mar
+    - 1FM Lounge Radio
+    - Lounge FM
+    - Absolute Chillout
+    - Eilo Ambient
+    - Milano Lounge
+  icon: mdi:radio
+
 select_effect:
   name: hyperion effect
   options:

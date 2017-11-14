@@ -631,6 +631,106 @@
   action:
   - service: script.test_loop_min
 
+- alias: bed_music_on
+  trigger:
+  - platform: state
+    entity_id: media_player.bedroom_speaker
+    from: 'off'
+    to: 'idle'
+  - platform: state
+    entity_id: input_select.select_radio_bed
+  action:
+  - service: timer.start
+    entity_id: timer.bed_music
+    data_template:
+      duration: '00:{{states.input_number.bed_music_timer.state|int}}:00'
+  - service: media_player.play_media
+    data_template:
+      entity_id: media_player.bedroom_speaker
+      media_content_type: 'audio/mp3'
+      media_content_id: >-
+        {%-
+            set play=
+            {
+            "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
+            "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
+            "State Of Trance": "http://de-hz-fal-stream07.rautemusik.fm/trance",
+            "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
+            "Ocean Radio": "http://philae.shoutca.st:8446/stream",
+            "Costa Del Mar": "http://sc-costadelmar.1.fm:10156",
+            "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
+            "Lounge FM": "http://cast.loungefm.com.ua/chillout128",
+            "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
+            "Eilo Ambient": "http://eilo.org:8000/ambient",
+            "Milano Lounge": "http://178.32.62.154:9739/stream",
+            }
+        -%}
+        {{ play[states("input_select.select_radio_bed")] }}
+
+- alias: bed_music_off
+  trigger:
+  - platform: state
+    entity_id: device_tracker.m4b30x
+    from: home
+    to: not_home
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.bed_music
+  action:
+  - service: media_player.turn_off
+    entity_id: media_player.bedroom_speaker
+
+- alias: sound_bar_music_on
+  trigger:
+  - platform: state
+    entity_id: media_player.htmt500501_b34d6a
+    from: 'off'
+    to: 'idle'
+  - platform: state
+    entity_id: input_select.select_sound_bar
+  action:
+  - service: timer.start
+    entity_id: timer.sound_bar
+    data_template:
+      duration: '00:{{states.input_number.sound_bar_music_timer.state|int}}:00'
+  - service: media_player.play_media
+    data_template:
+      entity_id: media_player.htmt500501_b34d6a
+      media_content_type: 'audio/mp3'
+      media_content_id: >-
+        {%-
+            set play=
+            {
+            "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
+            "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
+            "State Of Trance": "http://de-hz-fal-stream07.rautemusik.fm/trance",
+            "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
+            "Ocean Radio": "http://philae.shoutca.st:8446/stream",
+            "Costa Del Mar": "http://sc-costadelmar.1.fm:10156",
+            "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
+            "Lounge FM": "http://cast.loungefm.com.ua/chillout128",
+            "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
+            "Eilo Ambient": "http://eilo.org:8000/ambient",
+            "Milano Lounge": "http://178.32.62.154:9739/stream",
+            }
+        -%}
+        {{ play[states("input_select.select_sound_bar")] }}
+
+- alias: sound_bar_music_off
+  trigger:
+  - platform: state
+    entity_id: device_tracker.m4b30x
+    from: home
+    to: not_home
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.sound_bar
+  action:
+  - service: media_player.turn_off
+    entity_id: media_player.htmt500501_b34d6a
+
 #- alias: tetst_tab
   #trigger:
   #- platform: state
