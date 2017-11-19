@@ -1,22 +1,3 @@
-select_radio:
-  name: kodi online radio
-  options: 
-    - 1Mix Radio
-    - Nova Bg
-    - Digital Impulse
-    - State Of Trance
-    - 1FM Amsterdam
-    - Dj Zone
-    - Traffic
-    - Ocean Radio
-    - Costa Del Mar
-    - 1FM Lounge Radio
-    - Lounge FM
-    - Absolute Chillout
-    - Eilo Ambient
-    - Milano Lounge
-  icon: mdi:radio
-
 select_radio_bed:
   name: bed online radio
   options:
@@ -31,6 +12,16 @@ select_radio_bed:
     - Absolute Chillout
     - Eilo Ambient
     - Milano Lounge
+    - Lounge
+    - Smooth Lounge
+    - Vocal Lounge
+    - Sleep
+    - New Age
+    - Ambient
+    - Ambient Sleep
+    - Calm Radio
+    - Ambi Nature Radio
+    - Chroma Ambient
   icon: mdi:radio
 
 select_sound_bar:
@@ -47,6 +38,16 @@ select_sound_bar:
     - Absolute Chillout
     - Eilo Ambient
     - Milano Lounge
+    - Lounge
+    - Smooth Lounge
+    - Vocal Lounge
+    - Sleep
+    - New Age
+    - Ambient
+    - Ambient Sleep
+    - Calm Radio
+    - Ambi Nature Radio
+    - Chroma Ambient
   icon: mdi:radio
 
 select_effect:
@@ -85,10 +86,7 @@ select_effect:
 current_theme:
   options:
     - default
-    - dark_theme
+    - night
     - midnight
-    - dark_teal
-    - dark_cyan
-    - light_beach
   initial: default
-  icon: mdi:palette
+  icon: mdi:theme-light-dark

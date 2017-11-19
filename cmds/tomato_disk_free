@@ -2,5 +2,5 @@
 source $HOME/.homeassistant/set_env
 
 SSHPASS=$TOMATOPASS sshpass -e \
-ssh $TOMATOUSER@$TOMATOHOST \
+ssh -oConnectTimeout=5 $TOMATOUSER@$TOMATOHOST \
 df -m /dev/sda2 | awk 'END { print $4}'

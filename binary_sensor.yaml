@@ -4,11 +4,12 @@
   device_class: connectivity
   payload_on: "success"
   payload_off: "fail"
-  scan_interval: 600
+  scan_interval: 300
 
 - platform: command_line
   command: '/home/hass/.homeassistant/cmds/bravia_check'
   name: 'bravia'
+  device_class: plug
   payload_on: "success"
   payload_off: "fail"
   scan_interval: 300
@@ -19,6 +20,8 @@
       entity_id:
         - sensor.ping_isp
       device_class: connectivity
+      delay_off:
+        minutes: 16
       value_template: >-
         {%- if states.sensor.ping_isp.state == 'n/a' or
           states.sensor.ping_isp.state | float > 150 -%}
@@ -31,9 +34,7 @@
         - sensor.dht22_176e41_battery
         - sensor.bme280_171f93_battery
         - sensor.root_battery
-        #- input_number.slider_batt_level_p
-        #- input_number.slider_batt_level_v
-      device_class: power
+      device_class: battery
       value_template: >-
         {%- if states.sensor.dht22_176e41_battery.state and
                 states.sensor.bme280_171f93_battery.state -%}
@@ -51,25 +52,65 @@
     bedlight:
       entity_id:
         - sun.sun
-        - device_tracker.m4b30x
         - device_tracker.n0ll
-        - media_player.kodi
+        - binary_sensor.sound_bar_active
+        - timer.just_home
+      device_class: light
       value_template: >-
         {%-if is_state("sun.sun", "below_horizon") and
              is_state("device_tracker.m4b30x", "home") -%}
           {%-if is_state("device_tracker.n0ll", "home") -%}
             False
           {%- else -%}
-            {%- set  t =  now().minute + now().hour * 60 -%}
-            {%- set  tb =  45 + 21 * 60 -%}
-            {%- set  te =  15 + 4 * 60 -%}
-            {%- set stamp = states.script.media_start.attributes.last_triggered -%}
-            {%- if not stamp -%}
-              {%- set stamp = now() -%}
+            {%- set  t =  (as_timestamp(now()) - as_timestamp(now().strftime('%Y-%m-%d 00:00')))-%}
+            {%- set  ts =  states.input_datetime.bedl_time_start.attributes.timestamp -%}
+            {%- set  te =  states.input_datetime.bedl_time_end.attributes.timestamp -%}
+            {%-if (is_state("binary_sensor.sound_bar_active", "off") and
+                  (ts < t or t < te) or
+                  is_state("timer.just_home", "active"))
+            -%}
+              True
+            {%- else -%}
+              False
             {%- endif -%}
-            {%-if (is_state("media_player.kodi", "idle") and
-                  (tb < t or t < te) or
-                  (as_timestamp(now()) - as_timestamp(stamp)) < 600)
+          {%- endif -%}
+        {%- else -%}
+          False
+        {%- endif -%}
+    sound_bar_active:
+      entity_id:
+        - media_player.htmt500501_b34d6a
+        - binary_sensor.kodi_screen_saver
+        - media_player.kodi
+      device_class: sound
+      delay_off:
+        seconds: 60
+      value_template: '{{
+                          is_state("media_player.htmt500501_b34d6a", "playing") or
+                          is_state("binary_sensor.kodi_screen_saver", "off") or
+                          not is_state("media_player.kodi", "idle")
+                          }}'
+    bedmusic:
+      entity_id:
+        - sun.sun
+        - device_tracker.n0ll
+        - binary_sensor.sound_bar_active
+      device_class: sound
+      delay_on:
+        seconds: 60
+      delay_off:
+        seconds: 60
+      value_template: >-
+        {%-if is_state("sun.sun", "below_horizon") and
+             is_state("device_tracker.m4b30x", "home") -%}
+          {%-if is_state("device_tracker.n0ll", "home") -%}
+            False
+          {%- else -%}
+            {%- set  t =  (as_timestamp(now()) - as_timestamp(now().strftime('%Y-%m-%d 00:00')))-%}
+            {%- set  ts =  states.input_datetime.bedm_time_start.attributes.timestamp -%}
+            {%- set  te =  states.input_datetime.bedm_time_end.attributes.timestamp -%}
+            {%-if (is_state("binary_sensor.sound_bar_active", "off") and
+                  (ts < t or t < te))
             -%}
               True
             {%- else -%}
@@ -93,6 +134,19 @@
 - platform: esp_wd
   name: bedroom
   host: !secret bedroom
+  scan_interval: 300
+
+#uptimerobot.com angelgabriel.branson@oou.us
+- platform: rest
+  name: ext_port
+  resource: https://api.uptimerobot.com/v2/getMonitors
+  method: POST
+  device_class: connectivity
+  payload: api_key=m779688698-f03f19ccae5797b5123ea799&format=json&logs=0
+  headers:
+    Content-Type: application/x-www-form-urlencoded
+    Cache-Control: no-cache
+  value_template: '{{ value_json.monitors[0].status|int == 2 }}'
   scan_interval: 300
 
 #- platform: bayesian

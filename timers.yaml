@@ -1,11 +1,15 @@
 bed_light_timer:
-  icon: mdi:camera-timer
+  icon: mdi:timer-sand
+  duration: '00:01:00'
 bed_music:
   icon: mdi:timer-sand
+  duration: '00:01:00'
 sound_bar:
   icon: mdi:timer-sand
+  duration: '00:01:00'
 test_timer:
   icon: mdi:timer-sand
+  duration: '00:01:00'
 hyperion_effect_timer:
   name: 'effect time'
   icon: mdi:timer
@@ -14,3 +18,7 @@ hyperion_rgb_timer:
   name: 'rgb time'
   icon: mdi:timer
   duration: '00:00:05'
+just_home:
+  icon: mdi:timer
+  duration: '00:01:00'
+

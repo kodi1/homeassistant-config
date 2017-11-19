@@ -32,6 +32,7 @@ camera: !include cams.yaml
 binary_sensor: !include binary_sensor.yaml
 alert: !include alerts.yaml
 timer: !include timers.yaml
+input_datetime: !include input_datetime.yaml
 mqtt:
   embedded:
     listeners:
@@ -67,6 +68,7 @@ map:
 frontend:
   themes: !include themes.yaml
   extra_html_url: !include extra_url.yaml
+  javascript_version: latest
 # Enables configuration UI
 config:
 
@@ -93,11 +95,16 @@ updater:
 # Enables support for tracking state changes over time.
 history: !include history.yaml
 
+#history_graph: !include history_graph.yaml
+
 # Enables support for tracking state changes over time.
 recorder: !include recorder.yaml
 
 # View all events in a logbook
-logbook:
+logbook: !include logbook.yaml
+
+system_log:
+  max_entries: 20
 
 # Track the sun
 sun:

@@ -44,12 +44,15 @@ media:
   control: hidden
   view: false
   entities:
-  - input_select.select_radio
-  - script.media_start
-  - script.media_stop
   - script.bravia_vol_up
   - script.bravia_vol_down
-  - media_player.kodi
+  - input_select.select_sound_bar
+  - automation.sound_bar_music_on
+  - automation.sound_bar_music_off
+  - input_number.sound_bar_music_timer
+  - timer.sound_bar
+  - input_boolean.enable_sleep
+  - media_player.htmt500501_b34d6a
 weather_dark_sky:
   control: hidden
   view: false
@@ -96,27 +99,20 @@ other:
   - device_tracker.sgs4
   - sensor.pressure_history_mean
   - binary_sensor.bravia
+  - binary_sensor.sound_bar_active
   - binary_sensor.kodi_screen_saver
-  - binary_sensor.tomato_smb_online
+  - binary_sensor.smb_online
   - binary_sensor.isp_conn
+  - binary_sensor.ext_port
   - binary_sensor.batts_low
 script:
   control: hidden
   view: false
   entities:
-  - script.bravia_vol_down
-  - script.bravia_vol_up
-  - script.kodi_keep_wake
-  - script.media_restart
-  - script.media_start
-  - script.media_stop
-  - script.tv_keep_wake
-  - script.tomato_smb_restart
   - script.local_reboot
   - script.minix_reboot
   - script.tomato_reboot
   - script.reboot_all
-  - script.ports_open
   - script.hass_update
 alerts:
   control: hidden
@@ -126,22 +122,20 @@ alerts:
 autos:
   view: false
   entities:
+  - automation.root_home
+  - automation.root_not_home
+  - automation.n0ll_home
+  - automation.n0ll_not_home
   - automation.auto_reboot_all
-  - automation.cec_off
-  - automation.cec_on
+  - automation.tv_off
+  - automation.tv_on
   - automation.change_pressure
   - automation.mydelay
-  - automation.kodi_keep_alive
-  - automation.kodi_online_radio
-  - automation.kodi_paly_not_music
-  - automation.kodi_pause_not_music
-  - automation.kodi_radio_off_pc
-  - automation.kodi_radio_off_phone
-  - automation.kodi_radio_on
-  - automation.kodi_sleep_timer
+  - automation.kodi_paly
+  - automation.kodi_pause
+  - automation.radio_off_pc
+  - automation.radio_off_phone
   - automation.light_keep_alive
-  - automation.picture_off
-  - automation.picture_on
   - automation.send_effect_hyperion
   - automation.send_rgb_hyperion
   - automation.send_settings_hyperion
@@ -152,6 +146,7 @@ autos:
   - automation.updates_notify
   - automation.weather_alert
   - automation.esp_x1
+  - automation.open_ports
 
 scene_settings_video:
   view: false
@@ -190,24 +185,21 @@ bedroom_light:
   view: false
   control: hidden
   icon: mdi:lamp
-  name: bedroom light
+  name: light
   entities:
-  - binary_sensor.bedlight
   - light.bed_led
   - input_number.bed_cycle_duration
   - input_number.bed_light_duration
-  - automation.minutes_loop
   - automation.bed_turn_off
   - automation.bed_turn_on
   - automation.bed_auto_off
-  - script.test_loop_min
   - timer.bed_light_timer
 
 bedroom_music:
   view: false
   control: hidden
   icon: mdi:speaker-wireless
-  name: bedroom music
+  name: music
   entities:
   - input_select.select_radio_bed
   - media_player.bedroom_speaker
@@ -216,18 +208,45 @@ bedroom_music:
   - input_number.bed_music_timer
   - timer.bed_music
 
-sound_bar_music:
+bedroom_conrol:
   view: false
   control: hidden
-  icon: mdi:speaker-wireless
-  name: sound bar music
+  icon: mdi:timetable
+  name: control
   entities:
-  - input_select.select_sound_bar
-  - media_player.htmt500501_b34d6a
-  - automation.sound_bar_music_on
-  - automation.sound_bar_music_off
-  - input_number.sound_bar_music_timer
-  - timer.sound_bar
+  - binary_sensor.bedroom
+  - binary_sensor.bedmusic
+  - binary_sensor.bedlight
+  - input_datetime.bedl_time_start
+  - input_datetime.bedl_time_end
+  - input_datetime.bedm_time_start
+  - input_datetime.bedm_time_end
+
+media_control:
+  view: false
+  control: hidden
+  icon: mdi:television
+  name: media_control
+  entities:
+  - script.tv_hdmi1
+  - script.tv_hdmi1_audio
+  - script.sound_bar_up
+  - script.sound_bar_down
+  - script.sound_bar_mute
+  - script.sound_bar_on
+  - script.sound_bar_off
+  - switch.tv_cec
+  - switch.hyperion_enable
+  - input_number.cec_cmd_delay
+
+just_home:
+  view: false
+  control: hidden
+  icon: mdi:home-variant
+  name: home in
+  entities:
+  - timer.just_home
+  - input_number.just_home_timer
 
 default_view:
   view: true
@@ -245,6 +264,13 @@ default_view:
   - group.weather_dark_sky
   - group.media
   - group.alerts
+bed:
+  view: true
+  icon: mdi:hotel
+  entities:
+  - group.bedroom_light
+  - group.bedroom_music
+  - group.bedroom_conrol
 status:
   view: true
   icon: mdi:newspaper
@@ -256,14 +282,13 @@ settings:
   view: true
   icon: mdi:developer-board
   entities:
-  - switch.tv_picture_off
-  - switch.hyperion_enable
-  - switch.tv_cec
   - group.hyperion_effect
   - group.hyperion_color
   - group.warninglevel
+  - group.media_control
   - input_select.current_theme
   - group.hyperion_settings
+  - group.just_home
 weather:
   view: true
   icon: mdi:image-filter-hdr
@@ -292,10 +317,9 @@ test:
   entities:
   - binary_sensor.test_1
   - binary_sensor.x1
-  - binary_sensor.bedroom
+  - automation.minutes_loop
+  - script.test_loop_min
   - switch.mqtt_1
   - light.test_led
-  - group.bedroom_light
   - timer.test_timer
-  - group.bedroom_music
-  - group.sound_bar_music
+  - media_player.kodi

@@ -1,4 +1,4 @@
 #!/bin/bash
 source $HOME/.homeassistant/set_env
 
-echo '{"color": [0,0,0], "command": "color", "priority": 0}' | nc $HYPERION_HOST $HYPERION_PORT 
+echo '{"color": [0,0,0], "command": "color", "priority": 0}' | nc -q 0 $HYPERION_HOST $HYPERION_PORT

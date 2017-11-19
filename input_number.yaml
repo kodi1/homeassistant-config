@@ -173,23 +173,39 @@ bed_cycle_duration:
 bed_light_duration:
   name: 'light time'
   unit_of_measurement: 'min'
-  min: 1
+  min: 5
   max: 30
-  step: 1
-  icon: mdi:timer-sand
+  step: 5
+  icon: mdi:camera-timer
 
 bed_music_timer:
   name: 'music time'
   unit_of_measurement: 'min'
-  min: 20
+  min: 10
   max: 60
-  step: 10
+  step: 5
   icon: mdi:av-timer
 
 sound_bar_music_timer:
   name: 'music time'
   unit_of_measurement: 'min'
-  min: 30
+  min: 10
   max: 120
-  step: 10
+  step: 5
   icon: mdi:av-timer
+
+just_home_timer:
+  name: 'enter time'
+  unit_of_measurement: 'min'
+  min: 5
+  max: 30
+  step: 5
+  icon: mdi:home-modern
+
+cec_cmd_delay:
+  name: 'cec delay'
+  unit_of_measurement: 'sec'
+  min: 1
+  max: 20
+  step: 1
+  icon: mdi:sync

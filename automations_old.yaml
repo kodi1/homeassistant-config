@@ -39,44 +39,11 @@
   - delay: '00:00:03'
   - service: script.hyperion_startup
 
-- alias: kodi online radio
-  trigger:
-    platform: state
-    entity_id: input_select.select_radio
-  action:
-  - service: media_player.play_media
-    data_template:
-      entity_id: media_player.kodi
-      media_content_type: 'music'
-      media_content_id: >-
-        {%-
-            set play=
-            {
-            "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
-            "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
-            "Digital Impulse": "http://orion.shoutca.st:8922",
-            "State Of Trance": "http://de-hz-fal-stream07.rautemusik.fm/trance",
-            "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
-            "Traffic": "http://212.25.58.203:8002",
-            "Dj Zone": "http://80.83.123.210:9986",
-            "Ocean Radio": "http://philae.shoutca.st:8446/stream",
-            "Costa Del Mar": "http://sc-costadelmar.1.fm:10156",
-            "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
-            "Lounge FM": "http://cast.loungefm.com.ua/chillout128",
-            "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
-            "Eilo Ambient": "http://eilo.org:8000/ambient",
-            "Milano Lounge": "http://178.32.62.154:9739/stream",
-            }
-        -%}
-        {{ play[states("input_select.select_radio")] }}
-
 - alias: auto reboot all
   trigger:
     platform: state
     entity_id: binary_sensor.isp_conn
     to: 'off'
-    for:
-      minutes: 16
   condition:
     - condition: template
       value_template: '{{(as_timestamp(now()) - as_timestamp(states.automation.mydelay.attributes.last_triggered)) / 60 > 90 }}'
@@ -92,13 +59,26 @@
         {{" - rebooting."}}
   - service: script.reboot_all
 
+- alias: open ports
+  trigger:
+    platform: state
+    entity_id: binary_sensor.ext_port
+    to: 'off'
+    for:
+      minutes: 6
+  action:
+  - service: script.all_notify
+    data:
+      msg: Open ports
+  - service: script.ports_open
+
 - alias: tomato smb restart
   trigger:
     platform: state
-    entity_id: binary_sensor.tomato_smb_online
+    entity_id: binary_sensor.smb_online
     to: 'off'
     for:
-      minutes: 11
+      minutes: 6
   action:
   - service: script.all_notify
     data:
@@ -111,17 +91,17 @@
     # Event can also be 'shutdown'
     event: start
   action:
-  - service: script.media_restart
-  - delay: '00:00:30'
-  - service: script.sun_above
-  - service: script.sun_below
-  - delay: '00:00:30'
-  - service: automation.trigger
-    entity_id: automation.send_settings_hyperion
-  - service: script.ports_open
+  - service: script.start_up
   - service: script.all_notify
     data:
       msg: HA start.
+  - delay: '00:00:10'
+  - service: script.sun_above
+  - service: script.sun_below
+  - delay: '00:00:10'
+  - service: automation.trigger
+    entity_id: automation.send_settings_hyperion
+  - service: script.ports_open
 
 - alias: transmission_notify
   trigger:
@@ -136,49 +116,13 @@
   trigger:
     platform: event
     event_type: kodi_sleep_timer
-  action:
-  - service: script.media_stop
-
-- alias: tv keep alive
-  trigger:
-  - platform: time
-    hours: '/2'
-    minutes: 0
-    seconds: 0
   condition:
-    condition: and
-    conditions:
-    - condition: template
-      value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music")}}'
     - condition: state
-      entity_id: binary_sensor.kodi_screen_saver
-      state: 'on'
-    - condition: state
-      entity_id: switch.tv_picture_off
+      entity_id: switch.tv_cec
       state: 'on'
   action:
-  - service: script.tv_keep_wake
-
-- alias: kodi keep alive
-  trigger:
-  - platform: time
-    minutes: '/30'
-    seconds: 0
-  - platform: state
-    entity_id: input_select.select_radio
-  condition:
-    condition: and
-    conditions:
-    - condition: template
-      value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music")}}'
-    - condition: state
-      entity_id: binary_sensor.kodi_screen_saver
-      state: 'on'
-    - condition: state
-      entity_id: device_tracker.n0ll
-      state: home
-  action:
-  - service: script.kodi_keep_wake
+  - service: switch.turn_off
+    entity_id: switch.tv_cec
 
 - alias: light keep alive
   trigger:
@@ -188,128 +132,55 @@
   condition:
     condition: and
     conditions:
-    - condition: template
-      value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music")}}'
-    - condition: state
-      entity_id: binary_sensor.kodi_screen_saver
-      state: 'on'
-    - condition: state
-      entity_id: device_tracker.n0ll
-      state: home
+      - condition: state
+        entity_id: device_tracker.n0ll
+        state: home
+      - condition: template
+        value_template: '{{is_state("media_player.htmt500501_b34d6a", "playing")}}'
   action:
   - service: automation.trigger
     entity_id: automation.send_rgb_hyperion
 
-- alias: kodi radio off phone
+- alias: root_not_home
   trigger:
   - platform: state
     entity_id: device_tracker.m4b30x
     from: home
-    to: not_home
+    #to: not_home
   action:
-  - service: script.media_stop
+  - service: script.root_not_home
 
-- alias: kodi radio off pc
+- alias: n0ll_not_home
   trigger:
   - platform: state
     entity_id: device_tracker.n0ll
     to: not_home
     for:
       minutes: 2
-  condition:
-    condition: template
-    value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music")}}'
   action:
-  - service: script.media_stop
-  - delay: '00:00:05'
-  - service: input_select.select_option
-    data:
-      entity_id: input_select.select_effect
-      option: Sparks Color
+  - service: script.n0ll_not_home
 
-- alias: kodi radio on
+- alias: root_home
   trigger:
   - platform: state
     entity_id: device_tracker.m4b30x
-    from: not_home
     to: home
+  #condition:
+    #condition: template
+    #value_template: '{{trigger.from_state.state != "home"}}'
+  action:
+  - service: script.root_home
+
+- alias: n0ll_home
+  trigger:
   - platform: state
     entity_id: device_tracker.n0ll
     from: not_home
     to: home
-  condition:
-    condition: and
-    conditions:
-    - condition: state
-      entity_id: media_player.kodi
-      state: idle
-    - condition: or
-      conditions:
-      - condition: time
-        after: '18:30:00'
-        before: '00:05:00'
-      - condition: time
-        weekday:
-        - sat
-        - sun
-        after: '11:00:00'
-        before: '01:30:00'
   action:
-  - service: script.media_start
-  - service: input_select.select_option
-    data:
-      entity_id: input_select.select_effect
-      option: trails
+  - service: script.n0ll_home
 
-- alias: picture on
-  trigger:
-  - platform: state
-    entity_id: binary_sensor.kodi_screen_saver
-    to: 'off'
-  condition:
-    condition: and
-    conditions:
-    - condition: template
-      value_template: >-
-        {%- if (as_timestamp(now()) - as_timestamp(states.script.kodi_keep_wake.attributes.last_triggered)) > 5 and
-          (as_timestamp(now()) - as_timestamp(states.script.media_stop.attributes.last_triggered)) > 5 -%}
-          True
-        {%- else -%}
-          False
-        {%- endif -%}
-    - condition: state
-      entity_id: switch.tv_picture_off
-      state: 'on'
-  action:
-  - service: switch.turn_off
-    entity_id: switch.tv_picture_off
-  - service: input_select.select_option
-    data:
-      entity_id: input_select.select_effect
-      option: trails
-
-- alias: picture off
-  trigger:
-  - platform: state
-    entity_id: binary_sensor.kodi_screen_saver
-    to: 'on'
-  condition:
-    condition: and
-    conditions:
-    - condition: template
-      value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music")}}'
-    - condition: state
-      entity_id: switch.tv_picture_off
-      state: 'off'
-  action:
-  - service: switch.turn_on
-    entity_id: switch.tv_picture_off
-  - service: input_select.select_option
-    data:
-      entity_id: input_select.select_effect
-      option: trails_color
-
-- alias: cec off
+- alias: tv off
   trigger:
   - platform: state
     entity_id: binary_sensor.kodi_screen_saver
@@ -324,12 +195,9 @@
         entity_id: switch.tv_cec
         state: 'on'
   action:
-  - service: switch.turn_off
-    entity_id: switch.tv_cec
-  - service: switch.turn_off
-    entity_id: switch.tv_picture_off
+  - service: script.tv_off
 
-- alias: cec on
+- alias: tv on
   trigger:
   - platform: state
     entity_id: binary_sensor.kodi_screen_saver
@@ -343,17 +211,8 @@
       - condition: state
         entity_id: switch.tv_cec
         state: 'off'
-    - condition: template
-      value_template: >-
-        {%- if (as_timestamp(now()) - as_timestamp(states.script.media_stop.attributes.last_triggered)) > 5 and
-            (as_timestamp(now()) - as_timestamp(states.script.kodi_keep_wake.attributes.last_triggered)) > 5 -%}
-          True
-        {%- else -%}
-          False
-        {%- endif -%}
   action:
-  - service: switch.turn_on
-    entity_id: switch.tv_cec
+  - service: script.tv_on
 
 - alias: hyperion_clear_effcts
   trigger:
@@ -448,14 +307,11 @@
                     "saturationLGain":{{ states.input_number.saturation.state | float }}}
               }'
 
-- alias: kodi paly not music
+- alias: kodi paly
   trigger:
   - platform: state
     entity_id: media_player.kodi
     to: playing
-  condition:
-    condition: template
-    value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music") != True}}'
   action:
   - service: input_select.select_option
     data:
@@ -463,8 +319,11 @@
       option: None
   - service: script.hyperion_clear_rgb
   - service: script.set_settings_video
+  #- service: shell_command.tv_volup
+  #- delay: '00:00:03'
+  #- service: shell_command.tv_voldown
 
-- alias: kodi pause not music
+- alias: kodi pause
   trigger:
   - platform: state
     entity_id: media_player.kodi
@@ -472,17 +331,11 @@
   - platform: state
     entity_id: media_player.kodi
     to: paused
-  condition:
-    condition: template
-    value_template: '{{is_state_attr("media_player.kodi", "media_content_type", "music") != True}}'
   action:
   - service: input_select.select_option
     data:
       entity_id: input_select.select_effect
       option: trails
-  - service: shell_command.tv_volup
-  #- delay: '00:00:03'
-  - service: shell_command.tv_voldown
 
 - alias: change pressure
   trigger:
@@ -514,6 +367,9 @@
   trigger:
   - platform: state
     entity_id: sensor.pws_alerts
+  condition:
+    - condition: template
+      value_template: '{{trigger.from_state.state != trigger.to_state.state}}'
   action:
   - service: script.all_notify
     data_template:
@@ -531,14 +387,14 @@
 - alias: esp x1
   trigger:
   - platform: state
-    entity_id: binary_sensor.esp_mega_x1
+    entity_id: binary_sensor.x1
     to: 'off'
     for:
       minutes:  6
   - platform: numeric_state
-    entity_id: binary_sensor.esp_mega_x1
+    entity_id: binary_sensor.x1
     value_template: '{{state.attributes.mtime}}'
-    below: 10
+    below: 15
   #- platform: numeric_state
     #entity_id: input_number.slider_effect_time
     ##value_template: {{states.input_number.slider_effect_time.state |int }}
@@ -547,26 +403,16 @@
   - service: script.all_notify
     data_template:
       msg: >-
-        {%- if is_state("binary_sensor.esp_mega_x1", "on") -%}
-          {{states.binary_sensor.esp_mega_x1.attributes.friendly_name }}
-          boot count: {{states.binary_sensor.esp_mega_x1.attributes.boot_count }}
-          rssi: {{states.binary_sensor.esp_mega_x1.attributes.rssi }}
-          {{states.binary_sensor.esp_mega_x1.attributes.boot_cause }}
-          uptime: {{states.binary_sensor.esp_mega_x1.attributes.uptime }}
+        {%- if is_state("binary_sensor.x1", "on") -%}
+          {{states.binary_sensor.x1.attributes.friendly_name }}
+          boot count: {{states.binary_sensor.x1.attributes.boot_count }}
+          rssi: {{states.binary_sensor.x1.attributes.rssi }}
+          {{states.binary_sensor.x1.attributes.boot_cause }}
+          uptime: {{states.binary_sensor.x1.attributes.uptime }}
           time: {{now().strftime('%H:%M:%S')}}
         {%- else -%}
-          {{states.binary_sensor.esp_mega_x1.attributes.friendly_name }} is down
+          {{states.binary_sensor.x1.attributes.friendly_name }} is down
         {%- endif -%}
-  #- service: notify.mailbg
-    #data_template:
-      #title: 'hass'
-      #message: >-
-        #{{states.binary_sensor.esp_mega_x1.attributes.friendly_name }}
-        #boot count: {{states.binary_sensor.esp_mega_x1.attributes.boot_count }}
-        #rssi: {{states.binary_sensor.esp_mega_x1.attributes.rssi }}
-        #time: {{now().strftime('%H:%M:%S')}}
-        #{{states.binary_sensor.esp_mega_x1.attributes.boot_cause }}
-
 - alias: change_current_theme
   trigger:
     - platform: state
@@ -634,6 +480,9 @@
 - alias: bed_music_on
   trigger:
   - platform: state
+    entity_id: binary_sensor.bedmusic
+    to: 'on'
+  - platform: state
     entity_id: media_player.bedroom_speaker
     from: 'off'
     to: 'idle'
@@ -663,12 +512,29 @@
             "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
             "Eilo Ambient": "http://eilo.org:8000/ambient",
             "Milano Lounge": "http://178.32.62.154:9739/stream",
+            "Lounge": "http://live.radioart.com:80/fLounge.mp3",
+            "Smooth Lounge": "http://live.radioart.com:80/fSmooth_lounge.mp3",
+            "Vocal Lounge": "http://live.radioart.com:80/fVocal_lounge.mp3",
+            "Sleep": "http://live.radioart.com:80/fSleep.mp3",
+            "New Age": "http://live.radioart.com:80/fNew_age.mp3",
+            "Ambient": "http://live.radioart.com:80/fAmbient.mp3",
+            "Ambient Sleep": "https://radio.stereoscenic.com/asp-s",
+            "Calm Radio": "http://streams.calmradio.com/api/39/128/stream",
+            "Ambi Nature Radio": "http://94.23.252.14:8067/stream",
+            "Chroma Ambient": "http://148.251.184.14:8004/;539699463556254stream.nsv"
             }
         -%}
         {{ play[states("input_select.select_radio_bed")] }}
+  - service: media_player.volume_set
+    data:
+      entity_id: media_player.bedroom_speaker
+      volume_level: 0.10
 
 - alias: bed_music_off
   trigger:
+  - platform: state
+    entity_id: binary_sensor.bedmusic
+    to: 'off'
   - platform: state
     entity_id: device_tracker.m4b30x
     from: home
@@ -694,6 +560,7 @@
     entity_id: timer.sound_bar
     data_template:
       duration: '00:{{states.input_number.sound_bar_music_timer.state|int}}:00'
+  - service: script.sound_bar_do_sleep_if
   - service: media_player.play_media
     data_template:
       entity_id: media_player.htmt500501_b34d6a
@@ -713,6 +580,16 @@
             "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
             "Eilo Ambient": "http://eilo.org:8000/ambient",
             "Milano Lounge": "http://178.32.62.154:9739/stream",
+            "Lounge": "http://live.radioart.com:80/fLounge.mp3",
+            "Smooth Lounge": "http://live.radioart.com:80/fSmooth_lounge.mp3",
+            "Vocal Lounge": "http://live.radioart.com:80/fVocal_lounge.mp3",
+            "Sleep": "http://live.radioart.com:80/fSleep.mp3",
+            "New Age": "http://live.radioart.com:80/fNew_age.mp3",
+            "Ambient": "http://live.radioart.com:80/fAmbient.mp3",
+            "Ambient Sleep": "https://radio.stereoscenic.com/asp-s",
+            "Calm Radio": "http://streams.calmradio.com/api/39/128/stream",
+            "Ambi Nature Radio": "http://94.23.252.14:8067/stream",
+            "Chroma Ambient": "http://148.251.184.14:8004/;539699463556254stream.nsv"
             }
         -%}
         {{ play[states("input_select.select_sound_bar")] }}
@@ -730,6 +607,16 @@
   action:
   - service: media_player.turn_off
     entity_id: media_player.htmt500501_b34d6a
+
+- alias: sound_bar_idle
+  trigger:
+  - platform: state
+    entity_id: binary_sensor.sound_bar_active
+    to: 'off'
+    for:
+      minutes: 1
+  action:
+  - service: script.sound_bar_off
 
 #- alias: tetst_tab
   #trigger:

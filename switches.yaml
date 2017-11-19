@@ -3,12 +3,9 @@
     hyperion_enable:
       command_on: "/home/hass/.homeassistant/cmds/hyperion_on"
       command_off: "/home/hass/.homeassistant/cmds/hyperion_off"
-    tv_picture_off:
-      command_on: "/home/hass/.homeassistant/cmds/kodi_picoff"
-      command_off: "/home/hass/.homeassistant/cmds/kodi_picoff"
     tv_cec:
-      command_on: "/home/hass/.homeassistant/cmds/cec_on"
-      command_off: "/home/hass/.homeassistant/cmds/cec_off"
+      command_on: "/home/hass/.homeassistant/cmds/cec_cmd 'e 00'"
+      command_off: "/home/hass/.homeassistant/cmds/cec_cmd 'd 00'"
 
 - platform: mqtt
   name: "mqtt 1"

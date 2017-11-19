@@ -16,9 +16,6 @@ all_notify:
         - condition: state
           entity_id: media_player.kodi
           state: 'idle'
-        - condition: template
-          value_template: >-
-            {{is_state_attr('media_player.kodi', 'media_content_type', 'music')}}
     - service: persistent_notification.create
       data_template:
         message: '{{ msg }}'
@@ -32,79 +29,6 @@ mail_notify:
       data_template:
         message: '{{ m }}'
         title: 'hass'
-
-tv_keep_wake:
-  sequence:
-    #- wait_template: "{{states.binary_sensor.kodi_screen_saver.state == 'on'}}"
-      #timeout: '00:10:00'
-    - delay:
-        seconds: 10
-    - service: switch.toggle
-      entity_id: switch.tv_picture_off
-    - delay:
-        seconds: 1
-    - service: switch.toggle
-      entity_id: switch.tv_picture_off
-
-kodi_keep_wake:
-  sequence:
-    - service: shell_command.kodi_home
-    - service: shell_command.kodi_voldown
-    - service: shell_command.kodi_volup
-    - delay:
-        seconds: 1
-    - service: shell_command.kodi_screensaver
-
-media_start:
-  sequence:
-    - service: shell_command.kodi_home
-    - service: shell_command.kodi_voldown
-    - service: shell_command.kodi_volup
-    - service: shell_command.kodi_home
-    - service: shell_command.tv_hdmi1
-    - delay:
-       seconds: 3
-    - service: automation.trigger
-      entity_id: automation.kodi_online_radio
-
-media_stop:
-  sequence:
-    - service: shell_command.kodi_home
-    - service: shell_command.kodi_voldown
-    - service: shell_command.kodi_volup
-    - service: media_player.media_stop
-      entity_id: media_player.kodi
-    - delay:
-       seconds: 1
-    - service: input_select.select_option
-      data:
-        entity_id: input_select.select_effect
-        option: "None"
-    - service: script.hyperion_clear_rgb
-    - delay:
-        seconds: 1
-    - service: shell_command.kodi_screensaver
-
-media_restart:
-  sequence:
-    - delay:
-       seconds: 5
-    - service: script.kodi_keep_wake
-    - delay:
-       seconds: 5
-    - service: script.media_stop
-    - delay:
-       seconds: 5
-    - service: switch.turn_off
-      entity_id: switch.tv_cec
-    - service: switch.turn_off
-      entity_id: switch.tv_picture_off
-    - condition: state
-      entity_id: device_tracker.n0ll
-      state: 'home'
-    - delay:
-       seconds: 5
-    - service: script.media_start
 
 hyperion_clear_rgb:
   sequence:
@@ -130,9 +54,6 @@ hyperion_startup:
         - condition: state
           entity_id: media_player.kodi
           state: 'idle'
-        - condition: template
-          value_template: >-
-            {{is_state_attr('media_player.kodi', 'media_content_type', 'music')}}
     - service: input_select.select_option
       data:
         entity_id: input_select.select_effect
@@ -143,13 +64,33 @@ hyperion_startup:
         entity_id: input_select.select_effect
         option: None
 
-bravia_vol_up:
+tv_hdmi1:
   sequence:
-    - service: shell_command.tv_volup
+    - service: shell_command.tv_hdmi1
 
-bravia_vol_down:
+tv_hdmi1_audio:
   sequence:
-    - service: shell_command.tv_voldown
+    - service: shell_command.tv_hdmi1_audio
+
+sound_bar_up:
+  sequence:
+    - service: shell_command.sound_bar_up
+
+sound_bar_down:
+  sequence:
+    - service: shell_command.sound_bar_down
+
+sound_bar_mute:
+  sequence:
+    - service: shell_command.sound_bar_mute
+
+sound_bar_off:
+  sequence:
+    - service: shell_command.sound_bar_off
+
+sound_bar_on:
+  sequence:
+    - service: shell_command.sound_bar_on
 
 tomato_smb_restart:
   sequence:
@@ -168,6 +109,8 @@ tomato_reboot:
 minix_reboot:
   sequence:
     - service: shell_command.minix_reboot
+      data_template:
+        value: '{{"+0"}}'
 
 ports_open:
   sequence:
@@ -175,7 +118,9 @@ ports_open:
 
 reboot_all:
   sequence:
-    - service: script.minix_reboot
+    - service: shell_command.minix_reboot
+      data_template:
+        value: '{{"+3"}}'
     - service: shell_command.local_reboot
       data_template:
         value: '{{"+4"}}'
@@ -319,3 +264,172 @@ test_loop_min:
       entity_id: light.test_led
       data:
         transition: 1
+
+radio_on:
+  sequence:
+    - condition: and
+      conditions:
+        - condition: state
+          entity_id: media_player.htmt500501_b34d6a
+          state: 'off'
+        - condition: or
+          conditions:
+          - condition: time
+            after: '18:30:00'
+            before: '00:05:00'
+            weekday:
+              - mon
+              - tue
+              - wed
+              - thu
+              - fri
+          - condition: time
+            after: '10:30:00'
+            before: '00:35:00'
+            weekday:
+              - sat
+              - sun
+    - service: media_player.turn_on
+      entity_id: media_player.htmt500501_b34d6a
+    - wait_template: "{{states.media_player.htmt500501_b34d6a.state == 'playing'}}"
+      timeout: '00:00:15'
+    - service: media_player.volume_set
+      data:
+        entity_id: media_player.htmt500501_b34d6a
+        volume_level: 0.16
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.select_effect
+        option: trails
+
+sound_bar_do_sleep_if:
+  sequence:
+    - condition: template
+      value_template: >-
+        {%- if is_state("device_tracker.n0ll", "home") or
+        is_state("input_boolean.enable_sleep", "off") -%}
+          True
+        {%- else -%}
+          False
+        {%- endif -%}
+    - service: timer.pause
+      entity_id: timer.sound_bar
+
+start_up_sound_bar:
+  sequence:
+    - condition: state
+      entity_id: media_player.htmt500501_b34d6a
+      state: 'playing'
+    - service: timer.start
+      entity_id: timer.sound_bar
+    - condition: state
+      entity_id: device_tracker.n0ll
+      state: 'home'
+    - service: timer.pause
+      entity_id: timer.sound_bar
+
+start_up_bedroom_speaker:
+  sequence:
+    - condition: state
+      entity_id: media_player.bedroom_speaker
+      state: 'playing'
+    - service: timer.start
+      entity_id: timer.bed_music
+
+start_up_bed_led:
+  sequence:
+    - condition: state
+      entity_id: light.bed_led
+      state: 'on'
+    - service: timer.start
+      entity_id: timer.bed_light_timer
+
+start_up:
+  sequence:
+    - service: media_player.volume_down
+      entity_id: media_player.kodi
+    - service: media_player.volume_up
+      entity_id: media_player.kodi
+    - delay: '00:00:01'
+    - service: shell_command.kodi_screensaver
+    - service: script.start_up_sound_bar
+    - service: script.start_up_bedroom_speaker
+    - service: script.start_up_bed_led
+
+tv_on:
+  sequence:
+    - condition: template
+      value_template: >-
+        {%- if (as_timestamp(now()) - as_timestamp(states.script.start_up.attributes.last_triggered)) > 3 -%}
+          True
+        {%- else -%}
+          False
+        {%- endif -%}
+    #- service: script.tv_hdmi1_audio
+    - service: switch.turn_on
+      entity_id: switch.tv_cec
+    - delay: '00:00:03'
+    - service: script.sound_bar_on
+    - service: media_player.volume_down
+      entity_id: media_player.kodi
+    - service: media_player.volume_up
+      entity_id: media_player.kodi
+    - delay: '00:00:{{states.input_number.cec_cmd_delay.state|int}}'
+    - service: script.tv_hdmi1_audio
+    - service: script.tv_hdmi1
+    - delay: '00:00:{{states.input_number.cec_cmd_delay.state|int}}'
+    - service: script.tv_hdmi1_audio
+    - service: script.tv_hdmi1
+    - delay: '00:00:{{states.input_number.cec_cmd_delay.state|int}}'
+    - service: script.tv_hdmi1_audio
+    - service: script.tv_hdmi1
+
+tv_off:
+  sequence:
+    - service: switch.turn_off
+      entity_id: switch.tv_cec
+    - service: script.radio_on
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.select_effect
+        option: trails_color
+
+root_not_home:
+  sequence:
+    - service: media_player.turn_off
+      entity_id:
+        - media_player.htmt500501_b34d6a
+        - media_player.bedroom_speaker
+    - service: media_player.media_stop
+      entity_id: media_player.kodi
+
+root_home:
+  sequence:
+    - service: timer.start
+      entity_id: timer.just_home
+      data_template:
+        duration: '{{states.input_number.just_home_timer.state|int * 60}}'
+    - service: script.radio_on
+
+n0ll_not_home:
+  sequence:
+    - service: timer.start
+      entity_id: timer.sound_bar
+      data:
+        duration: '00:01:00'
+    - service: script.hyperion_clear_rgb
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.select_effect
+        option: Sparks Color
+
+n0ll_home:
+  sequence:
+    - service: script.radio_on
+    - service: automation.trigger
+      entity_id: automation.send_rgb_hyperion
+    - condition: state
+      entity_id: media_player.htmt500501_b34d6a
+      state: 'playing'
+    - service: timer.pause
+      entity_id: timer.sound_bar

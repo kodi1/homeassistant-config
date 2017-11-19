@@ -4,7 +4,7 @@
 
 - platform: generic
   name: '24sat image'
-  still_image_url: https://api.sat24.com/crop?type=visual5hdcomplete&lat=42.657&lon=23.3381&width=300&height=300&zoom=0.60&continent=eu
+  still_image_url: https://api.sat24.com/crop?type=visual5hdcomplete&lat=42.657&lon=23.3381&width=300&height=300&zoom=0.50&continent=eu
 
 #- platform: generic
   #name: '24sat animated'

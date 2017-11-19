@@ -4,7 +4,7 @@ sensor.pressure_history_mean:
 sensor.pws_weather:
   friendly_name: weather
 sensor.cpu_usage:
-  icon: mdi:percent
+  icon: mdi:chip
 sensor.cpu_temp:
   icon: mdi:oil-temperature
 sensor.disk_free:
@@ -17,6 +17,14 @@ sensor.ping_isp:
   icon: mdi:earth
 binary_sensor.bravia:
   icon: mdi:television
+binary_sensor.bedlight:
+  icon: mdi:candle
+binary_sensor.bedmusic:
+  icon: mdi:speaker-wireless
+binary_sensor.sound_bar_active:
+  icon: mdi:speaker-wireless
+binary_sensor.batts_low:
+  icon: mdi:battery-alert
 group.out:
   order: 1
 group.in:
@@ -49,3 +57,21 @@ sensor.hum_b:
   icon: mdi:water-percent
 media_player.htmt500501_b34d6a:
   friendly_name: Sound Bar
+switch.tv_cec:
+  icon: mdi:video-input-hdmi
+switch.hyperion_enable:
+  icon: mdi:spotlight-beam
+script.tv_hdmi1:
+  icon: mdi:television
+script.tv_hdmi1_audio:
+  icon: mdi:surround-sound
+script.sound_bar_on:
+  icon: mdi:speaker
+script.sound_bar_off:
+  icon: mdi:speaker-off
+script.sound_bar_up:
+  icon: mdi:volume-plus
+script.sound_bar_down:
+  icon: mdi:volume-minus
+script.sound_bar_mute:
+  icon: mdi:volume-mute
