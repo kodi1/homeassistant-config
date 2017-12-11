@@ -4,3 +4,4 @@ exclude:
     - input_datetime
     - input_boolean
     - input_select
+    - climate

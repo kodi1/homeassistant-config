@@ -10,5 +10,6 @@ exclude:
     - persistent_notification
     - camera
     - script
+    - climate
   entities:
     - automation.send_settings_hyperion

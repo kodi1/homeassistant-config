@@ -33,6 +33,7 @@ binary_sensor: !include binary_sensor.yaml
 alert: !include alerts.yaml
 timer: !include timers.yaml
 input_datetime: !include input_datetime.yaml
+climate: !include climate.yaml
 mqtt:
   embedded:
     listeners:

@@ -1,3 +1,7 @@
 enable_sleep:
   name: auto seep
   icon: mdi:sleep
+
+home_heating:
+  name: comfort
+  icon: mdi:radiator

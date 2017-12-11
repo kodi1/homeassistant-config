@@ -34,6 +34,7 @@
         - sensor.dht22_176e41_battery
         - sensor.bme280_171f93_battery
         - sensor.root_battery
+        - climate.living
       device_class: battery
       value_template: >-
         {%- if states.sensor.dht22_176e41_battery.state and
@@ -41,7 +42,8 @@
           {%- if
             states.sensor.dht22_176e41_battery.state|float <= states.input_number.slider_batt_level_v.state|float or
             states.sensor.bme280_171f93_battery.state|float <= states.input_number.slider_batt_level_v.state|float or
-            states.sensor.root_battery.state|float <= states.input_number.slider_batt_level_p.state|float -%}
+            states.sensor.root_battery.state|float <= states.input_number.slider_batt_level_p.state|float or
+            is_state_attr('climate.living', 'low_battery', true) -%}
             True
           {%- else -%}
             False
@@ -120,6 +122,26 @@
         {%- else -%}
           False
         {%- endif -%}
+    home_heating:
+      entity_id:
+        - device_tracker.n0ll
+        - timer.just_home
+        - timer.going_home
+        - media_player.htmt500501_b34d6a
+        - media_player.kodi
+        - binary_sensor.kodi_screen_saver
+      device_class: heat
+      delay_off:
+        minutes: 5
+      value_template: >-
+        {{
+        is_state("device_tracker.n0ll", "home") or
+        is_state("timer.just_home", "active") or
+        is_state("timer.going_home", "active") or
+        is_state("media_player.htmt500501_b34d6a", "playing") or
+        is_state("binary_sensor.kodi_screen_saver", "off") or
+        not is_state("media_player.kodi", "idle")
+        }}
 
 - platform: esp_wd
   name: x1

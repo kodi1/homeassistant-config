@@ -440,3 +440,57 @@ n0ll_home:
       state: 'playing'
     - service: timer.pause
       entity_id: timer.sound_bar
+
+heat_conrtol_home:
+  sequence:
+    #- service: logbook.log
+      #data_template:
+        #name: heat_conrtol_home
+        #message: >
+          #{{d}}
+    - condition: template
+      value_template: '{{d == "on"}}'
+    - service: climate.set_temperature
+      entity_id: climate.living
+      data_template:
+        operation_mode: manual
+        temperature: '{{states.input_number.temp_home.state|int}}'
+    - service: climate.set_operation_mode
+      data:
+        entity_id: climate.living
+        operation_mode: boost
+    #- delay: '00:00:35'
+    #- service: climate.set_temperature
+      #entity_id: climate.living
+      #data_template:
+        #operation_mode: manual
+        #temperature: '{{states.input_number.temp_home.state|int}}'
+    #- service: climate.set_operation_mode
+      #data:
+        #entity_id: climate.living
+        #operation_mode: boost
+
+heat_conrtol_away:
+  sequence:
+    - condition: template
+      value_template: '{{d == "off"}}'
+    - service: climate.set_temperature
+      entity_id: climate.living
+      data_template:
+        operation_mode: manual
+        temperature: '{{states.input_number.temp_away.state|int}}'
+    #- delay: '00:00:35'
+    #- service: climate.set_temperature
+      #entity_id: climate.living
+      #data_template:
+        #operation_mode: manual
+        #temperature: '{{states.input_number.temp_away.state|int}}'
+
+heat_conrtol:
+  sequence:
+    - service: script.heat_conrtol_home
+      data_template:
+        d: '{{ dat }}'
+    - service: script.heat_conrtol_away
+      data_template:
+        d: '{{ dat }}'
