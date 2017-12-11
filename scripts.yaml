@@ -411,6 +411,13 @@ root_home:
         duration: '{{states.input_number.just_home_timer.state|int * 60}}'
     - service: script.radio_on
 
+root_from_work:
+  sequence:
+    - service: timer.start
+      entity_id: timer.going_home
+      data_template:
+        duration: '{{states.input_number.going_home_timer.state|int * 60}}'
+
 n0ll_not_home:
   sequence:
     - service: timer.start

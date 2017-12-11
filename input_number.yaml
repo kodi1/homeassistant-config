@@ -209,3 +209,11 @@ cec_cmd_delay:
   max: 20
   step: 1
   icon: mdi:sync
+
+going_home_timer:
+  name: 'going home'
+  unit_of_measurement: 'min'
+  min: 30
+  max: 90
+  step: 5
+  icon: mdi:home-circle

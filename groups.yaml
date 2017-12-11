@@ -124,6 +124,7 @@ autos:
   entities:
   - automation.root_home
   - automation.root_not_home
+  - automation.root_from_work
   - automation.n0ll_home
   - automation.n0ll_not_home
   - automation.auto_reboot_all

@@ -21,4 +21,6 @@ hyperion_rgb_timer:
 just_home:
   icon: mdi:timer
   duration: '00:01:00'
-
+going_home:
+  icon: mdi:timer
+  duration: '00:01:00'

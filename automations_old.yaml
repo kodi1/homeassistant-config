@@ -141,6 +141,21 @@
   - service: automation.trigger
     entity_id: automation.send_rgb_hyperion
 
+- alias: root_from_work
+  trigger:
+  - platform: state
+    entity_id: device_tracker.m4b30x
+    from: Work
+  condition:
+    condition: and
+    conditions:
+    - condition: time
+      after: '18:00:00'
+    - condition: template
+      value_template: '{{trigger.to_state.state != "home"}}'
+  action:
+  - service: script.root_from_work
+
 - alias: root_not_home
   trigger:
   - platform: state
