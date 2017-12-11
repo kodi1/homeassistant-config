@@ -23,8 +23,12 @@ binary_sensor.bedmusic:
   icon: mdi:speaker-wireless
 binary_sensor.sound_bar_active:
   icon: mdi:speaker-wireless
+binary_sensor.home_heating:
+  icon: mdi:radiator
 binary_sensor.batts_low:
   icon: mdi:battery-alert
+binary_sensor.open_living:
+  icon: mdi:window-open
 group.out:
   order: 1
 group.in:

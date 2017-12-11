@@ -105,6 +105,8 @@ other:
   - binary_sensor.isp_conn
   - binary_sensor.ext_port
   - binary_sensor.batts_low
+  - binary_sensor.open_living
+  - binary_sensor.home_heating
 script:
   control: hidden
   view: false

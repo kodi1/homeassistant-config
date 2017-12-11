@@ -142,6 +142,16 @@
         is_state("binary_sensor.kodi_screen_saver", "off") or
         not is_state("media_player.kodi", "idle")
         }}
+    open_living:
+      entity_id:
+        - climate.living
+      device_class: opening
+      value_template: >-
+        {%- if states('climate.living') != 'unavailable' -%}
+          {{ states.climate.living.attributes.window_open }}
+        {% else -%}
+          {{ is_state('binary_sensor.open_living', 'on') }}
+        {%- endif -%}
 
 - platform: esp_wd
   name: x1
