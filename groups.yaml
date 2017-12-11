@@ -296,6 +296,7 @@ status:
   - group.batts
   - group.other
   - group.system
+  - history_graph.climate
 settings:
   view: true
   icon: mdi:developer-board

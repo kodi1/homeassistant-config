@@ -1,32 +1,8 @@
-temp:
-  name: Temperature
+climate:
+  name: Climate
   entities:
     - sensor.bme280_171f93_temperature
-    - sensor.dht22_176e41_temperature
-    - sensor.temp_b
-    - sensor.dark_sky_temperature
-  hours_to_show: 72
-
-batt:
-  name: Battery
-  entities:
-    - sensor.bme280_171f93_battery
-    - sensor.dht22_176e41_battery
-    - sensor.root_battery
-  hours_to_show: 72
-
-hum:
-  name: Humidity
-  entities:
-    - sensor.bme280_171f93_humidity
-    - sensor.dht22_176e41_humidity
-    - sensor.hum_b
-    - sensor.dark_sky_humidity
-  hours_to_show: 72
-
-press:
-  name: Pressure
-  entities:
-    - sensor.dark_sky_pressure
-    - sensor.sea_level_pressure
-  hours_to_show: 72
+    - sensor.temperature_living
+    - sensor.valve_living
+  hours_to_show: 24
+  refresh: 600

@@ -96,7 +96,7 @@ updater:
 # Enables support for tracking state changes over time.
 history: !include history.yaml
 
-#history_graph: !include history_graph.yaml
+history_graph: !include history_graph.yaml
 
 # Enables support for tracking state changes over time.
 recorder: !include recorder.yaml
