@@ -1,0 +1,7 @@
+home:
+  ignored_zones:
+    - work
+  devices:
+    - device_tracker.m4b30x
+  tolerance: 3000
+  unit_of_measurement: km

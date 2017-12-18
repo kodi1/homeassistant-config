@@ -9,3 +9,4 @@
   longitude: !secret work_longitude
   radius: 50
   icon: mdi:office
+  passive: true

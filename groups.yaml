@@ -150,6 +150,8 @@ autos:
   - automation.weather_alert
   - automation.esp_x1
   - automation.open_ports
+  - automation.home_away
+  - automation.home_near
 
 scene_settings_video:
   view: false
@@ -343,3 +345,4 @@ test:
   - light.test_led
   - timer.test_timer
   - media_player.kodi
+  - proximity.home

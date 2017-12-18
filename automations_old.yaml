@@ -141,30 +141,6 @@
   - service: automation.trigger
     entity_id: automation.send_rgb_hyperion
 
-- alias: root_from_work
-  trigger:
-  - platform: state
-    entity_id: device_tracker.m4b30x
-    from: Work
-  condition:
-    condition: and
-    conditions:
-    - condition: time
-      after: '18:00:00'
-    - condition: template
-      value_template: '{{trigger.to_state.state != "home"}}'
-  action:
-  - service: script.root_from_work
-
-- alias: root_not_home
-  trigger:
-  - platform: state
-    entity_id: device_tracker.m4b30x
-    from: home
-    #to: not_home
-  action:
-  - service: script.root_not_home
-
 - alias: n0ll_not_home
   trigger:
   - platform: state
@@ -174,17 +150,6 @@
       minutes: 2
   action:
   - service: script.n0ll_not_home
-
-- alias: root_home
-  trigger:
-  - platform: state
-    entity_id: device_tracker.m4b30x
-    to: home
-  #condition:
-    #condition: template
-    #value_template: '{{trigger.from_state.state != "home"}}'
-  action:
-  - service: script.root_home
 
 - alias: n0ll_home
   trigger:
@@ -651,6 +616,62 @@
   - service: script.heat_conrtol
     data_template:
       dat: '{{trigger.to_state.state}}'
+
+- alias: home_away
+  trigger:
+  - platform: numeric_state
+    entity_id: proximity.home
+    above: 25
+  condition:
+    - condition: template
+      value_template: >-
+        {{
+          is_state_attr('proximity.home', 'dir_of_travel', 'away_from')
+        }}
+  action:
+  - service: script.home_away
+
+- alias: home_near
+  trigger:
+  - platform: numeric_state
+    entity_id: proximity.home
+    below: 25
+  condition:
+    - condition: template
+      value_template: >-
+        {{
+          is_state_attr('proximity.home', 'dir_of_travel', 'towards') or
+          is_state_attr('proximity.home', 'dir_of_travel', 'arrived')
+        }}
+  action:
+  - service: script.home_near
+
+- alias: root_home
+  trigger:
+  - platform: zone
+    entity_id: device_tracker.m4b30x
+    zone: zone.home
+    event: enter
+  action:
+  - service: script.root_home
+
+- alias: root_from_work
+  trigger:
+  - platform: zone
+    entity_id: device_tracker.m4b30x
+    zone: zone.work
+    event: leave
+  action:
+  - service: script.root_from_work
+
+- alias: root_not_home
+  trigger:
+  - platform: zone
+    entity_id: device_tracker.m4b30x
+    zone: zone.home
+    event: leave
+  action:
+  - service: script.root_not_home
 
 #- alias: tetst_tab
   #trigger:

@@ -34,6 +34,7 @@ alert: !include alerts.yaml
 timer: !include timers.yaml
 input_datetime: !include input_datetime.yaml
 climate: !include climate.yaml
+proximity: !include proximity.yaml
 mqtt:
   embedded:
     listeners:
