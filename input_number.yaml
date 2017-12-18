@@ -225,11 +225,3 @@ temp_away:
   max: 25
   step: 0.5
   icon: mdi:home-outline
-
-going_home_timer:
-  name: 'going home'
-  unit_of_measurement: 'min'
-  min: 30
-  max: 90
-  step: 5
-  icon: mdi:home-circle

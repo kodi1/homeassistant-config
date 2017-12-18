@@ -1,4 +1,5 @@
 - platform: eq3btsmart_m
+  scan_interval: 600
   devices:
     living:
       mac: '00:1A:22:0A:FD:B2'

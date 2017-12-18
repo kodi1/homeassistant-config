@@ -6,6 +6,7 @@ https://home-assistant.io/components/climate.eq3btsmart/
 """
 import logging
 import threading
+from datetime import timedelta
 
 import voluptuous as vol
 
@@ -42,6 +43,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 SUPPORT_FLAGS = (SUPPORT_TARGET_TEMPERATURE | SUPPORT_OPERATION_MODE |
                  SUPPORT_AWAY_MODE)
 
+SCAN_INTERVAL = timedelta(seconds=300)
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up the eQ-3 BLE thermostats."""
@@ -125,9 +127,10 @@ class EQ3BTSmartThermostat(ClimateDevice):
     @property
     def current_operation(self):
         """Return the current operation mode."""
-        if self._thermostat.mode < 0:
-            return None
-        return self.modes[self._thermostat.mode]
+        with self.lock:
+            if self._thermostat.mode < 0:
+                return None
+            return self.modes[self._thermostat.mode]
 
     @property
     def operation_list(self):

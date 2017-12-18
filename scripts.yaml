@@ -443,48 +443,29 @@ n0ll_home:
 
 heat_conrtol_home:
   sequence:
-    #- service: logbook.log
-      #data_template:
-        #name: heat_conrtol_home
-        #message: >
-          #{{d}}
     - condition: template
       value_template: '{{d == "on"}}'
+    - service: climate.set_operation_mode
+      entity_id: climate.living
+      data:
+        operation_mode: manual
     - service: climate.set_temperature
       entity_id: climate.living
       data_template:
-        operation_mode: manual
         temperature: '{{states.input_number.temp_home.state|int}}'
     - service: climate.set_operation_mode
       data:
         entity_id: climate.living
         operation_mode: boost
-    #- delay: '00:00:35'
-    #- service: climate.set_temperature
-      #entity_id: climate.living
-      #data_template:
-        #operation_mode: manual
-        #temperature: '{{states.input_number.temp_home.state|int}}'
-    #- service: climate.set_operation_mode
-      #data:
-        #entity_id: climate.living
-        #operation_mode: boost
 
 heat_conrtol_away:
   sequence:
     - condition: template
       value_template: '{{d == "off"}}'
-    - service: climate.set_temperature
+    - service: climate.set_operation_mode
       entity_id: climate.living
-      data_template:
-        operation_mode: manual
-        temperature: '{{states.input_number.temp_away.state|int}}'
-    #- delay: '00:00:35'
-    #- service: climate.set_temperature
-      #entity_id: climate.living
-      #data_template:
-        #operation_mode: manual
-        #temperature: '{{states.input_number.temp_away.state|int}}'
+      data:
+        operation_mode: auto
 
 heat_conrtol:
   sequence:
