@@ -1,10 +1,12 @@
 - platform: tomato
   consider_home: 120
   interval_seconds: 60
-  track_new_devices: no
   host: !secret tomato_host
   username: !secret tomato_user
   password: !secret tomato_pass
   http_id: !secret tomato_httpid
+  new_device_defaults:
+    track_new_devices: false
+    hide_if_away: false
 
 - platform: gpslogger
