@@ -16,3 +16,14 @@
   availability_topic: "/test/status"
   payload_available: "Connected"
   payload_not_available: "Connection Lost"
+
+- platform: mqtt
+  name: "sonoff_1"
+  state_topic: "/sonoff_1/data"
+  value_template: '{{ value_json["relay/0"] }}'
+  command_topic: "/sonoff_1/relay/0/set"
+  payload_on: 1
+  payload_off: 0
+  availability_topic: "/sonoff_1/status"
+  payload_available: 1
+  payload_not_available: 0
