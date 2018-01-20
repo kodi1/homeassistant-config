@@ -17,8 +17,6 @@
 - platform: template
   sensors:
     isp_conn:
-      entity_id:
-        - sensor.ping_isp
       device_class: connectivity
       delay_off:
         minutes: 16
@@ -30,11 +28,6 @@
           True
         {%- endif %}
     batts_low:
-      entity_id:
-        - sensor.dht22_176e41_battery
-        - sensor.bme280_171f93_battery
-        - sensor.root_battery
-        - climate.living
       device_class: battery
       value_template: >-
         {%- if states.sensor.dht22_176e41_battery.state and
@@ -52,11 +45,6 @@
           True
         {%- endif %}
     bedlight:
-      entity_id:
-        - sun.sun
-        - device_tracker.n0ll
-        - binary_sensor.sound_bar_active
-        - timer.just_home
       device_class: light
       value_template: >-
         {%-if is_state("sun.sun", "below_horizon") and
@@ -80,10 +68,6 @@
           False
         {%- endif -%}
     sound_bar_active:
-      entity_id:
-        - media_player.htmt500501_b34d6a
-        - binary_sensor.kodi_screen_saver
-        - media_player.kodi
       device_class: sound
       delay_off:
         seconds: 60
@@ -94,10 +78,6 @@
                                 not is_state("media_player.kodi", "off"))
                           }}'
     bedmusic:
-      entity_id:
-        - sun.sun
-        - device_tracker.n0ll
-        - binary_sensor.sound_bar_active
       device_class: sound
       delay_on:
         seconds: 60
@@ -124,9 +104,6 @@
           False
         {%- endif -%}
     home_heating:
-      entity_id:
-        - device_tracker.n0ll
-        - binary_sensor.sound_bar_active
       device_class: heat
       delay_on:
         seconds: 300
@@ -138,8 +115,6 @@
           is_state("binary_sensor.sound_bar_active", "on")
         }}
     open_living:
-      entity_id:
-        - climate.living
       device_class: opening
       value_template: >-
         {%- if states('climate.living') != 'unavailable' -%}

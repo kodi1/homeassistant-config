@@ -36,8 +36,6 @@
 - platform: template
   sensors:
     root_battery:
-      entity_id:
-        - device_tracker.m4b30x
       unit_of_measurement: '%'
       icon_template: 'mdi:gauge'
       value_template: >-
@@ -47,8 +45,6 @@
               {{ states.sensor.root_battery.state }}
           {%- endif %}
     sea_level_pressure:
-      entity_id:
-        - sensor.pressure_history_mean
       friendly_name: 'sea pressure'
       unit_of_measurement: 'hPa'
       icon_template: 'mdi:gauge'
@@ -63,8 +59,6 @@
               {{ states.sensor.sea_level_pressure.state }}
           {%- endif %}
     change_pressure:
-      entity_id:
-        - sensor.pressure_history_mean
       friendly_name: 'change'
       unit_of_measurement: 'hPa/h'
       value_template: >-
@@ -78,8 +72,6 @@
           {{'mdi:trending-neutral'}}
         {% endif %}
     valve_living:
-      entity_id:
-        - climate.living
       unit_of_measurement: '%'
       icon_template: 'mdi:percent'
       value_template: >-
@@ -89,8 +81,6 @@
           {{ states.sensor.valve_living.state }}
         {%- endif -%}
     temperature_living:
-      entity_id:
-        - climate.living
       unit_of_measurement: '°C'
       icon_template: 'mdi:temperature-celsius'
       value_template: >-
