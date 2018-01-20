@@ -2,6 +2,7 @@
   consider_home: 120
   interval_seconds: 60
   host: !secret tomato_host
+  port: !secret tomato_port
   username: !secret tomato_user
   password: !secret tomato_pass
   http_id: !secret tomato_httpid

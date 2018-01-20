@@ -9,6 +9,7 @@ User=hass
 # Make sure the virtualenv Python binary is used
 Environment=VIRTUAL_ENV=/home/hass/virt_env
 Environment=PATH=/home/hass/virt_env/bin:/opt/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStartPre=/bin/sleep 30
 ExecStart=/home/hass/virt_env/bin/hass -c "/home/hass/.homeassistant"
 Restart=always
 RestartSec=3
