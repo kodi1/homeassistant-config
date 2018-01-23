@@ -132,6 +132,21 @@ hass_update:
      - service: homeassistant.check_config
      - service: homeassistant.restart
 
+kodi_turn_off:
+  sequence:
+    - condition: template
+      value_template: '{{is_state("binary_sensor.kodi_screen_saver", "off")}}'
+    - service: media_player.media_stop
+      entity_id: media_player.kodi
+    - delay: '00:00:03'
+    - service: shell_command.kodi_screensaver
+
+kodi_turn_on:
+  sequence:
+    - condition: template
+      value_template: '{{is_state("binary_sensor.kodi_screen_saver", "on")}}'
+    - service: shell_command.kodi_wakeup
+
 sun_above:
   sequence:
     - condition: template
@@ -346,10 +361,7 @@ start_up_bed_led:
 
 start_up:
   sequence:
-    - service: media_player.volume_down
-      entity_id: media_player.kodi
-    - service: media_player.volume_up
-      entity_id: media_player.kodi
+    - service: shell_command.kodi_wakeup
     - delay: '00:00:01'
     - service: shell_command.kodi_screensaver
     - service: script.start_up_sound_bar
@@ -358,9 +370,13 @@ start_up:
 
 tv_on:
   sequence:
+    #- service: logbook.log
+      #data_template:
+        #name: 'tv on time diff'
+        #message: '{{as_timestamp(now()) - as_timestamp(states.script.start_up.attributes.last_triggered) }}'
     - condition: template
       value_template: >-
-        {%- if (as_timestamp(now()) - as_timestamp(states.script.start_up.attributes.last_triggered)) > 3 -%}
+        {%- if (as_timestamp(now()) - as_timestamp(states.script.start_up.attributes.last_triggered)) > 9 -%}
           True
         {%- else -%}
           False
@@ -370,10 +386,6 @@ tv_on:
       entity_id: switch.tv_cec
     - delay: '00:00:03'
     - service: script.sound_bar_on
-    - service: media_player.volume_down
-      entity_id: media_player.kodi
-    - service: media_player.volume_up
-      entity_id: media_player.kodi
     - delay: '00:00:{{states.input_number.cec_cmd_delay.state|int}}'
     - service: script.tv_hdmi1_audio
     - service: script.tv_hdmi1
@@ -400,8 +412,7 @@ root_not_home:
       entity_id:
         - media_player.htmt500501_b34d6a
         - media_player.bedroom_speaker
-    - service: media_player.media_stop
-      entity_id: media_player.kodi
+    - service: script.kodi_turn_off
 
 root_home:
   sequence:

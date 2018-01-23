@@ -466,6 +466,8 @@
     entity_id: media_player.bedroom_speaker
     from: 'off'
     to: 'idle'
+    for:
+      seconds: 3
   - platform: state
     entity_id: input_select.select_radio_bed
   action:
@@ -533,6 +535,8 @@
     entity_id: media_player.htmt500501_b34d6a
     from: 'off'
     to: 'idle'
+    for:
+      seconds: 3
   - platform: state
     entity_id: input_select.select_sound_bar
   action:

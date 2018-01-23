@@ -3,6 +3,10 @@
   port: !secret kodi_port
   username: !secret kodi_user
   password: !secret kodi_pass
+  turn_off_action:
+    service: script.kodi_turn_off
+  turn_on_action:
+    service: script.kodi_turn_on
 
 - platform: cast
   host: !secret cast_bedroom

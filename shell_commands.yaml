@@ -1,4 +1,5 @@
 kodi_screensaver: "/home/hass/.homeassistant/cmds/kodi_screensaver"
+kodi_wakeup: "/home/hass/.homeassistant/cmds/kodi_wakeup"
 local_reboot: "/home/hass/.homeassistant/cmds/local_reboot {{ value }}"
 tomato_reboot: "/home/hass/.homeassistant/cmds/tomato_reboot"
 minix_reboot: "/home/hass/.homeassistant/cmds/minix_reboot {{ value }}"
