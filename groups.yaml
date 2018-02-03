@@ -208,6 +208,7 @@ bedroom_music:
   entities:
   - input_select.select_radio_bed
   - media_player.bedroom_speaker
+  - automation.bed_sleep_on
   - automation.bed_music_on
   - automation.bed_music_off
   - input_number.bed_music_timer

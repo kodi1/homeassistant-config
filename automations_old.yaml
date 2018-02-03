@@ -457,11 +457,43 @@
   action:
   - service: script.test_loop_min
 
-- alias: bed_music_on
+- alias: bed_sleep_on
   trigger:
   - platform: state
     entity_id: binary_sensor.bedmusic
     to: 'on'
+  action:
+  - service: timer.start
+    entity_id: timer.bed_music
+    data_template:
+      duration: '00:{{states.input_number.bed_music_timer.state|int}}:00'
+  - service: media_extractor.play_media
+    data_template:
+      entity_id: media_player.bedroom_speaker
+      media_content_type: 'audio/mp3'
+      media_content_id: >-
+        {%-
+            set play= [
+              '-i8IMw5WeXc',
+              'AsD5u6k6dKI',
+              'HIOYTqMAV7Y',
+              'AsD5u6k6dKI',
+              '5fNLEPrNi2A',
+              'hwsEjtlr9yw',
+              'kygoJiJAWG4',
+              '3Ak1ShDQWlU',
+              'T9IJKwEspI8'
+            ]
+        -%}
+        https://www.youtube.com/watch?v={{play|random}}
+  - delay: '00:00:03'
+  - service: media_player.volume_set
+    data:
+      entity_id: media_player.bedroom_speaker
+      volume_level: 0.12
+
+- alias: bed_music_on
+  trigger:
   - platform: state
     entity_id: media_player.bedroom_speaker
     from: 'off'
@@ -470,6 +502,14 @@
       seconds: 3
   - platform: state
     entity_id: input_select.select_radio_bed
+  condition:
+    - condition: template
+      value_template: >-
+        {%- if states.automation.bed_sleep_on.attributes.last_triggered != None -%}
+          {{(as_timestamp(now()) - as_timestamp(states.automation.bed_sleep_on.attributes.last_triggered)) > 9}}
+        {%- else -%}
+          True
+        {%- endif -%}
   action:
   - service: timer.start
     entity_id: timer.bed_music
