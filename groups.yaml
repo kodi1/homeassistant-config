@@ -245,6 +245,17 @@ media_control:
   - switch.hyperion_enable
   - input_number.cec_cmd_delay
 
+android_post_alarm:
+  view: false
+  control: hidden
+  icon: mdi:alarm-plus
+  name: andoid alarm
+  entities:
+  - input_number.post_android_alarm
+  - timer.post_android_alarm
+  - automation.event_android_alarm
+  - automation.post_android_alarm
+
 just_home:
   view: false
   control: hidden
@@ -290,6 +301,7 @@ bed:
   - group.bedroom_light
   - group.bedroom_music
   - group.bedroom_conrol
+  - group.android_post_alarm
 status:
   view: true
   icon: mdi:newspaper

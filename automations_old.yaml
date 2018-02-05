@@ -503,13 +503,22 @@
   - platform: state
     entity_id: input_select.select_radio_bed
   condition:
-    - condition: template
-      value_template: >-
-        {%- if states.automation.bed_sleep_on.attributes.last_triggered != None -%}
-          {{(as_timestamp(now()) - as_timestamp(states.automation.bed_sleep_on.attributes.last_triggered)) > 9}}
-        {%- else -%}
-          True
-        {%- endif -%}
+    condition: and
+    conditions:
+      - condition: template
+        value_template: >-
+          {%- if states.automation.bed_sleep_on.attributes.last_triggered != None -%}
+            {{(as_timestamp(now()) - as_timestamp(states.automation.bed_sleep_on.attributes.last_triggered)) > 9}}
+          {%- else -%}
+            True
+          {%- endif -%}
+      - condition: template
+        value_template: >-
+          {%- if states.automation.bed_music_on.attributes.last_triggered != None -%}
+            {{(as_timestamp(now()) - as_timestamp(states.automation.bed_music_on.attributes.last_triggered)) > 1}}
+          {%- else -%}
+            True
+          {%- endif -%}
   action:
   - service: timer.start
     entity_id: timer.bed_music
@@ -716,6 +725,29 @@
     event: leave
   action:
   - service: script.root_not_home
+
+- alias: event_android_alarm
+  trigger:
+    - platform: event
+      event_type: android_alarm
+  action:
+    - service: timer.start
+      entity_id: timer.post_android_alarm
+      data_template:
+        duration: '00:{{states.input_number.post_android_alarm.state|int}}:00'
+    - service: logbook.log
+      data_template:
+        name: 'ha_alarm'
+        message: 'timer arm {{states.input_number.post_android_alarm.state}} min'
+
+- alias: post_android_alarm
+  trigger:
+    - platform: event
+      event_type: timer.finished
+      event_data:
+        entity_id: timer.post_android_alarm
+  action:
+    - service: script.android_post_alarm
 
 #- alias: tetst_tab
   #trigger:

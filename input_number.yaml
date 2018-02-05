@@ -225,3 +225,11 @@ temp_away:
   max: 25
   step: 0.5
   icon: mdi:home-outline
+
+post_android_alarm:
+  name: 'delay'
+  unit_of_measurement: 'min'
+  min: 5
+  max: 15
+  step: 1
+  icon: mdi:alarm-multiple
