@@ -1,134 +1,134 @@
 - alias: updates notify
   trigger:
-    platform: state
-    entity_id: updater.updater
+    - platform: state
+      entity_id: updater.updater
   action:
-  - service: script.all_notify
-    data:
-      msg: Update for Home Assistant is available.
+    - service: script.all_notify
+      data:
+        msg: Update for Home Assistant is available.
 
 - alias: sun rise
   trigger:
-  - platform: sun
-    event: sunrise
-    offset: '-00:15:00'
+    - platform: sun
+      event: sunrise
+      offset: '-00:15:00'
   action:
-  - service: switch.turn_off
-    entity_id: switch.hyperion_enable
-  - service: input_select.select_option
-    data:
-      entity_id: input_select.select_effect
-      option: None
-  - service: input_select.select_option
-    data:
-      entity_id: input_select.current_theme
-      option: default
+    - service: switch.turn_off
+      entity_id: switch.hyperion_enable
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.select_effect
+        option: None
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.current_theme
+        option: default
 
 - alias: sun set
   trigger:
-  - platform: sun
-    event: sunset
-    offset: '00:15:00'
+    - platform: sun
+      event: sunset
+      offset: '00:15:00'
   action:
-  - service: switch.turn_on
-    entity_id: switch.hyperion_enable
-  - service: input_select.select_option
-    data:
-      entity_id: input_select.current_theme
-      option: midnight
-  - delay: '00:00:03'
-  - service: script.hyperion_startup
+    - service: switch.turn_on
+      entity_id: switch.hyperion_enable
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.current_theme
+        option: midnight
+    - delay: '00:00:03'
+    - service: script.hyperion_startup
 
 - alias: auto reboot all
   trigger:
-    platform: state
-    entity_id: binary_sensor.isp_conn
-    to: 'off'
+    - platform: state
+      entity_id: binary_sensor.isp_conn
+      to: 'off'
   condition:
     - condition: template
       value_template: '{{(as_timestamp(now()) - as_timestamp(states.automation.mydelay.attributes.last_triggered)) / 60 > 90 }}'
   action:
-  - service: script.all_notify
-    data:
-      msg: >-
-        {%- if is_state("sensor.ping_isp", "n/a") -%}
-          Cant ping isp
-        {%- else -%}
-          Isp ping {{states("sensor.ping_isp") }} ms high
-        {%- endif -%}
-        {{" - rebooting."}}
-  - service: script.reboot_all
+    - service: script.all_notify
+      data:
+        msg: >-
+          {%- if is_state("sensor.ping_isp", "n/a") -%}
+            Cant ping isp
+          {%- else -%}
+            Isp ping {{states("sensor.ping_isp") }} ms high
+          {%- endif -%}
+            {{" - rebooting."}}
+    - service: script.reboot_all
 
 - alias: open ports
   trigger:
-    platform: state
-    entity_id: binary_sensor.ext_port
-    to: 'off'
-    for:
-      minutes: 6
+    - platform: state
+      entity_id: binary_sensor.ext_port
+      to: 'off'
+      for:
+        minutes: 6
   action:
-  - service: script.all_notify
-    data:
-      msg: Open ports
-  - service: script.ports_open
+    - service: script.all_notify
+      data:
+        msg: Open ports
+    - service: script.ports_open
 
 - alias: tomato smb restart
   trigger:
-    platform: state
-    entity_id: binary_sensor.smb_online
-    to: 'off'
-    for:
-      minutes: 6
+    - platform: state
+      entity_id: binary_sensor.smb_online
+      to: 'off'
+      for:
+        minutes: 6
   action:
-  - service: script.all_notify
-    data:
-      msg: tomato smb restart
-  - service: script.tomato_smb_restart
+    - service: script.all_notify
+      data:
+        msg: tomato smb restart
+    - service: script.tomato_smb_restart
 
 - alias: mydelay
   trigger:
-    platform: homeassistant
-    # Event can also be 'shutdown'
-    event: start
+    - platform: homeassistant
+      # Event can also be 'shutdown'
+      event: start
   action:
-  - service: script.start_up
-  - service: script.all_notify
-    data:
-      msg: HA start.
-  - delay: '00:00:10'
-  - service: script.sun_above
-  - service: script.sun_below
-  - delay: '00:00:10'
-  - service: automation.trigger
-    entity_id: automation.send_settings_hyperion
-  - service: script.ports_open
+    - service: script.start_up
+    - service: script.all_notify
+      data:
+        msg: HA start.
+    - delay: '00:00:10'
+    - service: script.sun_above
+    - service: script.sun_below
+    - delay: '00:00:10'
+    - service: automation.trigger
+      entity_id: automation.send_settings_hyperion
+    - service: script.ports_open
 
 - alias: transmission_notify
   trigger:
-    platform: event
-    event_type: transmission
+    - platform: event
+      event_type: transmission
   action:
-  - service: script.all_notify
-    data_template:
-      msg: '{{trigger.event.data.file}} finished'
+    - service: script.all_notify
+      data_template:
+        msg: '{{trigger.event.data.file}} finished'
 
 - alias: kodi sleep timer
   trigger:
-    platform: event
-    event_type: kodi_sleep_timer
+    - platform: event
+      event_type: kodi_sleep_timer
   condition:
     - condition: state
       entity_id: switch.tv_cec
       state: 'on'
   action:
-  - service: switch.turn_off
-    entity_id: switch.tv_cec
+    - service: switch.turn_off
+      entity_id: switch.tv_cec
 
 - alias: light keep alive
   trigger:
-  - platform: time
-    minutes: '/10'
-    seconds: 0
+    - platform: time
+      minutes: '/10'
+      seconds: 0
   condition:
     condition: and
     conditions:
@@ -138,33 +138,33 @@
       - condition: template
         value_template: '{{is_state("media_player.htmt500501_b34d6a", "playing")}}'
   action:
-  - service: automation.trigger
-    entity_id: automation.send_rgb_hyperion
+    - service: automation.trigger
+      entity_id: automation.send_rgb_hyperion
 
 - alias: n0ll_not_home
   trigger:
-  - platform: state
-    entity_id: device_tracker.n0ll
-    to: not_home
-    for:
-      minutes: 2
+    - platform: state
+      entity_id: device_tracker.n0ll
+      to: not_home
+      for:
+        minutes: 2
   action:
-  - service: script.n0ll_not_home
+    - service: script.n0ll_not_home
 
 - alias: n0ll_home
   trigger:
-  - platform: state
-    entity_id: device_tracker.n0ll
-    from: not_home
-    to: home
+    - platform: state
+      entity_id: device_tracker.n0ll
+      from: not_home
+      to: home
   action:
-  - service: script.n0ll_home
+    - service: script.n0ll_home
 
 - alias: tv off
   trigger:
-  - platform: state
-    entity_id: binary_sensor.kodi_screen_saver
-    to: 'on'
+    - platform: state
+      entity_id: binary_sensor.kodi_screen_saver
+      to: 'on'
   condition:
     condition: and
     conditions:
@@ -175,13 +175,13 @@
         entity_id: switch.tv_cec
         state: 'on'
   action:
-  - service: script.tv_off
+    - service: script.tv_off
 
 - alias: tv on
   trigger:
-  - platform: state
-    entity_id: binary_sensor.kodi_screen_saver
-    to: 'off'
+    - platform: state
+      entity_id: binary_sensor.kodi_screen_saver
+      to: 'off'
   condition:
     condition: and
     conditions:
@@ -192,7 +192,7 @@
         entity_id: switch.tv_cec
         state: 'off'
   action:
-  - service: script.tv_on
+    - service: script.tv_on
 
 - alias: hyperion_clear_effcts
   trigger:
@@ -217,110 +217,110 @@
 
 - alias: send rgb hyperion
   trigger:
-  - platform: state
-    entity_id: input_number.slider_r
-  - platform: state
-    entity_id: input_number.slider_g
-  - platform: state
-    entity_id: input_number.slider_b
+    - platform: state
+      entity_id: input_number.slider_r
+    - platform: state
+      entity_id: input_number.slider_g
+    - platform: state
+      entity_id: input_number.slider_b
   action:
-  - service: shell_command.hyperion_cmd
-    data_template:
-      value: >-
-              '{
-              "color": [
-                          {{ states.input_number.slider_r.state | int - 5 }},
-                          {{ states.input_number.slider_g.state | int - 5 }},
-                          {{ states.input_number.slider_b.state | int - 5 }}
-                        ],
-              "command" : "color",
-              "priority": {{ states.input_number.slider_rgb_priority.state | int }}
-              }'
-  - service: script.set_settings_light
-  - service: shell_command.hyperion_cmd
-    data_template:
-      value: >-
-              '{
+    - service: shell_command.hyperion_cmd
+      data_template:
+        value: >-
+                '{
                 "color": [
-                            {{ states.input_number.slider_r.state | int }},
-                            {{ states.input_number.slider_g.state | int }},
-                            {{ states.input_number.slider_b.state | int }}],
-                "command": "color",
+                            {{ states.input_number.slider_r.state | int - 5 }},
+                            {{ states.input_number.slider_g.state | int - 5 }},
+                            {{ states.input_number.slider_b.state | int - 5 }}
+                          ],
+                "command" : "color",
                 "priority": {{ states.input_number.slider_rgb_priority.state | int }}
-              }'
+                }'
+    - service: script.set_settings_light
+    - service: shell_command.hyperion_cmd
+      data_template:
+        value: >-
+                '{
+                  "color": [
+                              {{ states.input_number.slider_r.state | int }},
+                              {{ states.input_number.slider_g.state | int }},
+                              {{ states.input_number.slider_b.state | int }}],
+                  "command": "color",
+                  "priority": {{ states.input_number.slider_rgb_priority.state | int }}
+                }'
 
 - alias: send effect hyperion
   trigger:
-  - platform: state
-    entity_id: input_select.select_effect
+    - platform: state
+      entity_id: input_select.select_effect
   action:
-  - service: script.set_settings_effect
-  - service: script.hyperion_cmd_x
+    - service: script.set_settings_effect
+    - service: script.hyperion_cmd_x
 
 - alias: send settings hyperion
   trigger:
-  - platform: state
-    entity_id: input_number.gamma_r
-  - platform: state
-    entity_id: input_number.gamma_g
-  - platform: state
-    entity_id: input_number.gamma_b
-  - platform: state
-    entity_id: input_number.brightness
-  - platform: state
-    entity_id: input_number.saturation
+    - platform: state
+      entity_id: input_number.gamma_r
+    - platform: state
+      entity_id: input_number.gamma_g
+    - platform: state
+      entity_id: input_number.gamma_b
+    - platform: state
+      entity_id: input_number.brightness
+    - platform: state
+      entity_id: input_number.saturation
   action:
-  - service: shell_command.hyperion_cmd
-    data_template:
-      value: >-
-              '{
-              "command":"transform",
-              "transform":
-                  {
-                    "gamma":
-                        [
-                            {{ states.input_number.gamma_r.state | float }},
-                            {{ states.input_number.gamma_g.state | float }},
-                            {{ states.input_number.gamma_b.state | float }}
-                        ],
-                    "luminanceGain":{{ states.input_number.brightness.state | float }},
-                    "saturationLGain":{{ states.input_number.saturation.state | float }}}
-              }'
+    - service: shell_command.hyperion_cmd
+      data_template:
+        value: >-
+                '{
+                "command":"transform",
+                "transform":
+                    {
+                      "gamma":
+                          [
+                              {{ states.input_number.gamma_r.state | float }},
+                              {{ states.input_number.gamma_g.state | float }},
+                              {{ states.input_number.gamma_b.state | float }}
+                          ],
+                      "luminanceGain":{{ states.input_number.brightness.state | float }},
+                      "saturationLGain":{{ states.input_number.saturation.state | float }}}
+                }'
 
 - alias: kodi paly
   trigger:
-  - platform: state
-    entity_id: media_player.kodi
-    to: playing
+    - platform: state
+      entity_id: media_player.kodi
+      to: playing
   action:
-  - service: input_select.select_option
-    data:
-      entity_id: input_select.select_effect
-      option: None
-  - service: script.hyperion_clear_rgb
-  - service: script.set_settings_video
-  #- service: shell_command.tv_volup
-  #- delay: '00:00:03'
-  #- service: shell_command.tv_voldown
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.select_effect
+        option: None
+    - service: script.hyperion_clear_rgb
+    - service: script.set_settings_video
+    #- service: shell_command.tv_volup
+    #- delay: '00:00:03'
+    #- service: shell_command.tv_voldown
 
 - alias: kodi pause
   trigger:
-  - platform: state
-    entity_id: media_player.kodi
-    to: idle
-  - platform: state
-    entity_id: media_player.kodi
-    to: paused
+    - platform: state
+      entity_id: media_player.kodi
+      to: idle
+    - platform: state
+      entity_id: media_player.kodi
+      to: paused
   action:
-  - service: input_select.select_option
-    data:
-      entity_id: input_select.select_effect
-      option: trails
+    - service: input_select.select_option
+      data:
+        entity_id: input_select.select_effect
+        option: trails
 
 - alias: change pressure
   trigger:
-  - platform: state
-    entity_id: sensor.change_pressure
+    - platform: state
+      entity_id: sensor.change_pressure
   condition:
     condition: and
     conditions:
@@ -339,60 +339,60 @@
             True
           {%- endif -%}
   action:
-  - service: script.all_notify
-    data_template:
-      msg: pressure change {{states.sensor.change_pressure.state}}
+    - service: script.all_notify
+      data_template:
+        msg: pressure change {{states.sensor.change_pressure.state}}
 
 - alias: weather alert
   trigger:
-  - platform: state
-    entity_id: sensor.pws_alerts
+    - platform: state
+      entity_id: sensor.pws_alerts
   condition:
     - condition: template
       value_template: '{{trigger.from_state.state != trigger.to_state.state}}'
   action:
-  - service: script.all_notify
-    data_template:
-      msg: >-
-        {% if states.sensor.pws_alerts.state != '0'-%}
-          {% for k, v  in states.sensor.pws_alerts.attributes.items() %}
-            {%-if 'Description' in k%}
-              {{v}}.
-            {% endif %}
-          {%- endfor %}
-        {%else %}
-          weather alert expired
-        {% endif %}
+    - service: script.all_notify
+      data_template:
+        msg: >-
+          {% if states.sensor.pws_alerts.state != '0'-%}
+            {% for k, v  in states.sensor.pws_alerts.attributes.items() %}
+              {%-if 'Description' in k%}
+                {{v}}.
+              {% endif %}
+            {%- endfor %}
+          {%else %}
+            weather alert expired
+          {% endif %}
 
 - alias: esp x1
   trigger:
-  - platform: state
-    entity_id: binary_sensor.x1
-    to: 'off'
-    for:
-      minutes:  6
-  - platform: numeric_state
-    entity_id: binary_sensor.x1
-    value_template: '{{state.attributes.mtime}}'
-    below: 15
-  #- platform: numeric_state
-    #entity_id: input_number.slider_effect_time
-    ##value_template: {{states.input_number.slider_effect_time.state |int }}
-    #below: 3
+    - platform: state
+      entity_id: binary_sensor.x1
+      to: 'off'
+      for:
+        minutes:  6
+    - platform: numeric_state
+      entity_id: binary_sensor.x1
+      value_template: '{{state.attributes.mtime}}'
+      below: 15
+    #- platform: numeric_state
+      #entity_id: input_number.slider_effect_time
+      #value_template: {{states.input_number.slider_effect_time.state |int }}
+      #below: 3
   action:
-  - service: script.all_notify
-    data_template:
-      msg: >-
-        {%- if is_state("binary_sensor.x1", "on") -%}
-          {{states.binary_sensor.x1.attributes.friendly_name }}
-          boot count: {{states.binary_sensor.x1.attributes.boot_count }}
-          rssi: {{states.binary_sensor.x1.attributes.rssi }}
-          {{states.binary_sensor.x1.attributes.boot_cause }}
-          uptime: {{states.binary_sensor.x1.attributes.uptime }}
-          time: {{now().strftime('%H:%M:%S')}}
-        {%- else -%}
-          {{states.binary_sensor.x1.attributes.friendly_name }} is down
-        {%- endif -%}
+    - service: script.all_notify
+      data_template:
+        msg: >-
+          {%- if is_state("binary_sensor.x1", "on") -%}
+            {{states.binary_sensor.x1.attributes.friendly_name }}
+            boot count: {{states.binary_sensor.x1.attributes.boot_count }}
+            rssi: {{states.binary_sensor.x1.attributes.rssi }}
+            {{states.binary_sensor.x1.attributes.boot_cause }}
+            uptime: {{states.binary_sensor.x1.attributes.uptime }}
+            time: {{now().strftime('%H:%M:%S')}}
+          {%- else -%}
+            {{states.binary_sensor.x1.attributes.friendly_name }} is down
+          {%- endif -%}
 - alias: change_current_theme
   trigger:
     - platform: state
@@ -404,104 +404,104 @@
 
 - alias: bed_turn_off
   trigger:
-  - platform: state
-    entity_id: binary_sensor.bedlight
-    to: 'off'
-  - platform: event
-    event_type: timer.finished
-    event_data:
-      entity_id: timer.bed_light_timer
+    - platform: state
+      entity_id: binary_sensor.bedlight
+      to: 'off'
+    - platform: event
+      event_type: timer.finished
+      event_data:
+        entity_id: timer.bed_light_timer
   action:
-    service: light.turn_off
-    entity_id: light.bed_led
-    data:
-      transition: 60
+    - service: light.turn_off
+      entity_id: light.bed_led
+      data:
+        transition: 60
 
 - alias: bed_turn_on
   trigger:
-  - platform: state
-    entity_id: binary_sensor.bedlight
-    to: 'on'
+    - platform: state
+      entity_id: binary_sensor.bedlight
+      to: 'on'
   action:
-  - service: automation.trigger
-    entity_id: automation.bed_auto_off
-  - service: light.turn_on
-    entity_id: light.bed_led
-    data_template:
-      rgb_color: ['{{(range(0, 100)|random)}}','{{(range(150, 200)|random)}}','{{(range(0, 100)|random)}}']
-      #brightness: '{{150}}'
-      transition: '{{15}}'
-  - delay: '00:00:15'
-  - service: light.turn_on
-    entity_id: light.bed_led
-    data:
-      effect: cycle
+    - service: automation.trigger
+      entity_id: automation.bed_auto_off
+    - service: light.turn_on
+      entity_id: light.bed_led
+      data_template:
+        rgb_color: ['{{(range(0, 100)|random)}}','{{(range(150, 200)|random)}}','{{(range(0, 100)|random)}}']
+        #brightness: '{{150}}'
+        transition: '{{15}}'
+    - delay: '00:00:15'
+    - service: light.turn_on
+      entity_id: light.bed_led
+      data:
+        effect: cycle
 
 - alias: bed_auto_off
   trigger:
-  - platform: state
-    entity_id: light.bed_led
-    to: 'on'
+    - platform: state
+      entity_id: light.bed_led
+      to: 'on'
   action:
-  - service: timer.start
-    entity_id: timer.bed_light_timer
-    data_template:
-      duration: '00:{{states.input_number.bed_light_duration.state|int}}:00'
+    - service: timer.start
+      entity_id: timer.bed_light_timer
+      data_template:
+        duration: '00:{{states.input_number.bed_light_duration.state|int}}:00'
 
 - alias: minutes_loop
   initial_state: 'off'
   trigger:
-  - platform: time
-    minutes: '/10'
-    seconds: 0
+    - platform: time
+      minutes: '/10'
+      seconds: 0
   action:
-  - service: script.test_loop_min
+    - service: script.test_loop_min
 
 - alias: bed_sleep_on
   trigger:
-  - platform: state
-    entity_id: binary_sensor.bedmusic
-    to: 'on'
+    - platform: state
+      entity_id: binary_sensor.bedmusic
+      to: 'on'
   action:
-  - service: timer.start
-    entity_id: timer.bed_music
-    data_template:
-      duration: '00:{{states.input_number.bed_music_timer.state|int}}:00'
-  - service: media_extractor.play_media
-    data_template:
-      entity_id: media_player.bedroom_speaker
-      media_content_type: 'audio/mp3'
-      media_content_id: >-
-        {%-
-            set play= [
-              '-i8IMw5WeXc',
-              'AsD5u6k6dKI',
-              'HIOYTqMAV7Y',
-              'AsD5u6k6dKI',
-              '5fNLEPrNi2A',
-              'hwsEjtlr9yw',
-              'kygoJiJAWG4',
-              '3Ak1ShDQWlU',
-              'T9IJKwEspI8'
-            ]
-        -%}
-        https://www.youtube.com/watch?v={{play|random}}
-  - delay: '00:00:03'
-  - service: media_player.volume_set
-    data:
-      entity_id: media_player.bedroom_speaker
-      volume_level: 0.12
+    - service: timer.start
+      entity_id: timer.bed_music
+      data_template:
+        duration: '00:{{states.input_number.bed_music_timer.state|int}}:00'
+    - service: media_extractor.play_media
+      data_template:
+        entity_id: media_player.bedroom_speaker
+        media_content_type: 'audio/mp3'
+        media_content_id: >-
+          {%-
+             set play= [
+                '-i8IMw5WeXc',
+                'AsD5u6k6dKI',
+                'HIOYTqMAV7Y',
+                'AsD5u6k6dKI',
+                '5fNLEPrNi2A',
+                'hwsEjtlr9yw',
+                'kygoJiJAWG4',
+                '3Ak1ShDQWlU',
+                'T9IJKwEspI8'
+              ]
+          -%}
+          https://www.youtube.com/watch?v={{play|random}}
+    - delay: '00:00:03'
+    - service: media_player.volume_set
+      data:
+        entity_id: media_player.bedroom_speaker
+        volume_level: 0.12
 
 - alias: bed_music_on
   trigger:
-  - platform: state
-    entity_id: media_player.bedroom_speaker
-    from: 'off'
-    to: 'idle'
-    for:
-      seconds: 3
-  - platform: state
-    entity_id: input_select.select_radio_bed
+    - platform: state
+      entity_id: media_player.bedroom_speaker
+      from: 'off'
+      to: 'idle'
+      for:
+        seconds: 3
+    - platform: state
+      entity_id: input_select.select_radio_bed
   condition:
     condition: and
     conditions:
@@ -520,161 +520,161 @@
             True
           {%- endif -%}
   action:
-  - service: timer.start
-    entity_id: timer.bed_music
-    data_template:
-      duration: '00:{{states.input_number.bed_music_timer.state|int}}:00'
-  - service: media_player.play_media
-    data_template:
-      entity_id: media_player.bedroom_speaker
-      media_content_type: 'audio/mp3'
-      media_content_id: >-
-        {%-
-            set play=
-            {
-            "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
-            "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
-            "State Of Trance": "http://de-hz-fal-stream07.rautemusik.fm/trance",
-            "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
-            "Ocean Radio": "http://philae.shoutca.st:8446/stream",
-            "Costa Del Mar": "http://sc-costadelmar.1.fm:10156",
-            "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
-            "Lounge FM": "http://cast.loungefm.com.ua/chillout128",
-            "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
-            "Eilo Ambient": "http://eilo.org:8000/ambient",
-            "Milano Lounge": "http://178.32.62.154:9739/stream",
-            "Lounge": "http://live.radioart.com:80/fLounge.mp3",
-            "Smooth Lounge": "http://live.radioart.com:80/fSmooth_lounge.mp3",
-            "Vocal Lounge": "http://live.radioart.com:80/fVocal_lounge.mp3",
-            "Sleep": "http://live.radioart.com:80/fSleep.mp3",
-            "New Age": "http://live.radioart.com:80/fNew_age.mp3",
-            "Ambient": "http://live.radioart.com:80/fAmbient.mp3",
-            "Ambient Sleep": "https://radio.stereoscenic.com/asp-s",
-            "Calm Radio": "http://streams.calmradio.com/api/39/128/stream",
-            "Ambi Nature Radio": "http://94.23.252.14:8067/stream",
-            "Chroma Ambient": "http://148.251.184.14:8004/;539699463556254stream.nsv"
-            }
-        -%}
-        {{ play[states("input_select.select_radio_bed")] }}
-  - service: media_player.volume_set
-    data:
-      entity_id: media_player.bedroom_speaker
-      volume_level: 0.10
+    - service: timer.start
+      entity_id: timer.bed_music
+      data_template:
+        duration: '00:{{states.input_number.bed_music_timer.state|int}}:00'
+    - service: media_player.play_media
+      data_template:
+        entity_id: media_player.bedroom_speaker
+        media_content_type: 'audio/mp3'
+        media_content_id: >-
+          {%-
+              set play=
+              {
+              "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
+              "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
+              "State Of Trance": "http://de-hz-fal-stream07.rautemusik.fm/trance",
+              "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
+              "Ocean Radio": "http://philae.shoutca.st:8446/stream",
+              "Costa Del Mar": "http://sc-costadelmar.1.fm:10156",
+              "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
+              "Lounge FM": "http://cast.loungefm.com.ua/chillout128",
+              "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
+              "Eilo Ambient": "http://eilo.org:8000/ambient",
+              "Milano Lounge": "http://178.32.62.154:9739/stream",
+              "Lounge": "http://live.radioart.com:80/fLounge.mp3",
+              "Smooth Lounge": "http://live.radioart.com:80/fSmooth_lounge.mp3",
+              "Vocal Lounge": "http://live.radioart.com:80/fVocal_lounge.mp3",
+              "Sleep": "http://live.radioart.com:80/fSleep.mp3",
+              "New Age": "http://live.radioart.com:80/fNew_age.mp3",
+              "Ambient": "http://live.radioart.com:80/fAmbient.mp3",
+              "Ambient Sleep": "https://radio.stereoscenic.com/asp-s",
+              "Calm Radio": "http://streams.calmradio.com/api/39/128/stream",
+              "Ambi Nature Radio": "http://94.23.252.14:8067/stream",
+              "Chroma Ambient": "http://148.251.184.14:8004/;539699463556254stream.nsv"
+              }
+          -%}
+          {{ play[states("input_select.select_radio_bed")] }}
+    - service: media_player.volume_set
+      data:
+        entity_id: media_player.bedroom_speaker
+        volume_level: 0.10
 
 - alias: bed_music_off
   trigger:
-  - platform: state
-    entity_id: binary_sensor.bedmusic
-    to: 'off'
-  - platform: state
-    entity_id: device_tracker.m4b30x
-    from: home
-    to: not_home
-  - platform: event
-    event_type: timer.finished
-    event_data:
-      entity_id: timer.bed_music
+    - platform: state
+      entity_id: binary_sensor.bedmusic
+      to: 'off'
+    - platform: state
+      entity_id: device_tracker.m4b30x
+      from: home
+      to: not_home
+    - platform: event
+      event_type: timer.finished
+      event_data:
+        entity_id: timer.bed_music
   action:
-  - service: media_player.turn_off
-    entity_id: media_player.bedroom_speaker
+    - service: media_player.turn_off
+      entity_id: media_player.bedroom_speaker
 
 - alias: sound_bar_music_on
   trigger:
-  - platform: state
-    entity_id: media_player.htmt500501_b34d6a
-    from: 'off'
-    to: 'idle'
-    for:
-      seconds: 3
-  - platform: state
-    entity_id: input_select.select_sound_bar
-  action:
-  - service: timer.start
-    entity_id: timer.sound_bar
-    data_template:
-      duration: '00:{{states.input_number.sound_bar_music_timer.state|int}}:00'
-  - service: script.sound_bar_do_sleep_if
-  - service: media_player.play_media
-    data_template:
+    - platform: state
       entity_id: media_player.htmt500501_b34d6a
-      media_content_type: 'audio/mp3'
-      media_content_id: >-
-        {%-
-            set play=
-            {
-            "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
-            "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
-            "State Of Trance": "http://de-hz-fal-stream07.rautemusik.fm/trance",
-            "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
-            "Ocean Radio": "http://philae.shoutca.st:8446/stream",
-            "Costa Del Mar": "http://sc-costadelmar.1.fm:10156",
-            "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
-            "Lounge FM": "http://cast.loungefm.com.ua/chillout128",
-            "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
-            "Eilo Ambient": "http://eilo.org:8000/ambient",
-            "Milano Lounge": "http://178.32.62.154:9739/stream",
-            "Lounge": "http://live.radioart.com:80/fLounge.mp3",
-            "Smooth Lounge": "http://live.radioart.com:80/fSmooth_lounge.mp3",
-            "Vocal Lounge": "http://live.radioart.com:80/fVocal_lounge.mp3",
-            "Sleep": "http://live.radioart.com:80/fSleep.mp3",
-            "New Age": "http://live.radioart.com:80/fNew_age.mp3",
-            "Ambient": "http://live.radioart.com:80/fAmbient.mp3",
-            "Ambient Sleep": "https://radio.stereoscenic.com/asp-s",
-            "Calm Radio": "http://streams.calmradio.com/api/39/128/stream",
-            "Ambi Nature Radio": "http://94.23.252.14:8067/stream",
-            "Chroma Ambient": "http://148.251.184.14:8004/;539699463556254stream.nsv"
-            }
-        -%}
-        {{ play[states("input_select.select_sound_bar")] }}
+      from: 'off'
+      to: 'idle'
+      for:
+        seconds: 3
+    - platform: state
+      entity_id: input_select.select_sound_bar
+  action:
+    - service: timer.start
+      entity_id: timer.sound_bar
+      data_template:
+        duration: '00:{{states.input_number.sound_bar_music_timer.state|int}}:00'
+    - service: script.sound_bar_do_sleep_if
+    - service: media_player.play_media
+      data_template:
+        entity_id: media_player.htmt500501_b34d6a
+        media_content_type: 'audio/mp3'
+        media_content_id: >-
+          {%-
+              set play=
+              {
+              "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
+              "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
+              "State Of Trance": "http://de-hz-fal-stream07.rautemusik.fm/trance",
+              "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
+              "Ocean Radio": "http://philae.shoutca.st:8446/stream",
+              "Costa Del Mar": "http://sc-costadelmar.1.fm:10156",
+              "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
+              "Lounge FM": "http://cast.loungefm.com.ua/chillout128",
+              "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
+              "Eilo Ambient": "http://eilo.org:8000/ambient",
+              "Milano Lounge": "http://178.32.62.154:9739/stream",
+              "Lounge": "http://live.radioart.com:80/fLounge.mp3",
+              "Smooth Lounge": "http://live.radioart.com:80/fSmooth_lounge.mp3",
+              "Vocal Lounge": "http://live.radioart.com:80/fVocal_lounge.mp3",
+              "Sleep": "http://live.radioart.com:80/fSleep.mp3",
+              "New Age": "http://live.radioart.com:80/fNew_age.mp3",
+              "Ambient": "http://live.radioart.com:80/fAmbient.mp3",
+              "Ambient Sleep": "https://radio.stereoscenic.com/asp-s",
+              "Calm Radio": "http://streams.calmradio.com/api/39/128/stream",
+              "Ambi Nature Radio": "http://94.23.252.14:8067/stream",
+              "Chroma Ambient": "http://148.251.184.14:8004/;539699463556254stream.nsv"
+              }
+          -%}
+          {{ play[states("input_select.select_sound_bar")] }}
 
 - alias: sound_bar_music_off
   trigger:
-  - platform: state
-    entity_id: device_tracker.m4b30x
-    from: home
-    to: not_home
-  - platform: event
-    event_type: timer.finished
-    event_data:
-      entity_id: timer.sound_bar
+    - platform: state
+      entity_id: device_tracker.m4b30x
+      from: home
+      to: not_home
+    - platform: event
+      event_type: timer.finished
+      event_data:
+        entity_id: timer.sound_bar
   action:
-  - service: media_player.turn_off
-    entity_id: media_player.htmt500501_b34d6a
+    - service: media_player.turn_off
+      entity_id: media_player.htmt500501_b34d6a
 
 - alias: sound_bar_idle
   trigger:
-  - platform: state
-    entity_id: binary_sensor.sound_bar_active
-    to: 'off'
+    - platform: state
+      entity_id: binary_sensor.sound_bar_active
+      to: 'off'
   action:
-  - service: script.sound_bar_off
+    - service: script.sound_bar_off
 
 - alias: living_heating_auto
   trigger:
-  - platform: state
-    entity_id: binary_sensor.home_heating
+    - platform: state
+      entity_id: binary_sensor.home_heating
   condition:
     - condition: template
       value_template: '{{trigger.from_state.state != trigger.to_state.state}}'
   action:
-  - service_template: >
-      input_boolean.turn_{{trigger.to_state.state}}
-    entity_id: input_boolean.home_heating
+    - service_template: >
+        input_boolean.turn_{{trigger.to_state.state}}
+      entity_id: input_boolean.home_heating
 
 - alias: living_heating
   trigger:
-  - platform: state
-    entity_id: input_boolean.home_heating
+    - platform: state
+      entity_id: input_boolean.home_heating
   action:
-  - service: script.heat_conrtol
-    data_template:
-      dat: '{{trigger.to_state.state}}'
+    - service: script.heat_conrtol
+      data_template:
+        dat: '{{trigger.to_state.state}}'
 
 - alias: home_away
   trigger:
-  - platform: numeric_state
-    entity_id: proximity.home
-    above: 25
+    - platform: numeric_state
+      entity_id: proximity.home
+      above: 25
   condition:
     - condition: template
       value_template: >-
@@ -682,13 +682,13 @@
           is_state_attr('proximity.home', 'dir_of_travel', 'away_from')
         }}
   action:
-  - service: script.home_away
+    - service: script.home_away
 
 - alias: home_near
   trigger:
-  - platform: numeric_state
-    entity_id: proximity.home
-    below: 25
+    - platform: numeric_state
+      entity_id: proximity.home
+      below: 25
   condition:
     - condition: template
       value_template: >-
@@ -697,34 +697,34 @@
           is_state_attr('proximity.home', 'dir_of_travel', 'arrived')
         }}
   action:
-  - service: script.home_near
+    - service: script.home_near
 
 - alias: root_home
   trigger:
-  - platform: zone
-    entity_id: device_tracker.m4b30x
-    zone: zone.home
-    event: enter
+    - platform: zone
+      entity_id: device_tracker.m4b30x
+      zone: zone.home
+      event: enter
   action:
-  - service: script.root_home
+    - service: script.root_home
 
 - alias: root_from_work
   trigger:
-  - platform: zone
-    entity_id: device_tracker.m4b30x
-    zone: zone.work
-    event: leave
+    - platform: zone
+      entity_id: device_tracker.m4b30x
+      zone: zone.work
+      event: leave
   action:
-  - service: script.root_from_work
+    - service: script.root_from_work
 
 - alias: root_not_home
   trigger:
-  - platform: zone
-    entity_id: device_tracker.m4b30x
-    zone: zone.home
-    event: leave
+    - platform: zone
+      entity_id: device_tracker.m4b30x
+      zone: zone.home
+      event: leave
   action:
-  - service: script.root_not_home
+    - service: script.root_not_home
 
 - alias: event_android_alarm
   trigger:
@@ -751,12 +751,12 @@
 
 #- alias: tetst_tab
   #trigger:
-  #- platform: state
-    #entity_id: switch.mqtt_1
+    #- platform: state
+      #entity_id: switch.mqtt_1
   #action:
-  #- service: persistent_notification.create
-    #data_template:
-      #message: '{{is_state("switch.mqtt_1", "unavailable") != True}}'
-  #- service: group.set_visibility
-    #data_template:
-      #visible: '{{is_state("switch.mqtt_1", "unavailable") != True}}'
+    #- service: persistent_notification.create
+      #data_template:
+        #message: '{{is_state("switch.mqtt_1", "unavailable") != True}}'
+    #- service: group.set_visibility
+      #data_template:
+        #visible: '{{is_state("switch.mqtt_1", "unavailable") != True}}'
