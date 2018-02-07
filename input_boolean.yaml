@@ -5,3 +5,7 @@ enable_sleep:
 home_heating:
   name: comfort
   icon: mdi:radiator
+
+home_motion:
+  name: home_motion
+  initial: off

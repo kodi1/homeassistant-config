@@ -107,6 +107,7 @@ other:
   - binary_sensor.batts_low
   - binary_sensor.open_living
   - binary_sensor.home_heating
+  - binary_sensor.home_motion
 script:
   control: hidden
   view: false
@@ -121,6 +122,7 @@ alerts:
   view: false
   entities:
   - alert.low_battery
+  - alert.home_motion
 autos:
   view: false
   entities:
@@ -278,6 +280,36 @@ heating_control:
   - automation.living_heating_auto
   - climate.living
 
+bed_motion:
+  view: false
+  control: hidden
+  name: 'bed motion'
+  entities:
+  - binary_sensor.bed_motion
+  - timer.bed_motion_timer
+  - automation.bed_motion_trigger
+  - script.bed_auto_light
+
+hall_motion:
+  view: false
+  control: hidden
+  name: 'hall motion'
+  entities:
+  - binary_sensor.hall_motion
+  - timer.hall_motion_timer
+  - automation.hall_motion_trigger
+  - script.hall_auto_light
+
+living_motion:
+  view: false
+  control: hidden
+  name: 'living motion'
+  entities:
+  - binary_sensor.living_motion
+  - timer.living_motion_timer
+  - automation.living_motion_trigger
+  - script.living_auto_light
+
 default_view:
   view: true
   icon: mdi:home-variant
@@ -348,6 +380,9 @@ test:
   view: true
   icon: mdi:nuke
   entities:
+  - group.bed_motion
+  - group.living_motion
+  - group.hall_motion
   - binary_sensor.test_1
   - binary_sensor.x1
   - automation.minutes_loop

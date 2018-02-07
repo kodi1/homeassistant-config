@@ -421,6 +421,8 @@ root_home:
       data_template:
         duration: '{{states.input_number.just_home_timer.state|int * 60}}'
     - service: script.radio_on
+    - service: input_boolean.turn_off
+      entity_id: input_boolean.home_motion
 
 root_from_work:
   sequence:
@@ -542,3 +544,68 @@ android_post_alarm:
       data:
         entity_id: media_player.bedroom_speaker
         volume_level: 0.15
+
+bed_auto_light:
+  sequence:
+    - condition: and
+      conditions:
+        - condition: state
+          entity_id: switch.hyperion_enable
+          state: 'on'
+        - condition: template
+          value_template: >-
+            {%- if (states.automation.bed_auto_off.attributes.last_triggered != None) -%}
+              {{
+                (as_timestamp(now()) -
+                as_timestamp(states.automation.bed_auto_off.attributes.last_triggered)) >
+                (states.input_number.bed_light_duration.state | float * 60)
+              }}
+            {%- else -%}
+              True
+            {%- endif -%}
+    - service: logbook.log
+      data:
+        name: 'Bed light'
+        message: 'On'
+    - service: light.turn_on
+      entity_id: light.bed_led
+      data_template:
+        rgb_color: ['{{(range(50, 100)|random)}}','{{(range(200, 250)|random)}}','{{(range(100, 150)|random)}}']
+        transition: '{{10}}'
+    - service: timer.start
+      entity_id: timer.bed_light_timer
+      data_template:
+        duration: '00:03:00'
+
+living_auto_light:
+  sequence:
+    - condition: and
+      conditions:
+        - condition: state
+          entity_id: switch.hyperion_enable
+          state: 'on'
+        - condition: state
+          entity_id: device_tracker.n0ll
+          state: 'not_home'
+        - condition: state
+          entity_id: binary_sensor.kodi_screen_saver
+          state: 'on'
+    - service: logbook.log
+      data:
+        name: 'Living light'
+        message: 'On'
+    - service: automation.trigger
+      entity_id: automation.light_keep_alive
+    - service: timer.start
+      entity_id: timer.hyperion_rgb_timer
+      data_template:
+        duration: '{{states.input_number.slider_rgb_time.state|int * 60}}'
+
+hall_auto_light:
+  sequence:
+    - service: logbook.log
+      data:
+        name: 'Hall light'
+        message: 'On'
+    - service: script.living_auto_light
+    - service: script.bed_auto_light

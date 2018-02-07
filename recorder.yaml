@@ -13,3 +13,13 @@ exclude:
     - climate
   entities:
     - automation.send_settings_hyperion
+    - timer.living_motion_timer
+    - timer.hall_motion_timer
+    - timer.bed_motion_timer
+    #- binary_sensor.living_motion
+    #- binary_sensor.hall_motion
+    #- binary_sensor.bed_motion
+    - automation.living_motion_trigger
+    - automation.hall_motion_trigger
+    - automation.bed_motion_trigger
+    - input_boolean.home_motion

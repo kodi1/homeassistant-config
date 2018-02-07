@@ -122,6 +122,18 @@
         {% else -%}
           {{ is_state('binary_sensor.open_living', 'on') }}
         {%- endif -%}
+    bed_motion:
+      device_class: motion
+      value_template: '{{ is_state("timer.bed_motion_timer", "active") }}'
+    living_motion:
+      device_class: motion
+      value_template: '{{ is_state("timer.living_motion_timer", "active") }}'
+    hall_motion:
+      device_class: motion
+      value_template: '{{ is_state("timer.hall_motion_timer", "active") }}'
+    home_motion:
+      device_class: safety
+      value_template: '{{ is_state("input_boolean.home_motion", "on") }}'
 
 - platform: esp_wd
   name: x1

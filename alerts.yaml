@@ -12,3 +12,18 @@ low_battery:
   notifiers:
     - kodi
     - mailbg
+
+home_motion:
+  name: 'Unexpected move'
+  done_message: 'Unexpected move clear'
+  entity_id: binary_sensor.home_motion
+  state: 'on'
+  repeat:
+    - 5
+    - 30
+    - 120
+    - 360
+  skip_first: True
+  can_acknowledge: True
+  notifiers:
+    - mailbg
