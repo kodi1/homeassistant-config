@@ -27,3 +27,11 @@
   availability_topic: "/sonoff_1/status"
   payload_available: 1
   payload_not_available: 0
+
+- platform: mqtt
+  name: "rf swich 1"
+  state_topic: "rf434/recv/arctech_switch_old/30"
+  value_template: '{"id":{{value_json["id"]}},"unit":{{value_json["unit"]}},"{{value_json["state"]}}":1}'
+  command_topic: "rf434/send/arctech_switch_old"
+  payload_on: '{"id":30,"unit":14,"on":1}'
+  payload_off: '{"id":30,"unit":14,"off":1}'

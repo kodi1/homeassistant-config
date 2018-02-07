@@ -81,3 +81,5 @@ script.sound_bar_mute:
   icon: mdi:volume-mute
 switch.sonoff_1:
   icon: mdi:power-socket-eu
+switch.rf_swich_1:
+  icon: mdi:power-socket-eu

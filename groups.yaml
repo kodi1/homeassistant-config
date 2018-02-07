@@ -389,6 +389,7 @@ test:
   - script.test_loop_min
   - switch.mqtt_1
   - switch.sonoff_1
+  - switch.rf_swich_1
   - light.test_led
   - timer.test_timer
   - media_player.kodi
