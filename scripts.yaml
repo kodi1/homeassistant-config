@@ -253,33 +253,6 @@ set_settings_effect:
         entity_id: input_number.brightness
         value: '{{states.input_number.effect_brightness.state}}'
 
-test_loop_min:
-  sequence:
-    - service: light.turn_on
-      entity_id: light.test_led
-      data:
-        brightness: 75
-        transition: 10
-    - service: light.turn_on
-      entity_id: light.bed_led
-      data:
-        rgb_color: [0,255,0]
-        transition: 10
-    - delay: '00:00:15'
-    - service: light.turn_on
-      entity_id: light.bed_led
-      data:
-        effect: cycle
-    - delay: '00:00:15'
-    - service: light.turn_off
-      entity_id: light.bed_led
-      data:
-        transition: 3
-    - service: light.turn_off
-      entity_id: light.test_led
-      data:
-        transition: 1
-
 radio_on:
   sequence:
     - condition: and

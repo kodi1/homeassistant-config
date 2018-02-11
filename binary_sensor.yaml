@@ -141,11 +141,6 @@
   scan_interval: 300
 
 - platform: esp_wd
-  name: test_1
-  host: !secret test_host_1
-  scan_interval: 300
-
-- platform: esp_wd
   name: bedroom
   host: !secret bedroom
   scan_interval: 300

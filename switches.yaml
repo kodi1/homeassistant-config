@@ -8,16 +8,6 @@
       command_off: "/home/hass/.homeassistant/cmds/cec_cmd 'd 00'"
 
 - platform: mqtt
-  name: "mqtt 1"
-  state_topic: "/test/relay/state"
-  command_topic: "/test/gpio/2"
-  payload_on: "0"
-  payload_off: "1"
-  availability_topic: "/test/status"
-  payload_available: "Connected"
-  payload_not_available: "Connection Lost"
-
-- platform: mqtt
   name: "sonoff_1"
   state_topic: "/sonoff_1/data"
   value_template: '{{ value_json["relay/0"] }}'

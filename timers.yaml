@@ -7,9 +7,6 @@ bed_music:
 sound_bar:
   icon: mdi:timer-sand
   duration: '00:01:00'
-test_timer:
-  icon: mdi:timer-sand
-  duration: '00:01:00'
 hyperion_effect_timer:
   name: 'effect time'
   icon: mdi:timer

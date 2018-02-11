@@ -458,15 +458,6 @@
       data_template:
         duration: '00:{{states.input_number.bed_light_duration.state|int}}:00'
 
-- alias: minutes_loop
-  initial_state: 'off'
-  trigger:
-    - platform: time
-      minutes: '/10'
-      seconds: 0
-  action:
-    - service: script.test_loop_min
-
 - alias: bed_sleep_on
   trigger:
     - platform: state
