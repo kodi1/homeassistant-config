@@ -387,5 +387,7 @@ test:
   - switch.mqtt_1
   - switch.sonoff_1
   - switch.rf_swich_1
+  - switch.av_switch
+  - switch.bed_switch
   - media_player.kodi
   - proximity.home

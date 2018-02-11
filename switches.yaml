@@ -9,12 +9,12 @@
 
 - platform: mqtt
   name: "sonoff_1"
-  state_topic: "/sonoff_1/data"
+  state_topic: "sonoff_1/data"
   value_template: '{{ value_json["relay/0"] }}'
-  command_topic: "/sonoff_1/relay/0/set"
+  command_topic: "sonoff_1/relay/0/set"
   payload_on: 1
   payload_off: 0
-  availability_topic: "/sonoff_1/status"
+  availability_topic: "sonoff_1/status"
   payload_available: 1
   payload_not_available: 0
 
@@ -25,3 +25,25 @@
   command_topic: "rf434/send/arctech_switch_old"
   payload_on: '{"id":30,"unit":14,"on":1}'
   payload_off: '{"id":30,"unit":14,"off":1}'
+
+- platform: mqtt
+  name: "av_switch"
+  state_topic: "av_switch/data"
+  value_template: '{{ value_json["relay/0"] }}'
+  command_topic: "av_switch/relay/0/set"
+  payload_on: 1
+  payload_off: 0
+  availability_topic: "av_switch/status"
+  payload_available: 1
+  payload_not_available: 0
+
+- platform: mqtt
+  name: "bed_switch"
+  state_topic: "bed_switch/data"
+  value_template: '{{ value_json["relay/0"] }}'
+  command_topic: "bed_switch/relay/0/set"
+  payload_on: 1
+  payload_off: 0
+  availability_topic: "bed_switch/status"
+  payload_available: 1
+  payload_not_available: 0

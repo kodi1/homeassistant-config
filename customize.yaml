@@ -83,3 +83,7 @@ switch.sonoff_1:
   icon: mdi:power-socket-eu
 switch.rf_swich_1:
   icon: mdi:power-socket-eu
+switch.bed_switch:
+  icon: mdi:speaker-wireless
+switch.av_switch:
+  icon: mdi:amplifier
