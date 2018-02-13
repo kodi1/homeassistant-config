@@ -9,3 +9,4 @@ known_devices.yaml
 set_env
 .HA_VERSION
 __pycache__
+entity_registry.yaml
