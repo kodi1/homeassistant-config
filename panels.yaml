@@ -12,3 +12,8 @@ transmission:
   title: 'transmission'
   icon: mdi:download-network
   url: !secret url_transmission
+
+kodi:
+  title: 'kodi'
+  icon: mdi:kodi
+  url: !secret url_kodi_remote

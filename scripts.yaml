@@ -118,6 +118,8 @@ ports_open:
 
 reboot_all:
   sequence:
+    - delay: '00:00:05'
+    - service: script.kodi_turn_off
     - service: shell_command.minix_reboot
       data_template:
         value: '{{"+3"}}'
@@ -134,12 +136,15 @@ hass_update:
 
 kodi_turn_off:
   sequence:
-    - condition: template
-      value_template: '{{is_state("binary_sensor.kodi_screen_saver", "off")}}'
+    - condition: state
+      entity_id: switch.tv_cec
+      state: 'on'
     - service: media_player.media_stop
       entity_id: media_player.kodi
     - delay: '00:00:03'
     - service: shell_command.kodi_screensaver
+    - service: automation.trigger
+      entity_id: automation.tv_off
 
 kodi_turn_on:
   sequence:
@@ -316,6 +321,15 @@ start_up_sound_bar:
     - service: timer.pause
       entity_id: timer.sound_bar
 
+start_up_delay_av_off:
+  sequence:
+    - delay: '00:00:05'
+    - service: switch.turn_off
+      entity_id: switch.tv_cec
+    - condition: template
+      value_template: '{{ is_state("media_player.htmt500501_b34d6a", "playing") == False }}'
+    - service: script.sound_bar_off
+
 start_up_bedroom_speaker:
   sequence:
     - condition: state
@@ -341,6 +355,15 @@ start_up:
     - service: script.start_up_bedroom_speaker
     - service: script.start_up_bed_led
 
+sound_stop_if_play:
+  sequence:
+    - condition: state
+      entity_id: media_player.htmt500501_b34d6a
+      state: 'playing'
+    #- service: media_player.media_stop
+    - service: media_player.turn_off
+      entity_id: media_player.htmt500501_b34d6a
+
 tv_on:
   sequence:
     #- service: logbook.log
@@ -349,25 +372,25 @@ tv_on:
         #message: '{{as_timestamp(now()) - as_timestamp(states.script.start_up.attributes.last_triggered) }}'
     - condition: template
       value_template: >-
-        {%- if (as_timestamp(now()) - as_timestamp(states.script.start_up.attributes.last_triggered)) > 9 -%}
-          True
+        {%- if (states.script.start_up.attributes.last_triggered != None) -%}
+          {{
+            (as_timestamp(now()) -
+            as_timestamp(states.script.start_up.attributes.last_triggered)) > 9
+          }}
         {%- else -%}
-          False
+          True
         {%- endif -%}
-    #- service: script.tv_hdmi1_audio
+    - service: script.sound_stop_if_play
     - service: switch.turn_on
       entity_id: switch.tv_cec
-    - delay: '00:00:03'
     - service: script.sound_bar_on
-    - delay: '00:00:{{states.input_number.cec_cmd_delay.state|int}}'
-    - service: script.tv_hdmi1_audio
     - service: script.tv_hdmi1
     - delay: '00:00:{{states.input_number.cec_cmd_delay.state|int}}'
-    - service: script.tv_hdmi1_audio
     - service: script.tv_hdmi1
+    - service: script.tv_hdmi1_audio
     - delay: '00:00:{{states.input_number.cec_cmd_delay.state|int}}'
-    - service: script.tv_hdmi1_audio
     - service: script.tv_hdmi1
+    - service: script.tv_hdmi1_audio
 
 tv_off:
   sequence:
@@ -427,6 +450,44 @@ n0ll_home:
     - service: timer.pause
       entity_id: timer.sound_bar
 
+control_heating_visible_off:
+  sequence:
+    - service: group.set_visibility
+      data:
+        entity_id:
+          - group.graph_climate
+          - group.heating_control
+        visible: false
+
+control_heating_visible_on:
+  sequence:
+    - service: group.set_visibility
+      data:
+        entity_id:
+          - group.graph_climate
+          - group.heating_control
+        visible: true
+
+control_heating_m_on:
+  sequence:
+    - service: climate.set_operation_mode
+      entity_id: climate.living
+      data:
+        operation_mode: 'auto'
+    - service: script.all_notify
+      data:
+        msg: Master heating On - valve auto.
+
+control_heating_m_off:
+  sequence:
+    - service: climate.set_operation_mode
+      entity_id: climate.living
+      data:
+        operation_mode: 'on'
+    - service: script.all_notify
+      data:
+        msg: Master heating Off - valve open.
+
 heat_conrtol_home:
   sequence:
     - condition: template
@@ -434,7 +495,7 @@ heat_conrtol_home:
     - service: climate.set_operation_mode
       entity_id: climate.living
       data:
-        operation_mode: manual
+        operation_mode: 'manual'
     - service: climate.set_temperature
       entity_id: climate.living
       data_template:
@@ -442,7 +503,7 @@ heat_conrtol_home:
     - service: climate.set_operation_mode
       data:
         entity_id: climate.living
-        operation_mode: boost
+        operation_mode: 'boost'
 
 heat_conrtol_away:
   sequence:
@@ -451,7 +512,7 @@ heat_conrtol_away:
     - service: climate.set_operation_mode
       entity_id: climate.living
       data:
-        operation_mode: auto
+        operation_mode: 'auto'
 
 heat_conrtol:
   sequence:
@@ -462,39 +523,75 @@ heat_conrtol:
       data_template:
         d: '{{ dat }}'
 
-home_near:
+home_near_heating:
   sequence:
+    - condition: state
+      entity_id: input_boolean.control_heating
+      state: 'on'
     - service: climate.set_operation_mode
       entity_id: climate.living
       data:
-        operation_mode: auto
+        operation_mode: 'auto'
+    - service: climate.set_temperature
+      entity_id: climate.living
+      data_template:
+        temperature: '{{states.input_number.temp_home.state|int - 1}}'
+
+home_near_turnon:
+  sequence:
+    - service: switch.turn_on
+      entity_id:
+        - switch.av_switch
+        - switch.bed_switch
+
+home_near:
+  sequence:
     - service: notify.mailbg
       data:
-        message: Auto Heating
+        message: home near trigger
         title: 'hass'
     - service: automation.turn_off
       entity_id: automation.home_near
     - service: automation.turn_on
       entity_id: automation.home_away
+    - service: script.home_near_heating
+    - service: script.home_near_turnon
+    - delay: '00:01:30'
+    - service: homeassistant.restart
 
-home_away:
+home_away_heating:
   sequence:
+    - condition: state
+      entity_id: input_boolean.control_heating
+      state: 'on'
     - service: climate.set_operation_mode
       entity_id: climate.living
       data:
-        operation_mode: manual
+        operation_mode: 'manual'
     - service: climate.set_temperature
       entity_id: climate.living
       data_template:
         temperature: '{{states.input_number.temp_away.state|int}}'
+
+home_away_turnoff:
+  sequence:
+    - service: switch.turn_off
+      entity_id:
+        - switch.av_switch
+        - switch.bed_switch
+
+home_away:
+  sequence:
     - service: notify.mailbg
       data:
-        message: Eco Heating
+        message: home away trigger
         title: 'hass'
     - service: automation.turn_off
       entity_id: automation.home_away
     - service: automation.turn_on
       entity_id: automation.home_near
+    - service: script.home_away_heating
+    - service: script.home_away_turnoff
 
 android_post_alarm:
   sequence:
@@ -518,8 +615,90 @@ android_post_alarm:
         entity_id: media_player.bedroom_speaker
         volume_level: 0.15
 
+bed_clear_timer:
+  sequence:
+    - condition: and
+      conditions:
+        - condition: state
+          entity_id: timer.bed_light_timer
+          state: 'active'
+        - condition: template
+          value_template: >-
+            {%- if (states.automation.bed_turn_on.attributes.last_triggered != None) -%}
+              {{
+                (as_timestamp(now()) -
+                as_timestamp(states.automation.bed_turn_on.attributes.last_triggered)) >
+                (states.input_number.bed_light_duration.state | float * 60)
+              }}
+            {%- else -%}
+              True
+            {%- endif -%}
+        #- condition: template
+          #value_template: >-
+            #{%- if (states.automation.bed_auto_off.attributes.last_triggered != None) -%}
+              #{{
+                #(as_timestamp(now()) -
+                #as_timestamp(states.automation.bed_auto_off.attributes.last_triggered)) > 30
+              #}}
+            #{%- else -%}
+              #True
+            #{%- endif -%}
+    - service: timer.finish
+      entity_id: timer.bed_light_timer
+
+living_clear_timer:
+  sequence:
+    - condition: and
+      conditions:
+        - condition: state
+          entity_id: timer.living_light_timer
+          state: 'active'
+        - condition: state
+          entity_id: timer.just_home
+          state: 'idle'
+        #- condition: template
+          #value_template: >-
+            #{%- if (states.automation.living_light_on.attributes.last_triggered != None) -%}
+              #{{
+                #(as_timestamp(now()) -
+                #as_timestamp(states.automation.living_light_on.attributes.last_triggered)) > 30
+              #}}
+            #{%- else -%}
+              #True
+            #{%- endif -%}
+    - service: timer.finish
+      entity_id: timer.living_light_timer
+
+hall_clear_timer:
+  sequence:
+    - condition: and
+      conditions:
+        - condition: state
+          entity_id: timer.hall_light_timer
+          state: 'active'
+        - condition: state
+          entity_id: timer.just_home
+          state: 'idle'
+        #- condition: template
+          #value_template: >-
+            #{%- if (states.automation.hall_light_on.attributes.last_triggered != None) -%}
+              #{{
+                #(as_timestamp(now()) -
+                #as_timestamp(states.automation.hall_light_on.attributes.last_triggered)) > 30
+              #}}
+            #{%- else -%}
+              #True
+            #{%- endif -%}
+    - service: timer.finish
+      entity_id: timer.hall_light_timer
+
 bed_auto_light:
   sequence:
+    - service: script.hall_clear_timer
+    - service: script.living_clear_timer
+    - condition: state
+      entity_id: switch.hyperion_enable
+      state: 'on'
     - condition: and
       conditions:
         - condition: state
@@ -548,10 +727,12 @@ bed_auto_light:
     - service: timer.start
       entity_id: timer.bed_light_timer
       data_template:
-        duration: '00:03:00'
+        duration: '{{states.input_number.bed_light_time.state|int}}'
 
 living_auto_light:
   sequence:
+    - service: script.hall_clear_timer
+    - service: script.bed_clear_timer
     - condition: and
       conditions:
         - condition: state
@@ -561,24 +742,44 @@ living_auto_light:
           entity_id: device_tracker.n0ll
           state: 'not_home'
         - condition: state
-          entity_id: binary_sensor.kodi_screen_saver
-          state: 'on'
+          entity_id: binary_sensor.sound_bar_active
+          state: 'off'
+        - condition: template
+          value_template: >-
+            {%- if (states.script.living_auto_light.attributes.last_triggered != None) -%}
+              {{
+                (as_timestamp(now()) -
+                as_timestamp(states.script.living_auto_light.attributes.last_triggered)) > 5
+              }}
+            {%- else -%}
+              True
+            {%- endif -%}
     - service: logbook.log
       data:
         name: 'Living light'
         message: 'On'
-    - service: automation.trigger
-      entity_id: automation.light_keep_alive
     - service: timer.start
-      entity_id: timer.hyperion_rgb_timer
+      entity_id: timer.living_light_timer
       data_template:
-        duration: '{{states.input_number.slider_rgb_time.state|int * 60}}'
+        duration: '{{states.input_number.living_light_time.state|int}}'
 
 hall_auto_light:
   sequence:
+    - service: script.living_clear_timer
+    - service: script.bed_clear_timer
+    - condition: or
+      conditions:
+        - condition: state
+          entity_id: device_tracker.m4b30x
+          state: 'home'
+        - condition: state
+          entity_id: switch.hyperion_enable
+          state: 'on'
     - service: logbook.log
       data:
         name: 'Hall light'
         message: 'On'
-    - service: script.living_auto_light
-    - service: script.bed_auto_light
+    - service: timer.start
+      entity_id: timer.hall_light_timer
+      data_template:
+        duration: '{{states.input_number.hall_light_time.state|int}}'

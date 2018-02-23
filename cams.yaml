@@ -1,10 +1,10 @@
 - platform: generic
   name: 'meteo sat'
-  still_image_url: http://www.meteo.bg/sites/storm.cfd.meteo.bg.meteo/files/meteoImages/IR.gif
+  still_image_url: http://info.meteo.bg/i/meteo/IR.gif
 
 - platform: generic
   name: '24sat image'
-  still_image_url: https://api.sat24.com/crop?type=visual5hdcomplete&lat=42.657&lon=23.3381&width=300&height=300&zoom=0.50&continent=eu
+  still_image_url: https://api.sat24.com/crop?type=visual5hdcomplete&lat={{states.device_tracker.m4b30x.attributes.latitude}}&lon={{states.device_tracker.m4b30x.attributes.longitude}}&width=300&height=300&zoom=0.50&continent=eu
 
 #- platform: generic
   #name: '24sat animated'
@@ -12,11 +12,11 @@
 
 - platform: generic
   name: 'rain map'
-  still_image_url: http://weather.bg/images/gif/0/Precip.gif
+  still_image_url: http://info.meteo.bg/i/meteo/gif/0/Precip.gif
 
 - platform: generic
   name: 'temp map'
-  still_image_url: http://weather.bg/images/gif/0/Temp.gif
+  still_image_url: http://info.meteo.bg/i/meteo/gif/0/Temp.gif
 
 - platform: generic
   name: 'weathermod'

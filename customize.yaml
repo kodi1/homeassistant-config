@@ -15,6 +15,9 @@ sensor.mem_free:
   icon: mdi:memory
 sensor.ping_isp:
   icon: mdi:earth
+sensor.homeassistant_v2db:
+  friendly_name: 'hass db'
+  icon: mdi:database
 sensor.pws_alerts:
   friendly_name: alerts
 binary_sensor.bravia:

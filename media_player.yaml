@@ -10,5 +10,10 @@
 
 - platform: cast
   host: !secret cast_bedroom
+
 - platform: cast
   host: !secret cast_sound_bar
+
+- platform: songpal_m
+  name: soundbar
+  endpoint: !secret songpal_soundbar

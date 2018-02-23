@@ -1,10 +1,6 @@
 #!/bin/bash
 source $HOME/.homeassistant/set_env
 
-SSHPASS=$PASS sshpass -e \
-ssh $USERNAME@$HOST \
-"echo $1  > /sys/devices/virtual/amhdmitx/amhdmitx0/cec"
-
 # echo "e" > /sys/devices/virtual/amhdmitx/amhdmitx0/cec - on
 # echo "d" > /sys/devices/virtual/amhdmitx/amhdmitx0/cec - off
 # echo "14" > /sys/devices/virtual/amhdmitx/amhdmitx0/cec - select
@@ -15,3 +11,25 @@ ssh $USERNAME@$HOST \
 # echo "1b 5 41" > /sys/devices/virtual/amhdmitx/amhdmitx0/cec up
 # echo "1b 5 42" > /sys/devices/virtual/amhdmitx/amhdmitx0/cec
 # echo "1b 5 43" > /sys/devices/virtual/amhdmitx/amhdmitx0/cec
+
+# SSHPASS=$PASS sshpass -e \
+# ssh $USERNAME@$HOST \
+# "echo $1  > /sys/devices/virtual/amhdmitx/amhdmitx0/cec"
+
+# audio mute    15:44:65
+# audio unmute  15:44:66
+# audio volup   15:44:41
+# audio voldown 15:44:42
+# audio off     15:44:6c
+# audio on      15:44:6d
+# tv mute       10:44:65
+# tv unmute     10:44:66
+# tv volup      10:44:41
+# tv voldown    10:44:42
+# tv off        10:36
+# tv on         10:04
+# tv src        15:70:10:00
+
+SSHPASS=$PASS sshpass -e \
+ssh $USERNAME@$HOST \
+"echo $1 | cec-client -s -o hass -d 1"

@@ -102,6 +102,7 @@
     - service: automation.trigger
       entity_id: automation.send_settings_hyperion
     - service: script.ports_open
+    - service: script.start_up_delay_av_off
 
 - alias: transmission_notify
   trigger:
@@ -165,6 +166,8 @@
     - platform: state
       entity_id: binary_sensor.kodi_screen_saver
       to: 'on'
+      for:
+        seconds: 60
   condition:
     condition: and
     conditions:
@@ -393,6 +396,7 @@
           {%- else -%}
             {{states.binary_sensor.x1.attributes.friendly_name }} is down
           {%- endif -%}
+
 - alias: change_current_theme
   trigger:
     - platform: state
@@ -650,13 +654,44 @@
   action:
     - service: script.sound_bar_off
 
+- alias: auto_heating_visible
+  trigger:
+    - platform: state
+      entity_id: input_boolean.control_heating
+    - platform: homeassistant
+      event: start
+  action:
+    - service_template: >
+        {%- if states.input_boolean.control_heating.state == 'on' -%}
+          script.control_heating_visible_on
+        {%- else -%}
+          script.control_heating_visible_off
+        {%- endif -%}
+
+- alias: auto_master_heating
+  trigger:
+    - platform: state
+      entity_id: input_boolean.control_heating
+  action:
+    - service_template: >
+        {%- if states.input_boolean.control_heating.state == 'on' -%}
+          script.control_heating_m_on
+        {%- else -%}
+          script.control_heating_m_off
+        {%- endif -%}
+
 - alias: living_heating_auto
   trigger:
     - platform: state
       entity_id: binary_sensor.home_heating
   condition:
-    - condition: template
-      value_template: '{{trigger.from_state.state != trigger.to_state.state}}'
+    condition: and
+    conditions:
+      - condition: template
+        value_template: '{{trigger.from_state.state != trigger.to_state.state}}'
+      - condition: state
+        entity_id: input_boolean.control_heating
+        state: 'on'
   action:
     - service_template: >
         input_boolean.turn_{{trigger.to_state.state}}
@@ -758,6 +793,13 @@
   action:
     - service: timer.start
       entity_id: timer.bed_motion_timer
+
+- alias: bed_light_trigger
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.bed_motion
+      to: 'on'
+  action:
     - service: script.bed_auto_light
 
 - alias: living_motion_trigger
@@ -768,6 +810,13 @@
   action:
     - service: timer.start
       entity_id: timer.living_motion_timer
+
+- alias: living_light_trigger
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.living_motion
+      to: 'on'
+  action:
     - service: script.living_auto_light
 
 - alias: hall_motion_trigger
@@ -775,10 +824,65 @@
     - platform: mqtt
       topic: rf434/recv/ev1527
       payload: '{"unitcode":882544,"state":"closed"}'
+      #.piolibdeps/ESPiLight_ID996/src/pilight/libs/pilight/protocols/433.92/ev1527.c
+      #MIN_PULSE_LENGTH  251
+      #MAX_PULSE_LENGTH        355
+      #AVG_PULSE_LENGTH        300
   action:
     - service: timer.start
       entity_id: timer.hall_motion_timer
+
+- alias: hall_light_trigger
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.hall_motion
+      to: 'on'
+  action:
     - service: script.hall_auto_light
+
+- alias: hall_light_on
+  trigger:
+    - platform: state
+      entity_id: timer.hall_light_timer
+      to: 'active'
+      for:
+        seconds: 1
+  action:
+    - service: light.turn_on
+      entity_id: light.hall_light
+
+- alias: hall_light_off
+  trigger:
+    - platform: event
+      event_type: timer.finished
+      event_data:
+        entity_id: timer.hall_light_timer
+  action:
+    - delay: '00:00:01'
+    - service: light.turn_off
+      entity_id: light.hall_light
+
+- alias: living_light_on
+  trigger:
+    - platform: state
+      entity_id: timer.living_light_timer
+      to: 'active'
+      for:
+        seconds: 1
+  action:
+    - service: light.turn_on
+      entity_id: light.living_light
+
+- alias: living_light_off
+  trigger:
+    - platform: event
+      event_type: timer.finished
+      event_data:
+        entity_id: timer.living_light_timer
+  action:
+    - delay: '00:00:01'
+    - service: light.turn_off
+      entity_id: light.living_light
 
 - alias: home_motion_detect
   trigger:

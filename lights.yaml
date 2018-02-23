@@ -39,3 +39,15 @@
   availability_topic: "/bedroom_led/status"
   payload_available: "Connected"
   payload_not_available: "Connection Lost"
+
+- platform: mqtt
+  name: "living light"
+  command_topic: "rf434/send/arctech_switch"
+  payload_on: '{"id":10,"unit":10,"on":1}'
+  payload_off: '{"id":10,"unit":10,"off":1}'
+
+- platform: mqtt
+  name: "hall light"
+  command_topic: "rf434/send/arctech_switch"
+  payload_on: '{"id":20,"unit":10,"on":1}'
+  payload_off: '{"id":20,"unit":10,"off":1}'

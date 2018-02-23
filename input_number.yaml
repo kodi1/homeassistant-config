@@ -206,7 +206,7 @@ cec_cmd_delay:
   name: 'cec delay'
   unit_of_measurement: 'sec'
   min: 1
-  max: 20
+  max: 10
   step: 1
   icon: mdi:sync
 
@@ -229,7 +229,31 @@ temp_away:
 post_android_alarm:
   name: 'delay'
   unit_of_measurement: 'min'
-  min: 5
-  max: 15
+  min: 1
+  max: 9
   step: 1
   icon: mdi:alarm-multiple
+
+bed_light_time:
+  name: 'bed'
+  unit_of_measurement: 'sec'
+  min: 5
+  max: 300
+  step: 5
+  icon: mdi:camera-timer
+
+hall_light_time:
+  name: 'hall'
+  unit_of_measurement: 'sec'
+  min: 5
+  max: 300
+  step: 5
+  icon: mdi:camera-timer
+
+living_light_time:
+  name: 'living'
+  unit_of_measurement: 'sec'
+  min: 5
+  max: 300
+  step: 5
+  icon: mdi:camera-timer

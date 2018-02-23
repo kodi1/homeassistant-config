@@ -75,7 +75,7 @@
       unit_of_measurement: '%'
       icon_template: 'mdi:percent'
       value_template: >-
-        {%- if states('climate.living') != 'unavailable' -%}
+        {%- if states('climate.living') != 'unknown' -%}
           {{ states.climate.living.attributes.valve|int }}
         {% else -%}
           {{ states.sensor.valve_living.state }}
@@ -84,7 +84,7 @@
       unit_of_measurement: '°C'
       icon_template: 'mdi:temperature-celsius'
       value_template: >-
-        {%- if states('climate.living') != 'unavailable' -%}
+        {%- if states('climate.living') != 'unknown' -%}
           {{ states.climate.living.attributes.temperature|float }}
         {% else -%}
           {{ states.sensor.temperature_target_living.state }}
@@ -142,6 +142,11 @@
   state_topic: "/bedroom_led/env/temperature"
   unit_of_measurement: "°C"
   expire_after: 660
+
+- platform: filesize
+  file_paths:
+    - /home/hass/.homeassistant/home-assistant_v2.db
+  scan_interval: 600
 
 #- platform: snmp
   #name: 'router load 1m'

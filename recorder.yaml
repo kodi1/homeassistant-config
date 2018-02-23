@@ -22,4 +22,5 @@ exclude:
     - automation.living_motion_trigger
     - automation.hall_motion_trigger
     - automation.bed_motion_trigger
+    - media_player.soundbar
     - input_boolean.home_motion

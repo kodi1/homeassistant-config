@@ -9,3 +9,8 @@ home_heating:
 home_motion:
   name: home_motion
   initial: off
+
+
+control_heating:
+  name: auto heating
+  icon: mdi:radiator

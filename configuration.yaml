@@ -11,6 +11,7 @@ homeassistant:
   # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
   time_zone: Europe/Sofia
   customize: !include customize.yaml
+  whitelist_external_dirs: !secret white_dirs
 
 zone: !include zones.yaml
 automation: !include automations.yaml
@@ -71,7 +72,7 @@ map:
 frontend:
   themes: !include themes.yaml
   extra_html_url: !include extra_url.yaml
-  javascript_version: latest
+  javascript_version: auto
 # Enables configuration UI
 config:
 
@@ -108,6 +109,9 @@ logbook: !include logbook.yaml
 
 system_log:
   max_entries: 20
+
+logger:
+  default: warn
 
 # Track the sun
 sun:

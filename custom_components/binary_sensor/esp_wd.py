@@ -24,11 +24,15 @@ def fetch_data(f):
   return None
 
 _data_re = [
-    {'re': r'uptime:<td>(.*?)<tr>', 'name': 'uptime'},
+    {'re': r'uptime:?<td>(.*?)<tr>', 'name': 'uptime'},
     {'re': r'load.*?(\d+)', 'name': 'load'},
     {'re': r'rssi.*?(\d+)', 'name': 'rssi'},
     {'re': r'Boot\ cause:<td>(.*?)<tr>', 'name': 'boot_cause'},
     {'re': r'Boot\ count.*?(\d+)', 'name': 'boot_count'},
+    {'re': r'boot[\s\S]*?(\w+\s\w+)', 'name': 'boot_cause'},
+    {'re': r'boot[\s\S]*?(\d+)', 'name': 'boot_count'},
+    {'re': r'client\sip.*?(\d+\.\d+\.\d+\.\d+)', 'name': 'ip'},
+    {'re': r'free\smem.*?(\d+)', 'name': 'mem'},
   ]
 
 if __name__ == '__main__':

@@ -6,3 +6,15 @@ climate:
     - sensor.valve_living
   hours_to_show: 24
   refresh: 600
+
+motion:
+  name: motion
+  entities:
+    - binary_sensor.living_motion
+    - light.living_light
+    - binary_sensor.hall_motion
+    - light.hall_light
+    - binary_sensor.bed_motion
+    - light.bed_led
+  hours_to_show: 1
+  refresh: 60

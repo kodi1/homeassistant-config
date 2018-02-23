@@ -2,22 +2,18 @@ bedm_time_start:
   name: music start
   has_date: false
   has_time: true
-  #initial: '23:30'
 
 bedm_time_end:
   name: music end
   has_date: false
   has_time: true
-  #initial: '4:15'
 
 bedl_time_start:
   name: lihgt start
   has_date: false
   has_time: true
-  #initial: '21:30'
 
 bedl_time_end:
   name: lihgt end
   has_date: false
   has_time: true
-  #initial: '3:45'

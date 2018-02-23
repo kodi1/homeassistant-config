@@ -40,6 +40,7 @@ system:
   - sensor.disk_free
   - sensor.ping_isp
   - sensor.tomato_disk_free
+  - sensor.homeassistant_v2db
 media:
   control: hidden
   view: false
@@ -154,6 +155,9 @@ autos:
   - automation.open_ports
   - automation.home_away
   - automation.home_near
+  - automation.bed_motion_trigger
+  - automation.hall_motion_trigger
+  - automation.living_motion_trigger
 
 scene_settings_video:
   view: false
@@ -276,9 +280,14 @@ heating_control:
   - input_boolean.home_heating
   - input_number.temp_home
   - input_number.temp_away
-  - automation.living_heating
   - automation.living_heating_auto
   - climate.living
+
+graph_climate:
+  view: false
+  control: hidden
+  entities:
+  - history_graph.climate
 
 bed_motion:
   view: false
@@ -286,9 +295,11 @@ bed_motion:
   name: 'bed motion'
   entities:
   - binary_sensor.bed_motion
-  - timer.bed_motion_timer
-  - automation.bed_motion_trigger
+  - automation.bed_light_trigger
   - script.bed_auto_light
+  - input_number.bed_light_time
+  - timer.bed_light_timer
+  - light.bed_led
 
 hall_motion:
   view: false
@@ -296,9 +307,13 @@ hall_motion:
   name: 'hall motion'
   entities:
   - binary_sensor.hall_motion
-  - timer.hall_motion_timer
-  - automation.hall_motion_trigger
+  - automation.hall_light_trigger
+  - automation.hall_light_off
+  - automation.hall_light_on
   - script.hall_auto_light
+  - input_number.hall_light_time
+  - timer.hall_light_timer
+  - light.hall_light
 
 living_motion:
   view: false
@@ -306,9 +321,13 @@ living_motion:
   name: 'living motion'
   entities:
   - binary_sensor.living_motion
-  - timer.living_motion_timer
-  - automation.living_motion_trigger
+  - automation.living_light_trigger
+  - automation.living_light_off
+  - automation.living_light_on
   - script.living_auto_light
+  - input_number.living_light_time
+  - timer.living_light_timer
+  - light.living_light
 
 default_view:
   view: true
@@ -341,17 +360,14 @@ status:
   - group.batts
   - group.other
   - group.system
-  - history_graph.climate
+  - group.graph_climate
 settings:
   view: true
   icon: mdi:developer-board
   entities:
-  - group.hyperion_effect
-  - group.hyperion_color
   - group.warninglevel
   - group.media_control
   - input_select.current_theme
-  - group.hyperion_settings
   - group.just_home
   - group.heating_control
 weather:
@@ -373,16 +389,23 @@ scenes_settings:
   view: true
   icon: mdi:led-strip
   entities:
+  - group.hyperion_effect
+  - group.hyperion_color
+  - group.hyperion_settings
   - group.scene_settings_video
   - group.scene_settings_effect
   - group.scene_settings_light
-test:
+light:
   view: true
-  icon: mdi:nuke
+  icon: mdi:ceiling-light
   entities:
   - group.bed_motion
   - group.living_motion
   - group.hall_motion
+test:
+  view: true
+  icon: mdi:nuke
+  entities:
   - binary_sensor.x1
   - switch.mqtt_1
   - switch.sonoff_1
@@ -390,4 +413,7 @@ test:
   - switch.av_switch
   - switch.bed_switch
   - media_player.kodi
+  - media_player.soundbar
   - proximity.home
+  - history_graph.motion
+  - input_boolean.control_heating
