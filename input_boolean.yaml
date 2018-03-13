@@ -10,6 +10,9 @@ home_motion:
   name: home_motion
   initial: off
 
+just_home_pause:
+  name: juste_home
+  initial: off
 
 control_heating:
   name: auto heating

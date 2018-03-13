@@ -270,6 +270,10 @@ just_home:
   entities:
   - timer.just_home
   - input_number.just_home_timer
+  - binary_sensor.juste_home_lights
+  - automation.just_home_auto
+  - script.just_home_light_on
+  - script.just_home_light_off
 
 heating_control:
   view: false
@@ -368,7 +372,6 @@ settings:
   - group.warninglevel
   - group.media_control
   - input_select.current_theme
-  - group.just_home
   - group.heating_control
 weather:
   view: true
@@ -402,6 +405,7 @@ light:
   - group.bed_motion
   - group.living_motion
   - group.hall_motion
+  - group.just_home
 test:
   view: true
   icon: mdi:nuke

@@ -845,6 +845,7 @@
     - platform: state
       entity_id: timer.hall_light_timer
       to: 'active'
+      from: 'idle'
       for:
         seconds: 1
   action:
@@ -867,6 +868,7 @@
     - platform: state
       entity_id: timer.living_light_timer
       to: 'active'
+      from: 'idle'
       for:
         seconds: 1
   action:
@@ -901,6 +903,20 @@
   action:
     - service: input_boolean.turn_on
       entity_id: input_boolean.home_motion
+
+- alias: just_home_auto
+  trigger:
+    - platform: state
+      entity_id: timer.just_home
+  action:
+    - service_template: >
+        {%- if (trigger.to_state.state ==  'active') -%}
+          script.just_home_light_on
+        {%- endif -%}
+
+        {%- if (trigger.to_state.state ==  'idle') -%}
+          script.just_home_light_off
+        {%- endif -%}
 
 #- alias: tetst_tab
   #trigger:

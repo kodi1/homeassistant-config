@@ -622,6 +622,9 @@ bed_clear_timer:
         - condition: state
           entity_id: timer.bed_light_timer
           state: 'active'
+        - condition: state
+          entity_id: binary_sensor.juste_home_lights
+          state: 'off'
         - condition: template
           value_template: >-
             {%- if (states.automation.bed_turn_on.attributes.last_triggered != None) -%}
@@ -654,8 +657,8 @@ living_clear_timer:
           entity_id: timer.living_light_timer
           state: 'active'
         - condition: state
-          entity_id: timer.just_home
-          state: 'idle'
+          entity_id: binary_sensor.juste_home_lights
+          state: 'off'
         #- condition: template
           #value_template: >-
             #{%- if (states.automation.living_light_on.attributes.last_triggered != None) -%}
@@ -677,8 +680,8 @@ hall_clear_timer:
           entity_id: timer.hall_light_timer
           state: 'active'
         - condition: state
-          entity_id: timer.just_home
-          state: 'idle'
+          entity_id: binary_sensor.juste_home_lights
+          state: 'off'
         #- condition: template
           #value_template: >-
             #{%- if (states.automation.hall_light_on.attributes.last_triggered != None) -%}
@@ -704,6 +707,9 @@ bed_auto_light:
         - condition: state
           entity_id: switch.hyperion_enable
           state: 'on'
+        - condition: state
+          entity_id: binary_sensor.juste_home_lights
+          state: 'off'
         - condition: template
           value_template: >-
             {%- if (states.automation.bed_auto_off.attributes.last_triggered != None) -%}
@@ -744,6 +750,9 @@ living_auto_light:
         - condition: state
           entity_id: binary_sensor.sound_bar_active
           state: 'off'
+        - condition: state
+          entity_id: binary_sensor.juste_home_lights
+          state: 'off'
         - condition: template
           value_template: >-
             {%- if (states.script.living_auto_light.attributes.last_triggered != None) -%}
@@ -767,14 +776,19 @@ hall_auto_light:
   sequence:
     - service: script.living_clear_timer
     - service: script.bed_clear_timer
-    - condition: or
+    - condition: and
       conditions:
-        - condition: state
-          entity_id: device_tracker.m4b30x
-          state: 'home'
-        - condition: state
-          entity_id: switch.hyperion_enable
-          state: 'on'
+      - condition: state
+        entity_id: binary_sensor.juste_home_lights
+        state: 'off'
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: device_tracker.m4b30x
+            state: 'home'
+          - condition: state
+            entity_id: switch.hyperion_enable
+            state: 'on'
     - service: logbook.log
       data:
         name: 'Hall light'
@@ -783,3 +797,50 @@ hall_auto_light:
       entity_id: timer.hall_light_timer
       data_template:
         duration: '{{states.input_number.hall_light_time.state|int}}'
+
+just_home_light_on:
+  sequence:
+    - condition: or
+      conditions:
+        - condition: sun
+          after: sunset
+          after_offset: "00:10:00"
+        - condition: sun
+          before: sunrise
+          before_offset: "-00:10:00"
+    - service: timer.start
+      entity_id: timer.living_light_timer
+      data_template:
+        duration: '{{states.input_number.living_light_time.state|int}}'
+    - service: timer.start
+      entity_id: timer.hall_light_timer
+      data_template:
+        duration: '{{states.input_number.hall_light_time.state|int}}'
+    - delay: '00:00:03'
+    - service: timer.pause
+      entity_id:
+        - timer.living_light_timer
+        - timer.hall_light_timer
+    - service: input_boolean.turn_on
+      entity_id: input_boolean.just_home_pause
+    - service: logbook.log
+      data:
+        name: 'Just home light'
+        message: 'On'
+
+just_home_light_off:
+  sequence:
+    - condition: state
+      entity_id: binary_sensor.juste_home_lights
+      state: 'on'
+    - service: timer.start
+      entity_id:
+        - timer.living_light_timer
+        - timer.hall_light_timer
+    - delay: '00:00:03'
+    - service: input_boolean.turn_off
+      entity_id: input_boolean.just_home_pause
+    - service: logbook.log
+      data:
+        name: 'Just home light'
+        message: 'Off'

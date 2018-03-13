@@ -134,6 +134,9 @@
     home_motion:
       device_class: safety
       value_template: '{{ is_state("input_boolean.home_motion", "on") }}'
+    juste_home_lights:
+      device_class: light
+      value_template: '{{ is_state("input_boolean.just_home_pause", "on") }}'
 
 - platform: esp_wd
   name: x1
