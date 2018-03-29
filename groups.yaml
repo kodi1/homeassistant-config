@@ -242,9 +242,6 @@ media_control:
   entities:
   - script.tv_hdmi1
   - script.tv_hdmi1_audio
-  - script.sound_bar_up
-  - script.sound_bar_down
-  - script.sound_bar_mute
   - script.sound_bar_on
   - script.sound_bar_off
   - switch.tv_cec

@@ -72,18 +72,6 @@ tv_hdmi1_audio:
   sequence:
     - service: shell_command.tv_hdmi1_audio
 
-sound_bar_up:
-  sequence:
-    - service: shell_command.sound_bar_up
-
-sound_bar_down:
-  sequence:
-    - service: shell_command.sound_bar_down
-
-sound_bar_mute:
-  sequence:
-    - service: shell_command.sound_bar_mute
-
 sound_bar_off:
   sequence:
     - service: shell_command.sound_bar_off
