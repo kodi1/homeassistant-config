@@ -11,7 +11,7 @@ low_battery:
   #skip_first: True
   notifiers:
     - kodi
-    - mailbg
+    - gmail
 
 home_motion:
   name: 'Unexpected move'
@@ -26,4 +26,4 @@ home_motion:
   skip_first: True
   can_acknowledge: True
   notifiers:
-    - mailbg
+    - gmail

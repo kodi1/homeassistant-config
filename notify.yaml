@@ -6,14 +6,13 @@
   password: !secret kodi_pass
 
 - platform: smtp
-  name: mailbg
-  server: smtp.mail.bg
-  port: 465
-  timeout: 10
-  sender: !secret smtp_user
-  encryption: tls
-  username: !secret smtp_user
-  password: !secret smtp_pass
+  name: gmail
+  server: smtp.gmail.com
+  port: 587
+  timeout: 15
+  sender: hass@gmail.com
+  encryption: starttls
+  username: !secret g_user
+  password: !secret g_pass
   recipient:
     - !secret smtp_recp
-  sender_name: Hass

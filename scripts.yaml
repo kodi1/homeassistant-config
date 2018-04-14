@@ -25,7 +25,7 @@ mail_notify:
     - condition: template
       value_template: >-
         {{states.device_tracker.m4b30x.state != 'home'}}
-    - service: notify.mailbg
+    - service: notify.gmail
       data_template:
         message: '{{ m }}'
         title: 'hass'
@@ -534,7 +534,7 @@ home_near_turnon:
 
 home_near:
   sequence:
-    - service: notify.mailbg
+    - service: notify.gmail
       data:
         message: home near trigger
         title: 'hass'
@@ -570,7 +570,7 @@ home_away_turnoff:
 
 home_away:
   sequence:
-    - service: notify.mailbg
+    - service: notify.gmail
       data:
         message: home away trigger
         title: 'hass'
