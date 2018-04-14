@@ -407,6 +407,7 @@ test:
   view: true
   icon: mdi:nuke
   entities:
+  - device_tracker.google_maps_107209225675467950565
   - binary_sensor.x1
   - switch.mqtt_1
   - switch.sonoff_1

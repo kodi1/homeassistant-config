@@ -9,4 +9,5 @@ known_devices.yaml
 set_env
 .HA_VERSION
 __pycache__
+.google_maps_location_sharing.cookies
 entity_registry.yaml

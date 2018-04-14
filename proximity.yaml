@@ -3,5 +3,5 @@ home:
     - work
   devices:
     - device_tracker.m4b30x
-  tolerance: 3000
+  tolerance: 1000
   unit_of_measurement: km

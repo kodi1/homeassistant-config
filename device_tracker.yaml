@@ -11,3 +11,8 @@
     hide_if_away: false
 
 - platform: gpslogger
+
+- platform: google_maps
+  username: !secret g_user
+  password: !secret g_pass
+  interval_seconds: 60
