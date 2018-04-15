@@ -16,6 +16,8 @@
     - humidity
     - pressure
     - precip_intensity
+    - summary
+    - daily_summary
 
 - platform: wunderground
   api_key: !secret wnderground_key
@@ -27,6 +29,9 @@
     #- relative_humidity
     #- wind_kph
     - weather
+    - weather_1h
+    - weather_1d_metric
+    - weather_1n_metric
     #- weather_3h
     #- weather_6h
     #- weather_12h

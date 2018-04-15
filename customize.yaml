@@ -3,6 +3,16 @@ sensor.pressure_history_mean:
   friendly_name: pressure stats
 sensor.pws_weather:
   friendly_name: weather
+sensor.pws_weather_1h:
+  friendly_name: hour
+sensor.pws_weather_1d_metric:
+  friendly_name: day
+sensor.pws_weather_1n_metric:
+  friendly_name: night
+sensor.dark_sky_summary:
+  friendly_name: weather
+sensor.dark_sky_daily_summary:
+  friendly_name: week
 sensor.cpu_usage:
   icon: mdi:chip
 sensor.cpu_temp:

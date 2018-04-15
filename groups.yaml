@@ -340,7 +340,7 @@ default_view:
   - sun.sun
   - sensor.change_pressure
   - sensor.pws_alerts
-  - sensor.pws_weather
+  - sensor.dark_sky_summary
   - group.out
   - group.in
   - group.weather_dark_sky
@@ -374,6 +374,11 @@ weather:
   view: true
   icon: mdi:image-filter-hdr
   entities:
+  - sensor.pws_weather
+  - sensor.pws_weather_1h
+  - sensor.pws_weather_1d_metric
+  - sensor.pws_weather_1n_metric
+  - sensor.dark_sky_daily_summary
   - camera.24sat_image
   - camera.meteo_sat
   - camera.rain_map
