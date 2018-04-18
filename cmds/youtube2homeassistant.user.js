@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         youtube to homeassistant
 // @namespace    https://github.com/kodi1/homeassistant-config/raw/master/cmds/youtube2homeassistant.user.js
-// @version      0.01
+// @version      0.02
 // @description  ha video
 // @author       kodi1
 // @compatible chrome
@@ -163,7 +163,7 @@ function start() {
     };
 
     createButton = function(id, cb_func) {
-        var obj = document.querySelector('#top-row>#subscribe-button');
+        var obj = document.querySelector('#top-level-buttons');
         if (obj !== null) {
             // check if the button has already been created
             var btnRow = document.getElementById(id);
@@ -183,7 +183,7 @@ function start() {
                 bvd2_btn.appendChild(getSpan(id, ""));
                 bvd2_btn.onclick = cb_func;
 
-                obj.parentNode.insertBefore(bestvd2, obj);
+                obj.parentNode.appendChild(bestvd2, obj);
                 bestvd2.appendChild(bvd2_btn);
             }
         }
