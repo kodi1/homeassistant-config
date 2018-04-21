@@ -94,6 +94,15 @@
         {% else -%}
           {{ states.sensor.temperature_target_living.state }}
         {%- endif -%}
+    tomato_disk_free:
+      unit_of_measurement: 'MB'
+      icon_template: 'mdi:gauge'
+      value_template: >-
+        {%- if states('sensor.tomato_disk_free_rand') != 'unknown' -%}
+          {{states.sensor.tomato_disk_free_rand.state|int}}
+        {% else -%}
+          {{states.sensor.tomato_disk_free_rand.state}}
+        {%- endif -%}
 
 - platform: command_line
   name: CPU Temp
@@ -126,7 +135,7 @@
   scan_interval: 300
 
 - platform: command_line
-  name: tomato disk free
+  name: tomato disk free rand
   command: "/home/hass/.homeassistant/cmds/tomato_disk_free"
   unit_of_measurement: "MB"
   scan_interval: 600

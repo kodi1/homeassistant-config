@@ -918,6 +918,20 @@
           script.just_home_light_off
         {%- endif -%}
 
+- alias: download_ready
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.download_active
+      to: 'off'
+      from: 'on'
+  condition:
+    - condition: time
+      after: '09:45:00'
+  action:
+    - service: script.all_notify
+      data:
+        msg: Download ready
+
 #- alias: tetst_tab
   #trigger:
     #- platform: state

@@ -161,6 +161,12 @@
   value_template: '{{ value_json.monitors[0].status|int == 2 }}'
   scan_interval: 300
 
+- platform: trend
+  sensors:
+    download_active:
+      entity_id: sensor.tomato_disk_free_rand
+      min_gradient: -0.05
+
 #- platform: bayesian
 #  name: bedlight
 #  prior: 0.2

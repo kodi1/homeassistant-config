@@ -25,3 +25,4 @@ exclude:
     - media_player.soundbar
     - input_boolean.just_home_pause
     - input_boolean.home_motion
+    - sensor.tomato_disk_free_rand

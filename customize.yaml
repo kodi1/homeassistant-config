@@ -30,6 +30,8 @@ sensor.homeassistant_v2db:
   icon: mdi:database
 sensor.pws_alerts:
   friendly_name: alerts
+sensor.tomato_disk_free_rand:
+  hidden: true
 binary_sensor.bravia:
   icon: mdi:television
 binary_sensor.bedlight:
@@ -44,6 +46,8 @@ binary_sensor.batts_low:
   icon: mdi:battery-alert
 binary_sensor.open_living:
   icon: mdi:window-open
+binary_sensor.download_active:
+  icon: mdi:download
 group.out:
   order: 1
 group.in:
