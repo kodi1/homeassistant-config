@@ -846,8 +846,8 @@
       entity_id: timer.hall_light_timer
       to: 'active'
       from: 'idle'
-      for:
-        seconds: 1
+      #for:
+        #seconds: 1
   action:
     - service: light.turn_on
       entity_id: light.hall_light
@@ -859,7 +859,7 @@
       event_data:
         entity_id: timer.hall_light_timer
   action:
-    - delay: '00:00:01'
+    #- delay: '00:00:01'
     - service: light.turn_off
       entity_id: light.hall_light
 
@@ -869,8 +869,8 @@
       entity_id: timer.living_light_timer
       to: 'active'
       from: 'idle'
-      for:
-        seconds: 1
+      #for:
+        #seconds: 1
   action:
     - service: light.turn_on
       entity_id: light.living_light
@@ -882,7 +882,7 @@
       event_data:
         entity_id: timer.living_light_timer
   action:
-    - delay: '00:00:01'
+    #- delay: '00:00:01'
     - service: light.turn_off
       entity_id: light.living_light
 
