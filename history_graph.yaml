@@ -1,12 +1,3 @@
-climate:
-  name: Climate
-  entities:
-    - sensor.bme280_171f93_temperature
-    - sensor.temperature_living
-    - sensor.valve_living
-  hours_to_show: 24
-  refresh: 600
-
 motion:
   name: motion
   entities:

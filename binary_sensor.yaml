@@ -103,25 +103,6 @@
         {%- else -%}
           False
         {%- endif -%}
-    home_heating:
-      device_class: heat
-      delay_on:
-        seconds: 300
-      delay_off:
-        seconds: 300
-      value_template: >-
-        {{
-          is_state("device_tracker.n0ll", "home") or
-          is_state("binary_sensor.sound_bar_active", "on")
-        }}
-    open_living:
-      device_class: opening
-      value_template: >-
-        {%- if states('climate.living') != 'unknown' -%}
-          {{ states.climate.living.attributes.window_open }}
-        {% else -%}
-          {{ is_state('binary_sensor.open_living', 'on') }}
-        {%- endif -%}
     bed_motion:
       device_class: motion
       value_template: '{{ is_state("timer.bed_motion_timer", "active") }}'

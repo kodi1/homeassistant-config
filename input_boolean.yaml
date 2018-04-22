@@ -2,10 +2,6 @@ enable_sleep:
   name: auto seep
   icon: mdi:sleep
 
-home_heating:
-  name: comfort
-  icon: mdi:radiator
-
 home_motion:
   name: home_motion
   initial: off
@@ -13,7 +9,3 @@ home_motion:
 just_home_pause:
   name: juste_home
   initial: off
-
-control_heating:
-  name: auto heating
-  icon: mdi:radiator

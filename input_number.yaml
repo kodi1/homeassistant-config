@@ -210,22 +210,6 @@ cec_cmd_delay:
   step: 1
   icon: mdi:sync
 
-temp_home:
-  name: 'comfort'
-  unit_of_measurement: '°C'
-  min: 15
-  max: 25
-  step: 0.5
-  icon: mdi:home
-
-temp_away:
-  name: 'eco'
-  unit_of_measurement: '°C'
-  min: 15
-  max: 25
-  step: 0.5
-  icon: mdi:home-outline
-
 post_android_alarm:
   name: 'delay'
   unit_of_measurement: 'min'

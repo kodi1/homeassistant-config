@@ -14,6 +14,7 @@ homeassistant:
   whitelist_external_dirs: !secret white_dirs
   packages:
     lights_follow: !include lights_follow.yaml
+    heating: !include heating.yaml
 
 zone: !include zones.yaml
 #automation: !include automations.yaml
@@ -36,7 +37,6 @@ binary_sensor: !include binary_sensor.yaml
 alert: !include alerts.yaml
 timer: !include timers.yaml
 input_datetime: !include input_datetime.yaml
-climate: !include climate.yaml
 proximity: !include proximity.yaml
 media_extractor:
 mqtt:
