@@ -12,9 +12,11 @@ homeassistant:
   time_zone: Europe/Sofia
   customize: !include customize.yaml
   whitelist_external_dirs: !secret white_dirs
+  packages:
+    lights_follow: !include lights_follow.yaml
 
 zone: !include zones.yaml
-automation: !include automations.yaml
+#automation: !include automations.yaml
 automation old: !include automations_old.yaml
 device_tracker: !include device_tracker.yaml
 input_boolean: !include input_boolean.yaml

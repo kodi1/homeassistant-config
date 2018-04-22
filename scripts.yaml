@@ -613,6 +613,9 @@ bed_clear_timer:
         - condition: state
           entity_id: binary_sensor.juste_home_lights
           state: 'off'
+        - condition: state
+          entity_id: input_boolean.light_auto_follow
+          state: 'on'
         - condition: template
           value_template: >-
             {%- if (states.automation.bed_turn_on.attributes.last_triggered != None) -%}
@@ -647,6 +650,9 @@ living_clear_timer:
         - condition: state
           entity_id: binary_sensor.juste_home_lights
           state: 'off'
+        - condition: state
+          entity_id: input_boolean.light_auto_follow
+          state: 'on'
         #- condition: template
           #value_template: >-
             #{%- if (states.automation.living_light_on.attributes.last_triggered != None) -%}
@@ -670,6 +676,9 @@ hall_clear_timer:
         - condition: state
           entity_id: binary_sensor.juste_home_lights
           state: 'off'
+        - condition: state
+          entity_id: input_boolean.light_auto_follow
+          state: 'on'
         #- condition: template
           #value_template: >-
             #{%- if (states.automation.hall_light_on.attributes.last_triggered != None) -%}
@@ -827,7 +836,9 @@ just_home_light_off:
         - timer.hall_light_timer
     - delay: '00:00:03'
     - service: input_boolean.turn_off
-      entity_id: input_boolean.just_home_pause
+      entity_id:
+        - input_boolean.just_home_pause
+        - input_boolean.light_auto_follow
     - service: logbook.log
       data:
         name: 'Just home light'

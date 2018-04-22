@@ -16,6 +16,7 @@ exclude:
     - timer.living_motion_timer
     - timer.hall_motion_timer
     - timer.bed_motion_timer
+    - timer.light_follow
     #- binary_sensor.living_motion
     #- binary_sensor.hall_motion
     #- binary_sensor.bed_motion
@@ -24,5 +25,6 @@ exclude:
     - automation.bed_motion_trigger
     - media_player.soundbar
     - input_boolean.just_home_pause
+    - input_boolean.light_auto_follow
     - input_boolean.home_motion
     - sensor.tomato_disk_free_rand

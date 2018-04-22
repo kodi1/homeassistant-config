@@ -409,6 +409,7 @@ light:
   - group.living_motion
   - group.hall_motion
   - group.just_home
+  - group.auto_follow
 test:
   view: true
   icon: mdi:nuke
