@@ -1,0 +1,204 @@
+group:
+  warninglevel:
+    name: warn levels
+    control: hidden
+    view: false
+    entities:
+      - input_number.slider_batt_level_p
+      - input_number.slider_batt_level_v
+      - input_number.pressure_speed
+
+  other:
+    control: hidden
+    view: false
+    entities:
+      - sensor.pressure_history_mean
+      - binary_sensor.bravia
+      - binary_sensor.sound_bar_active
+      - binary_sensor.kodi_screen_saver
+      - binary_sensor.smb_online
+      - binary_sensor.isp_conn
+      - binary_sensor.ext_port
+      - sensor.transmission_state
+      - binary_sensor.batts_low
+      - binary_sensor.open_living
+      - binary_sensor.home_heating
+      - binary_sensor.home_motion
+
+  script:
+    control: hidden
+    view: false
+    entities:
+      - script.local_reboot
+      - script.minix_reboot
+      - script.tomato_reboot
+      - script.reboot_all
+      - script.hass_update
+
+  alerts:
+    control: hidden
+    view: false
+    entities:
+      - alert.low_battery
+      - alert.home_motion
+
+  autos:
+    view: false
+    entities:
+      - automation.root_home
+      - automation.root_not_home
+      - automation.root_from_work
+      - automation.n0ll_home
+      - automation.n0ll_not_home
+      - automation.auto_reboot_all
+      - automation.tv_off
+      - automation.tv_on
+      - automation.change_pressure
+      - automation.mydelay
+      - automation.kodi_paly
+      - automation.kodi_pause
+      - automation.radio_off_pc
+      - automation.radio_off_phone
+      - automation.send_effect_hyperion
+      - automation.send_rgb_hyperion
+      - automation.send_settings_hyperion
+      - automation.sun_set
+      - automation.sun_rise
+      - automation.tomato_smb_restart
+      - automation.updates_notify
+      - automation.weather_alert
+      - automation.open_ports
+      - automation.home_away
+      - automation.home_near
+      - automation.bed_motion_trigger
+      - automation.hall_motion_trigger
+      - automation.living_motion_trigger
+      - automation.just_home
+      - automation.home_motion_detect
+      - automation.minix_home
+
+  default_view:
+    view: true
+    icon: mdi:home-variant
+    control: hidden
+    entities:
+      - device_tracker.root
+      - sun.sun
+      - sensor.change_pressure
+      - sensor.pws_alerts
+      - sensor.pws_weather
+      - group.out
+      - group.in
+      - group.weather_dark_sky
+      - group.media
+      - group.alerts
+      - group.in_call
+
+  bed:
+    view: true
+    icon: mdi:hotel
+    entities:
+      - group.bedroom_light
+      - group.bedroom_music
+      - group.bedroom_conrol
+      - group.android_post_alarm
+
+  status:
+    view: true
+    icon: mdi:newspaper
+    entities:
+      - group.batts
+      - group.other
+      - group.system
+      - group.graph_climate
+
+  settings:
+    view: true
+    icon: mdi:developer-board
+    entities:
+      - group.warninglevel
+      - group.media_control
+      - input_select.current_theme
+      - group.heating_control
+
+  automations:
+    view: true
+    icon: mdi:chemical-weapon
+    entities:
+      - group.autos
+      - group.script
+
+  light:
+    view: true
+    icon: mdi:ceiling-light
+    entities:
+      - group.bed_motion
+      - group.living_motion
+      - group.hall_motion
+      - group.just_home
+      - group.light_extend
+
+  test:
+    view: true
+    icon: mdi:nuke
+    entities:
+      - switch.mqtt_1
+      - switch.sonoff_1
+      - switch.rf_switch_1
+      - switch.av_switch
+      - switch.bed_switch
+      - switch.fan_living
+      - media_player.kodi
+      - media_player.soundbar
+      - history_graph.motion
+      - input_boolean.control_heating
+      - input_boolean.in_call
+
+homeassistant:
+  customize:
+    group.out:
+      order: 1
+    group.in:
+      order: 2
+    group.weather_dark_sky:
+      order: 3
+    group.media:
+      order: 4
+    group.batts:
+      order: 5
+    group.other:
+      order: 6
+    group.system:
+      order: 7
+    group.autos:
+      order: 8
+    group.script:
+      order: 9
+    group.hyperion_effect:
+      order: 10
+    group.hyperion_color:
+      order: 11
+    group.alerts:
+      order: 12
+    group.hyperion_settings:
+      order: 13
+    group.battslevel:
+      order: 14
+    group.bed:
+      order: 101
+    group.status:
+      order: 102
+    group.settings:
+      order: 103
+    group.weather:
+      order: 104
+    group.automations:
+      order: 105
+    group.scenes_settings:
+      order: 106
+    group.light:
+      order: 107
+    group.trackers:
+      order: 108
+    group.test:
+      order: 109

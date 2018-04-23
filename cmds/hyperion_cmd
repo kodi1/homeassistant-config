@@ -1,0 +1,4 @@
+#!/bin/bash
+source $HOME/.homeassistant/set_env
+
+echo $1 | nc -q 0 $HYPERION_HOST $HYPERION_PORT

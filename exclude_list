@@ -1,0 +1,15 @@
+.gitignore
+.git
+exclude_list
+sync
+deps
+tts
+.uuid
+home-assistant.log
+home-assistant_v2.db*
+secrets.yaml
+known_devices.yaml
+set_env
+.HA_VERSION
+mqtt_passwd
+__pycache__

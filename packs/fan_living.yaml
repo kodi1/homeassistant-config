@@ -1,0 +1,16 @@
+homeassistant:
+  customize:
+    switch.fan_living:
+      icon: mdi:fan
+
+switch:
+  - platform: mqtt
+    name: "fan_living"
+    state_topic: "fan_living/data"
+    value_template: '{{ value_json["relay/0"] }}'
+    command_topic: "fan_living/relay/0/set"
+    payload_on: 1
+    payload_off: 0
+    availability_topic: "fan_living/status"
+    payload_available: 1
+    payload_not_available: 0

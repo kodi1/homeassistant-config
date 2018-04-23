@@ -1,0 +1,127 @@
+homeassistant:
+  customize:
+    binary_sensor.in_call:
+      icon: mdi:phone-in-talk
+    input_boolean.in_call:
+      icon: mdi:cellphone-android
+
+group:
+  in_call:
+    view: false
+    control: hidden
+    name: 'in call'
+    entities:
+      - binary_sensor.in_call
+      - input_boolean.in_call
+      - automation.in_call
+      - input_number.sound_bar_save_volume
+      - script.in_call_on
+      - script.in_call_off
+
+binary_sensor:
+  - platform: template
+    sensors:
+      in_call:
+        delay_off:
+          seconds: 20
+        delay_on:
+          seconds: 5
+        device_class: sound
+        value_template: '{{ is_state("input_boolean.in_call", "on") }}'
+
+input_number:
+  sound_bar_save_volume:
+    mode: box
+    min: 0
+    max: 1
+    step: 0.01
+    initial: 0.14
+
+input_boolean:
+  in_call:
+    name: in_call
+    initial: off
+
+automation:
+  - alias: in_call
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.in_call
+    action:
+      - service_template: >-
+          {%- if (trigger.to_state.state == 'on') -%}
+            script.in_call_on
+          {%- else -%}
+            script.in_call_off
+          {%- endif -%}
+
+  - alias: in_call_visible
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.in_call
+      - platform: homeassistant
+        event: start
+    action:
+      - service: script.group_visibility
+        data:
+          entity_id: group.in_call
+          cond: binary_sensor.in_call
+          visible_state: 'on'
+
+script:
+  in_call_on:
+    sequence:
+      - service: script.in_call_on_kodi
+      - service: script.in_call_on_soundbar
+
+  in_call_off:
+    sequence:
+      - service: script.in_call_off_kodi
+      - service: script.in_call_off_soundbar
+
+  in_call_on_kodi:
+    sequence:
+      - condition: state
+        entity_id: media_player.kodi
+        state: 'playing'
+      - service: media_player.media_pause
+        entity_id: media_player.kodi
+      - service: script.kodi_seek_back
+
+  in_call_on_soundbar:
+    sequence:
+      - condition: state
+        entity_id: media_player.htmt500501_b34d6a
+        state: 'playing'
+      - service: input_number.set_value
+        data_template:
+          entity_id: input_number.sound_bar_save_volume
+          value: >-
+            {%- set volume = state_attr('media_player.htmt500501_b34d6a', 'volume_level') -%}
+            {%- if volume -%}
+              {{volume|round(2)}}
+            {%- else -%}
+              0.18
+            {%- endif -%}
+      - service: media_player.volume_set
+        data:
+          entity_id: media_player.htmt500501_b34d6a
+          volume_level: 0.14
+
+  in_call_off_kodi:
+    sequence:
+      - condition: state
+        entity_id: media_player.kodi
+        state: 'paused'
+      - service: media_player.media_play
+        entity_id: media_player.kodi
+
+  in_call_off_soundbar:
+    sequence:
+      - condition: state
+        entity_id: media_player.htmt500501_b34d6a
+        state: 'playing'
+      - service: media_player.volume_set
+        data_template:
+          entity_id: media_player.htmt500501_b34d6a
+          volume_level: '{{states.input_number.sound_bar_save_volume.state}}'

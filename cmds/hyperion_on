@@ -1,0 +1,4 @@
+#!/bin/bash
+source $HOME/.homeassistant/set_env
+
+echo '{"command": "clear", "priority": 0}' | nc -q 0 $HYPERION_HOST $HYPERION_PORT

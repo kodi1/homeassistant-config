@@ -1,0 +1,61 @@
+homeassistant:
+  customize:
+    sensor.ping_isp:
+      icon: mdi:earth
+
+sensor:
+  - platform: command_line
+    name: ping isp
+    command: "/home/hass/.homeassistant/cmds/test_isp"
+    unit_of_measurement: "ms"
+    scan_interval: 300
+
+binary_sensor:
+  - platform: command_line
+    command: '/home/hass/.homeassistant/cmds/tomato_smb_check'
+    name: 'smb online'
+    device_class: connectivity
+    payload_on: "success"
+    payload_off: "fail"
+    scan_interval: 300
+
+  - platform: template
+    sensors:
+      isp_conn:
+        device_class: connectivity
+        delay_off:
+          minutes: 16
+        value_template: >-
+          {%- if states.sensor.ping_isp.state == 'n/a' or
+            states.sensor.ping_isp.state | float > 150 -%}
+            False
+          {%- else -%}
+            True
+          {%- endif %}
+
+automation:
+  - alias: tomato smb restart
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.smb_online
+        to: 'off'
+        for:
+          minutes: 6
+    action:
+      - service: script.all_notify
+        data:
+          msg: tomato smb restart
+      - service: script.tomato_smb_restart
+
+script:
+  tomato_smb_restart:
+    sequence:
+      - service: shell_command.tomato_smb_restart
+
+  tomato_reboot:
+    sequence:
+      - service: shell_command.tomato_reboot
+
+shell_command:
+  tomato_reboot: "/home/hass/.homeassistant/cmds/tomato_reboot"
+  tomato_smb_restart: "/home/hass/.homeassistant/cmds/tomato_smb_restart"

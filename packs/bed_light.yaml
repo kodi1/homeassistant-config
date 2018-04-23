@@ -1,0 +1,305 @@
+group:
+  bed_motion:
+    view: false
+    control: hidden
+    name: 'bed motion'
+    entities:
+      - binary_sensor.bed_motion
+      - automation.bed_light_trigger
+      - script.bed_auto_light
+      - input_number.bed_light_time
+      - timer.bed_light_timer
+      - light.bed_led
+
+  bedroom_light:
+    view: false
+    control: hidden
+    icon: mdi:lamp
+    name: light
+    entities:
+      - light.bed_led
+      - input_number.bed_cycle_duration
+      - input_number.bed_light_duration
+      - automation.bed_turn_off
+      - automation.bed_turn_on
+      - automation.bed_auto_off
+      - timer.bed_light_timer
+
+automation:
+  - alias: bed_turn_off
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.bedlight
+        to: 'off'
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.bed_light_timer
+    action:
+      - service: light.turn_off
+        entity_id: light.bed_led
+        data:
+          transition: 60
+
+  - alias: bed_turn_on
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.bedlight
+        to: 'on'
+    action:
+      - service: automation.trigger
+        entity_id: automation.bed_auto_off
+      - service: light.turn_on
+        entity_id: light.bed_led
+        data_template:
+          rgb_color: ['{{(range(0, 100)|random)}}','{{(range(150, 200)|random)}}','{{(range(0, 100)|random)}}']
+          #brightness: '{{150}}'
+          transition: '{{15}}'
+      - delay: '00:00:15'
+      - service: light.turn_on
+        entity_id: light.bed_led
+        data:
+          effect: cycle
+
+  - alias: bed_auto_off
+    trigger:
+      - platform: state
+        entity_id: light.bed_led
+        to: 'on'
+    condition:
+      - condition: template
+        value_template: >-
+          {%- if (states.script.bed_auto_light.attributes.last_triggered != None) -%}
+            {{
+              (as_timestamp(now()) - as_timestamp(states.script.bed_auto_light.attributes.last_triggered)) > 5
+            }}
+          {%- else -%}
+            True
+          {%- endif -%}
+    action:
+      - service: timer.start
+        entity_id: timer.bed_light_timer
+        data_template:
+          duration: '00:{{states.input_number.bed_light_duration.state|int}}:00'
+
+  - alias: bed_motion_trigger
+    trigger:
+      - platform: mqtt
+        topic: rf434/recv/arctech_screen_old/23
+        payload: '{"id":23,"unit":13,"state":"up"}'
+    action:
+      - service: timer.start
+        entity_id: timer.bed_motion_timer
+
+  - alias: bed_light_trigger
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.bed_motion
+        to: 'on'
+    action:
+      - service: script.bed_auto_light
+
+input_datetime:
+  bedl_time_start:
+    name: lihgt start
+    has_date: false
+    has_time: true
+
+  bedl_time_end:
+    name: lihgt end
+    has_date: false
+    has_time: true
+
+input_number:
+  bed_cycle_duration:
+    name: 'effect time'
+    unit_of_measurement: 'sec'
+    min: 30
+    max: 120
+    step: 5
+    icon: mdi:av-timer
+
+  bed_light_duration:
+    name: 'light time'
+    unit_of_measurement: 'min'
+    min: 1
+    max: 10
+    step: 1
+    icon: mdi:camera-timer
+
+  bed_light_time:
+    name: 'bed'
+    unit_of_measurement: 'sec'
+    min: 30
+    max: 180
+    step: 5
+    icon: mdi:camera-timer
+
+binary_sensor:
+  - platform: template
+    sensors:
+      bedlight:
+        device_class: light
+        value_template: >-
+          {%-if is_state("sun.sun", "below_horizon") and
+              is_state("device_tracker.root", "home")-%}
+            {%- set  t =  (as_timestamp(now()) - as_timestamp(now().strftime('%Y-%m-%d 00:00')))-%}
+            {%- set  ts =  states.input_datetime.bedl_time_start.attributes.timestamp -%}
+            {%- set  te =  states.input_datetime.bedl_time_end.attributes.timestamp -%}
+            {{
+                is_state("binary_sensor.sound_bar_active", "off") and
+                not is_state("device_tracker.n0ll", "home") and
+                (ts < t or t < te) or
+                is_state("timer.just_home_light", "active")
+              }}
+          {%- else -%}
+            False
+          {%- endif -%}
+
+      bed_motion:
+        device_class: motion
+        value_template: '{{ is_state("timer.bed_motion_timer", "active") }}'
+
+script:
+  bed_auto_light:
+    sequence:
+      - service: script.bed_auto_on_light
+      - service: script.hall_clear_timer
+      - service: script.living_clear_timer
+
+  bed_auto_on_light:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: switch.hyperion_enable
+            state: 'on'
+          - condition: state
+            entity_id: binary_sensor.juste_home_lights
+            state: 'off'
+          - condition: template
+            value_template: >-
+              {%- if (states.automation.bed_auto_off.attributes.last_triggered != None) -%}
+                {{
+                  (as_timestamp(now()) -
+                  as_timestamp(states.automation.bed_auto_off.attributes.last_triggered)) >
+                  (states.input_number.bed_light_duration.state | float * 60)
+                }}
+              {%- else -%}
+                True
+              {%- endif -%}
+      - service: logbook.log
+        data:
+          name: 'Bed light'
+          message: 'On'
+      - service: light.turn_on
+        entity_id: light.bed_led
+        data_template:
+          rgb_color: ['{{(range(50, 100)|random)}}','{{(range(200, 250)|random)}}','{{(range(100, 150)|random)}}']
+          transition: '{{10}}'
+      - service: timer.start
+        entity_id: timer.bed_light_timer
+        data_template:
+          duration: '{{states.input_number.bed_light_time.state|int}}'
+
+  bed_clear_timer:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: timer.bed_light_timer
+            state: 'active'
+          - condition: state
+            entity_id: binary_sensor.juste_home_lights
+            state: 'off'
+          - condition: state
+            entity_id: input_boolean.just_home_pause
+            state: 'off'
+          - condition: state
+            entity_id: input_boolean.light_auto_follow
+            state: 'on'
+          - condition: template
+            value_template: >-
+              {%- if (states.automation.bed_turn_on.attributes.last_triggered != None) -%}
+                {{
+                  (as_timestamp(now()) -
+                  as_timestamp(states.automation.bed_turn_on.attributes.last_triggered)) >
+                  (states.input_number.bed_light_duration.state | float * 60)
+                }}
+              {%- else -%}
+                True
+              {%- endif -%}
+          #- condition: template
+            #value_template: >-
+              #{%- if (states.automation.bed_auto_off.attributes.last_triggered != None) -%}
+                #{{
+                  #(as_timestamp(now()) -
+                  #as_timestamp(states.automation.bed_auto_off.attributes.last_triggered)) > 30
+                #}}
+              #{%- else -%}
+                #True
+              #{%- endif -%}
+      - service: timer.finish
+        entity_id: timer.bed_light_timer
+
+  start_up_bed_led:
+    sequence:
+      - condition: state
+        entity_id: light.bed_led
+        state: 'on'
+      - service: timer.start
+        entity_id: timer.bed_light_timer
+
+timer:
+  bed_light_timer:
+    name: 'light time'
+    icon: mdi:timer-sand
+    duration: '00:01:00'
+
+  bed_motion_timer:
+    name: 'motion timer'
+    icon: mdi:timer
+    duration: '00:00:05'
+
+light:
+  - platform: mqtt_template
+    name: 'bed led'
+    effect_list:
+      - cycle
+      - none
+    command_topic: "/bedroom_led/cmd"
+    state_topic: "/bedroom_led/status/led"
+    command_on_template: >-
+      {{"rgb_json,{'state':'on'"}}
+      {%- if brightness is defined -%}
+      ,'brightness':{{brightness}}
+      {%- endif -%}
+      {%- if red is defined and green is defined and blue is defined -%}
+        ,'r':{{red}},'g':{{green}},'b':{{blue}}
+      {%- endif -%}
+      {%- if transition is defined -%}
+        ,'transition':{{transition |int * 1000}}
+      {%- else -%}
+        ,'transition':{{3000}}
+      {%- endif -%}
+      {%- if effect is defined -%}
+        ,'eff':'{{effect}}','eff_time':{{states.input_number.bed_cycle_duration.state|int}}
+      {%- endif -%}
+      {{"}"}}
+
+    command_off_template: >-
+      {{"rgb_json,{'state':'off'"}}
+      {%- if transition is defined -%}
+      ,'transition':{{transition |int * 1000}}
+      {%- endif -%}
+      {{"}"}}
+
+    state_template: '{{ value_json.state }}'
+    brightness_template: '{{ value_json.brightness }}'
+    red_template: '{{ value_json.r }}'
+    green_template: '{{ value_json.g }}'
+    blue_template: '{{ value_json.b }}'
+    effect_template: '{{ value_json.eff }}'
+    availability_topic: "/bedroom_led/status"
+    payload_available: "Connected"
+    payload_not_available: "Connection Lost"

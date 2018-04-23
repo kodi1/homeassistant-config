@@ -1,0 +1,269 @@
+homeassistant:
+  customize:
+    sensor.pressure_history_mean:
+      icon: mdi:gauge
+      friendly_name: pressure stats
+    sensor.pws_weather:
+      friendly_name: weather
+    sensor.pws_weather_1h:
+      friendly_name: hour
+    sensor.pws_weather_1d_metric:
+      friendly_name: day
+    sensor.pws_weather_1n_metric:
+      friendly_name: night
+    sensor.dark_sky_summary:
+      friendly_name: weather
+    sensor.dark_sky_daily_summary:
+      friendly_name: week
+    sensor.pws_alerts:
+      friendly_name: alerts
+    binary_sensor.open_living:
+      icon: mdi:window-open
+    sensor.hum_b:
+      icon: mdi:water-percent
+
+group:
+  in:
+    control: hidden
+    view: false
+    entities:
+      - sensor.bme280_171f93_temperature
+      - sensor.bme280_171f93_humidity
+      - sensor.bme280_171f93_pressure
+      - sensor.temp_b
+      - sensor.hum_b
+  out:
+    control: hidden
+    view: false
+    entities:
+      - sensor.dht22_176e41_temperature
+      - sensor.dht22_176e41_humidity
+      - sensor.sea_level_pressure
+      - sensor.dht22_176e41_feels
+  weather_dark_sky:
+    control: hidden
+    view: false
+    name: weather
+    entities:
+      - sensor.dark_sky_temperature
+      - sensor.dark_sky_pressure
+      - sensor.dark_sky_humidity
+      - sensor.dark_sky_wind_speed
+      - sensor.dark_sky_precip_intensity
+  weather:
+    view: true
+    icon: mdi:image-filter-hdr
+    entities:
+      - sensor.pws_weather_1h
+      - sensor.pws_weather_1d_metric
+      - sensor.pws_weather_1n_metric
+      - sensor.dark_sky_daily_summary
+      - camera.24sat_image
+      - camera.meteo_sat
+      - camera.rain_map
+      - camera.temp_map
+      - camera.weathermod
+
+sensor:
+  #- platform: yr
+    #monitored_conditions:
+      #- symbol
+
+  - platform: darksky
+    api_key: !secret darksky_key
+    update_interval:
+      minutes: 5
+    units:
+      si
+    monitored_conditions:
+      #- nearest_storm_distance
+      #- icon
+      - temperature
+      - wind_speed
+      - humidity
+      - pressure
+      - precip_intensity
+      #- summary
+      - daily_summary
+
+  - platform: wunderground
+    api_key: !secret wnderground_key
+    pws_id: ISOFIA368
+    monitored_conditions:
+      - alerts
+      #- temp_c
+      #- pressure_mb
+      #- relative_humidity
+      #- wind_kph
+      - weather
+      - weather_1h
+      - weather_1d_metric
+      - weather_1n_metric
+      #- weather_3h
+      #- weather_6h
+      #- weather_12h
+      #- weather_24h
+      #- precip_today_metric
+
+  - platform: template
+    sensors:
+      sea_level_pressure:
+        friendly_name: 'sea pressure'
+        unit_of_measurement: 'hPa'
+        icon_template: 'mdi:gauge'
+        value_template: >-
+            {%- if states('sensor.pressure_history_mean') != 'unknown' and
+                    states('sensor.dht22_176e41_temperature') != 'unknown' %}
+                {% set p1 = states.sensor.pressure_history_mean.state | float %}
+                {% set t = states.sensor.dht22_176e41_temperature.state | float %}
+                {% set h = 603 | float %}
+                {{ (p1 *  ( (1 - (0.0065 * h) / (t + (0.0065 * h) + 273.15)) **  -5.257)) | round(2) }}
+            {% else %}
+                {{ states.sensor.sea_level_pressure.state }}
+            {%- endif %}
+
+      change_pressure:
+        friendly_name: 'change'
+        unit_of_measurement: 'hPa/h'
+        value_template: >-
+          {{states.sensor.pressure_history_mean.attributes.change|round(2)}}
+        icon_template: >-
+          {%if states.sensor.pressure_history_mean.attributes.change|float > 0.33 %}
+            {{'mdi:trending-up'}}
+          {% elif states.sensor.pressure_history_mean.attributes.change|float < -0.33 %}
+            {{'mdi:trending-down'}}
+          {% else %}
+            {{'mdi:trending-neutral'}}
+          {% endif %}
+
+  - platform: mqtt
+    name: "hum b"
+    state_topic: "/bedroom_led/env/humidity"
+    unit_of_measurement: "%"
+    expire_after: 660
+
+  - platform: mqtt
+    name: "temp b"
+    state_topic: "/bedroom_led/env/temperature"
+    unit_of_measurement: "°C"
+    expire_after: 660
+
+  - platform: statistics
+    name: pressure history
+    entity_id: sensor.bme280_171f93_pressure
+    sampling_size: 6
+
+input_number:
+  pressure_speed:
+    name: 'hPa/h alert'
+    unit_of_measurement: 'hPa/h'
+    min: 0.9
+    max: 1.1
+    step: 0.01
+    icon: mdi:altimeter
+
+automation:
+  - alias: sun rise
+    trigger:
+      - platform: sun
+        event: sunrise
+        offset: '-00:15:00'
+    action:
+      - service: script.hyperion_clear_rgb
+      - service: switch.turn_off
+        entity_id: switch.hyperion_enable
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.select_effect
+          option: None
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.current_theme
+          option: default
+
+  - alias: sun set
+    trigger:
+      - platform: sun
+        event: sunset
+        offset: '00:15:00'
+    action:
+      - service: switch.turn_on
+        entity_id: switch.hyperion_enable
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.current_theme
+          option: midnight
+      - delay: '00:00:03'
+      - service: script.hyperion_startup
+
+  - alias: change pressure
+    trigger:
+      - platform: state
+        entity_id: sensor.change_pressure
+    condition:
+      condition: and
+      conditions:
+        - condition: template
+          value_template: >-
+            {%- if states.sensor.change_pressure.state | float > 0 -%}
+              {{states.sensor.change_pressure.state | float > states.input_number.pressure_speed.state | float}}
+            {%- else -%}
+              {{states.sensor.change_pressure.state | float * -1 > states.input_number.pressure_speed.state | float}}
+            {%- endif -%}
+        - condition: template
+          value_template: >-
+            {%- if states.automation.change_pressure.attributes.last_triggered != None -%}
+              {{(as_timestamp(now()) - as_timestamp(states.automation.change_pressure.attributes.last_triggered))/60 > 60}}
+            {%- else -%}
+              True
+            {%- endif -%}
+    action:
+      - service: script.all_notify
+        data_template:
+          msg: pressure change {{states.sensor.change_pressure.state}}
+
+  - alias: weather alert
+    trigger:
+      - platform: state
+        entity_id: sensor.pws_alerts
+    condition:
+      - condition: template
+        value_template: '{{trigger.from_state.state != trigger.to_state.state}}'
+    action:
+      - service: script.all_notify
+        data_template:
+          msg: >-
+            {% if states.sensor.pws_alerts.state != '0'-%}
+              {% for k, v  in states.sensor.pws_alerts.attributes.items() %}
+                {%-if 'Description' in k%}
+                  {{v}}.
+                {% endif %}
+              {%- endfor %}
+            {%else %}
+              weather alert expired
+            {% endif %}
+
+camera:
+  - platform: generic
+    name: 'meteo sat'
+    still_image_url: http://info.meteo.bg/i/meteo/IR.gif
+
+  - platform: generic
+    name: '24sat image'
+    still_image_url: https://api.sat24.com/crop?type=visual5hdcomplete&lat={{states.device_tracker.root.attributes.latitude}}&lon={{states.device_tracker.root.attributes.longitude}}&width=300&height=300&zoom=0.50&continent=eu
+
+  #- platform: generic
+    #name: '24sat animated'
+    #still_image_url: https://api.sat24.com/animated/EU/visual
+
+  - platform: generic
+    name: 'rain map'
+    still_image_url: http://info.meteo.bg/i/meteo/gif/0/Precip.gif
+
+  - platform: generic
+    name: 'temp map'
+    still_image_url: http://info.meteo.bg/i/meteo/gif/0/Temp.gif
+
+  - platform: generic
+    name: 'weathermod'
+    still_image_url: http://cap.weathermod-bg.eu/KZNCAP_G.jpg

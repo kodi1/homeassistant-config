@@ -1,0 +1,171 @@
+group:
+  trackers:
+    view: true
+    #icon: mdi:crosshairs-gps
+    icon: mdi:radar
+    entities:
+      - device_tracker.m4b30x
+      - device_tracker.google_maps_107209225675467950565
+      - device_tracker.n0ll
+      - device_tracker.minix
+      - device_tracker.pi3
+      - device_tracker.sgs4
+      - sensor.view_root
+      - proximity.home
+      - input_number.tracker_delay
+      - input_number.tracker_accuracy
+      - input_number.tracker_force_update
+      - automation.track_merge_startup
+      - automation.track_merge
+      - history_graph.accuracy
+      - camera.tracker
+
+python_script:
+
+sensor:
+  - platform: template
+    sensors:
+      gps_accuracy_g:
+        friendly_name: 'g_user'
+        unit_of_measurement: 'm'
+        icon_template: 'mdi:map-marker-radius'
+        value_template: >-
+            {%- if states.device_tracker.google_maps_107209225675467950565.attributes.gps_accuracy %}
+              {{ states.device_tracker.google_maps_107209225675467950565.attributes.gps_accuracy }}
+            {% else %}
+                {{ states.sensor.gps_accuracy_g.state }}
+            {%- endif %}
+
+      gps_accuracy_t:
+        friendly_name: 'tasker'
+        unit_of_measurement: 'm'
+        icon_template: 'mdi:map-marker-radius'
+        value_template: >-
+            {%- if states.device_tracker.m4b30x.attributes.gps_accuracy %}
+              {{ states.device_tracker.m4b30x.attributes.gps_accuracy }}
+            {% else %}
+                {{ states.sensor.gps_accuracy_t.state }}
+            {%- endif %}
+
+history_graph:
+  gps_accuracy:
+    name: accuracy
+    entities:
+      - sensor.gps_accuracy_g
+      - sensor.gps_accuracy_t
+    hours_to_show: 8
+    refresh: 300
+
+automation:
+  - alias: track_merge
+    initial_state: 'off'
+    trigger:
+      - platform: state
+        entity_id: device_tracker.m4b30x
+      - platform: state
+        entity_id: device_tracker.google_maps_107209225675467950565
+    action:
+      - service: python_script.device_tracker_merge
+        data_template:
+          device_name: 'root'
+          master_device: device_tracker.m4b30x
+          slave_device: device_tracker.google_maps_107209225675467950565
+          trigger_id: '{{trigger.entity_id}}'
+          time: '{{ states.input_number.tracker_delay.state|float * 60 }}'
+          force_update: '{{ states.input_number.tracker_force_update.state|float * 60 }}'
+          accuracy: '{{ states.input_number.tracker_accuracy.state|float * 1000 }}'
+          distance: '{{ distance(states.device_tracker.m4b30x,states.device_tracker.google_maps_107209225675467950565) }}'
+
+  - alias: track_merge_startup
+    trigger:
+      - platform: homeassistant
+        event: start
+    action:
+      - service: python_script.device_tracker_merge
+        data_template:
+          device_name: 'root'
+          master_device: device_tracker.m4b30x
+          slave_device: device_tracker.google_maps_107209225675467950565
+          trigger_id: 'device_tracker.m4b30x'
+          time: '{{ states.input_number.tracker_delay.state|float * 60 }}'
+          force_update: '{{ states.input_number.tracker_force_update.state|float * 60 }}'
+          accuracy: '{{ states.input_number.tracker_accuracy.state|float * 1000 }}'
+          distance: '{{ distance(states.device_tracker.m4b30x,states.device_tracker.google_maps_107209225675467950565) }}'
+      - delay: '00:00:05'
+      - service: automation.turn_on
+        entity_id: automation.track_merge
+
+input_number:
+  tracker_delay:
+    name: 'delay'
+    unit_of_measurement: 'min'
+    min: 1
+    max: 15
+    step: 1
+    icon: mdi:timelapse
+
+  tracker_accuracy:
+    name: 'accuracy'
+    unit_of_measurement: 'km'
+    min: 0.5
+    max: 1.5
+    step: 0.1
+    icon: mdi:counter
+
+  tracker_force_update:
+    name: 'update'
+    unit_of_measurement: 'min'
+    min: 10
+    max: 60
+    step: 5
+    icon: mdi:timer
+
+camera:
+  name: tracker
+  platform: generic
+  still_image_url: !secret tracker_image
+  limit_refetch_to_url_change: true
+
+device_tracker:
+  - platform: tomato
+    consider_home: 120
+    interval_seconds: 60
+    host: !secret tomato_host
+    port: !secret tomato_port
+    username: !secret tomato_user
+    password: !secret tomato_pass
+    http_id: !secret tomato_httpid
+    new_device_defaults:
+      track_new_devices: false
+      hide_if_away: false
+
+  - platform: gpslogger
+
+  - platform: google_maps
+    username: !secret g_user
+    password: !secret g_pass
+    interval_seconds: 120
+
+zone:
+  - name: Home
+    latitude: !secret home_latitude
+    longitude: !secret home_longitude
+    radius: 50
+    icon: mdi:home
+
+  - name: Work
+    latitude: !secret work_latitude
+    longitude: !secret work_longitude
+    radius: 50
+    icon: mdi:office
+    passive: true
+
+proximity:
+  home:
+    zone: home
+    ignored_zones:
+      - work
+    devices:
+      - device_tracker.root
+    tolerance: 500
+    unit_of_measurement: km

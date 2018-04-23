@@ -1,0 +1,159 @@
+notify:
+  - platform: kodi
+    name: kodi
+    host: !secret kodi_host
+    port: !secret kodi_port
+    username: !secret kodi_user
+    password: !secret kodi_pass
+
+  - platform: smtp
+    name: gmail
+    server: smtp.gmail.com
+    port: 587
+    timeout: 15
+    sender: hass@gmail.com
+    encryption: starttls
+    username: !secret g_user
+    password: !secret g_pass
+    recipient:
+      - !secret smtp_recp
+
+automation:
+  - alias: updates notify
+    trigger:
+      - platform: state
+        entity_id: updater.updater
+    action:
+      - service: script.all_notify
+        data:
+          msg: Update for Home Assistant is available.
+
+input_select:
+  current_theme:
+    options:
+      - default
+      - night
+      - midnight
+    initial: default
+    icon: mdi:theme-light-dark
+
+script:
+  all_notify:
+    sequence:
+      - service: notify.kodi
+        data_template:
+          message: '{{ msg }}'
+          data:
+            icon: 'info'
+      - service: script.mail_notify
+        data_template:
+          m: '{{ msg }}'
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: binary_sensor.kodi_screen_saver
+            state: 'on'
+          - condition: state
+            entity_id: media_player.kodi
+            state: 'idle'
+      - service: persistent_notification.create
+        data_template:
+          message: '{{ msg }}'
+
+  mail_notify:
+    sequence:
+      - condition: template
+        value_template: >-
+          {{states.device_tracker.root.state != 'home'}}
+      - service: notify.gmail
+        data_template:
+          message: '{{ m }}'
+          title: 'hass'
+
+  local_reboot:
+    sequence:
+      - service: shell_command.local_reboot
+        data_template:
+          value: '{{"now"}}'
+
+  minix_reboot:
+    sequence:
+      - service: shell_command.minix_reboot
+        data_template:
+          value: '{{"+0"}}'
+
+  ports_open:
+    sequence:
+      - service: shell_command.port_open
+
+  reboot_all:
+    sequence:
+      - delay: '00:00:05'
+      - service: script.kodi_turn_off
+      - service: shell_command.minix_reboot
+        data_template:
+          value: '{{"+3"}}'
+      - service: shell_command.local_reboot
+        data_template:
+          value: '{{"+4"}}'
+      - service: script.tomato_reboot
+
+  hass_update:
+    sequence:
+      - service: shell_command.ha_update
+      - service: homeassistant.check_config
+      - service: script.local_reboot
+
+  sun_above:
+    sequence:
+      - condition: template
+        value_template: '{{is_state("sun.sun", "above_horizon")}}'
+      - service: automation.trigger
+        entity_id: automation.sun_rise
+
+  sun_below:
+    sequence:
+      - condition: template
+        value_template: '{{is_state("sun.sun", "below_horizon")}}'
+      - service: automation.trigger
+        entity_id: automation.sun_set
+
+  start_up:
+    sequence:
+      - service: timer.start
+        entity_id: timer.start_up_batt_delay
+        data:
+          duration: '00:10:00'
+      - wait_template: "{{states.device_tracker.root != None}}"
+        timeout: '00:00:15'
+      - service: script.all_notify
+        data:
+          msg: HA start.
+      - service: automation.turn_on
+        entity_id:
+          - automation.root_home
+          - automation.root_not_home
+      - service: script.start_up_sound_bar
+      - service: script.start_up_bedroom_speaker
+      - service: script.start_up_bed_led
+      - service: script.kodi_wakeup
+      - delay: '00:00:01'
+      - service: shell_command.kodi_screensaver
+      - delay: '00:00:01'
+      - service: automation.turn_on
+        entity_id:
+          - automation.tv_off
+          - automation.tv_on
+      - service: automation.trigger
+        entity_id: automation.send_settings_hyperion
+      - service: script.sun_above
+      - service: script.sun_below
+      - service: script.ports_open
+      - service: script.start_up_delay_av_off
+
+  group_visibility:
+    sequence:
+      - service: group.set_visibility
+        data_template:
+          entity_id: '{{ entity_id }}'
+          visible: '{{ is_state(cond, visible_state) }}'

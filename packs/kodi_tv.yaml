@@ -1,0 +1,247 @@
+homeassistant:
+  customize:
+    switch.tv_cec:
+      icon: mdi:video-input-hdmi
+    switch.hyperion_enable:
+      icon: mdi:spotlight-beam
+    script.tv_hdmi1:
+      icon: mdi:television
+    script.tv_hdmi1_audio:
+      icon: mdi:surround-sound
+    binary_sensor.bravia:
+      icon: mdi:television
+
+group:
+  media_control:
+    view: false
+    control: hidden
+    icon: mdi:television
+    name: media_control
+    entities:
+      - script.tv_hdmi1
+      - script.tv_hdmi1_audio
+      - script.sound_bar_on
+      - script.sound_bar_off
+      - switch.tv_cec
+      - switch.hyperion_enable
+
+automation:
+  - alias: kodi sleep timer
+    trigger:
+      - platform: event
+        event_type: kodi_sleep_timer
+    condition:
+      - condition: state
+        entity_id: switch.tv_cec
+        state: 'on'
+    action:
+      - service: switch.turn_off
+        entity_id: switch.tv_cec
+
+  - alias: tv off
+    initial_state: off
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.kodi_screen_saver
+        to: 'on'
+        for:
+          seconds: 60
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: media_player.kodi
+          state: idle
+        # radio will not start if kodi_sleep_timer is fired
+        - condition: state
+          entity_id: switch.tv_cec
+          state: 'on'
+    action:
+      - service: script.tv_off
+
+  - alias: tv on
+    initial_state: off
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.kodi_screen_saver
+        to: 'off'
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: media_player.kodi
+          state: idle
+        - condition: state
+          entity_id: switch.tv_cec
+          state: 'off'
+    action:
+      - service: script.tv_on
+
+  - alias: kodi paly
+    trigger:
+      - platform: state
+        entity_id: media_player.kodi
+        to: playing
+    action:
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.select_effect
+          option: None
+      - service: script.hyperion_clear_rgb
+      - service: script.set_settings_video
+
+  - alias: kodi pause
+    trigger:
+      - platform: state
+        entity_id: media_player.kodi
+        to: idle
+      - platform: state
+        entity_id: media_player.kodi
+        to: paused
+    action:
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.select_effect
+          option: trails
+
+  - alias: kodi pause long
+    trigger:
+      - platform: state
+        entity_id: media_player.kodi
+        to: paused
+        for:
+          seconds: 5
+    action:
+      - service: media_player.kodi_call_method
+        data:
+          entity_id: media_player.kodi
+          method: Addons.ExecuteAddon
+          addonid: plugin.program.braviacontrol
+          params: VolumeDown
+      - delay: '00:00:01'
+      - service: media_player.kodi_call_method
+        data:
+          entity_id: media_player.kodi
+          method: Addons.ExecuteAddon
+          addonid: plugin.program.braviacontrol
+          params: VolumeUp
+
+media_player:
+  - platform: kodi
+    host: !secret kodi_host
+    port: !secret kodi_port
+    username: !secret kodi_user
+    password: !secret kodi_pass
+    turn_off_action:
+      service: script.kodi_turn_off
+    turn_on_action:
+      service: script.kodi_turn_on
+
+script:
+  tv_hdmi1:
+    sequence:
+      - service: shell_command.tv_hdmi1
+
+  tv_hdmi1_audio:
+    sequence:
+      - service: shell_command.tv_hdmi1_audio
+
+  kodi_turn_off:
+    sequence:
+      - condition: state
+        entity_id: switch.tv_cec
+        state: 'on'
+      - service: media_player.media_stop
+        entity_id: media_player.kodi
+      - delay: '00:00:03'
+      - service: shell_command.kodi_screensaver
+      - service: automation.trigger
+        entity_id: automation.tv_off
+
+  kodi_turn_on:
+    sequence:
+      - condition: template
+        value_template: '{{is_state("binary_sensor.kodi_screen_saver", "on")}}'
+      - service: script.kodi_wakeup
+
+  start_up_delay_av_off:
+    sequence:
+      - delay: '00:00:05'
+      - service: switch.turn_off
+        entity_id: switch.tv_cec
+      - condition: template
+        value_template: '{{ is_state("media_player.htmt500501_b34d6a", "playing") == False }}'
+      - service: script.sound_bar_off
+
+  tv_on:
+    sequence:
+      - service: script.sound_stop_if_play
+      - service: switch.turn_on
+        entity_id: switch.tv_cec
+      - delay: '00:00:01'
+      - service: script.sound_bar_on
+      - delay: '00:00:03'
+      - service: script.tv_hdmi1_audio
+      - delay: '00:00:03'
+      - service: script.tv_hdmi1
+      - delay: '00:00:11'
+      - service: script.tv_hdmi1_audio
+      - delay: '00:00:03'
+      - service: script.tv_hdmi1
+      - delay: '00:00:11'
+      - service: script.tv_hdmi1_audio
+      - delay: '00:00:03'
+      - service: script.tv_hdmi1
+      - service: script.just_home_clear
+
+  tv_off:
+    sequence:
+      - service: switch.turn_off
+        entity_id: switch.tv_cec
+      - service: script.radio_on
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.select_effect
+          option: trails_color
+
+  kodi_wakeup:
+    sequence:
+      - service: media_player.kodi_call_method
+        data:
+          entity_id: media_player.kodi
+          method: Input.ExecuteAction
+          action: volumedown
+      - service: media_player.kodi_call_method
+        data:
+          entity_id: media_player.kodi
+          method: Input.ExecuteAction
+          action: volumeup
+      - service: media_player.kodi_call_method
+        data:
+          entity_id: media_player.kodi
+          method: GUI.ActivateWindow
+          window: home
+
+  kodi_seek_back:
+    sequence:
+      - service: media_player.kodi_call_method
+        data:
+          entity_id: media_player.kodi
+          method: Input.ExecuteAction
+          action: stepback
+
+shell_command:
+  kodi_screensaver: "/home/hass/.homeassistant/cmds/kodi_screensaver"
+  minix_reboot: "/home/hass/.homeassistant/cmds/minix_reboot {{ value }}"
+  tv_hdmi1: "/home/hass/.homeassistant/cmds/cec_cmd 'as'"
+  tv_hdmi1_audio: "/home/hass/.homeassistant/cmds/cec_cmd 'tx 15:70:10:00'"
+  #tv_volup: "/home/hass/.homeassistant/cmds/cec_cmd 'tx 10:44:41'"
+  #tv_voldown: "/home/hass/.homeassistant/cmds/cec_cmd 'tx 10:44:42'"
+  #kodi_seek_back: "/home/hass/.homeassistant/cmds/kodi_seek_back"
+
+switch:
+  - platform: command_line
+    switches:
+      tv_cec:
+        command_on: "/home/hass/.homeassistant/cmds/cec_cmd 'tx 10:04'"
+        command_off: "/home/hass/.homeassistant/cmds/cec_cmd 'tx 10:36'"

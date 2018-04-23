@@ -1,0 +1,6 @@
+#!/bin/bash
+source $HOME/.homeassistant/set_env
+
+SSHPASS=$LOCALPASS sshpass -e \
+ssh -p2222 $LOCALUSER@$LOCALHOST \
+sudo systemctl restart myservice.service

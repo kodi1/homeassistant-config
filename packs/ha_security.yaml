@@ -1,0 +1,46 @@
+alert:
+  home_motion:
+    name: 'Unexpected move'
+    done_message: 'Unexpected move clear'
+    entity_id: binary_sensor.home_motion
+    state: 'on'
+    repeat:
+      - 5
+      - 30
+      - 120
+      - 360
+    skip_first: True
+    can_acknowledge: True
+    notifiers:
+      - gmail
+
+input_boolean:
+  home_motion:
+    name: home_motion
+    initial: off
+
+binary_sensor:
+  - platform: template
+    sensors:
+      home_motion:
+        device_class: safety
+        value_template: '{{ is_state("input_boolean.home_motion", "on") }}'
+
+automation:
+  - alias: home_motion_detect
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.living_motion
+        to: 'on'
+      - platform: state
+        entity_id: binary_sensor.hall_motion
+        to: 'on'
+      - platform: state
+        entity_id: binary_sensor.bed_motion
+        to: 'on'
+    condition:
+      - condition: template
+        value_template: '{{is_state("device_tracker.root", "home") != True}}'
+    action:
+      - service: input_boolean.turn_on
+        entity_id: input_boolean.home_motion
