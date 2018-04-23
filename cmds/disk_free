@@ -1,0 +1,4 @@
+#!/bin/bash
+source $HOME/.homeassistant/set_env
+
+df -m / | awk 'END { print $4}'

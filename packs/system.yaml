@@ -1,0 +1,235 @@
+homeassistant:
+  customize:
+    switch.sonoff_1:
+      icon: mdi:power-socket-eu
+    switch.rf_switch_1:
+      icon: mdi:power-socket-eu
+    switch.bed_switch:
+      icon: mdi:speaker-wireless
+    switch.av_switch:
+      icon: mdi:amplifier
+    sensor.cpu_usage:
+      icon: mdi:chip
+    sensor.cpu_temp:
+      icon: mdi:oil-temperature
+    sensor.disk_free:
+      icon: mdi:harddisk
+    sensor.mem_free:
+      icon: mdi:memory
+    sensor.homeassistant_v2db:
+      friendly_name: 'hass db'
+      icon: mdi:database
+
+group:
+  system:
+    control: hidden
+    view: false
+    entities:
+      - sensor.cpu_usage
+      - sensor.cpu_temp
+      - sensor.mem_free
+      - sensor.disk_free
+      - sensor.ping_isp
+      - sensor.tomato_disk_free
+      - sensor.homeassistant_v2db
+
+sensor:
+  - platform: command_line
+    name: CPU Temp
+    command: "/home/hass/.homeassistant/cmds/cpu_temp"
+    unit_of_measurement: "°C"
+    scan_interval: 300
+
+  - platform: command_line
+    name: Disk Free
+    command: "/home/hass/.homeassistant/cmds/disk_free"
+    unit_of_measurement: "MB"
+    scan_interval: 300
+
+  - platform: command_line
+    name: Cpu Usage
+    command: "/home/hass/.homeassistant/cmds/cpu_usage"
+    unit_of_measurement: "%"
+    scan_interval: 300
+
+  - platform: command_line
+    name: Mem Free
+    command: "/home/hass/.homeassistant/cmds/mem_free"
+    unit_of_measurement: "MB"
+    scan_interval: 300
+
+  - platform: filesize
+    file_paths:
+      - /home/hass/.homeassistant/home-assistant_v2.db
+    scan_interval: 600
+
+binary_sensor:
+  - platform: command_line
+    command: '/home/hass/.homeassistant/cmds/bravia_check'
+    name: 'bravia'
+    device_class: plug
+    payload_on: "success"
+    payload_off: "fail"
+    scan_interval: 300
+
+  - platform: esp_wd
+    name: x1
+    host: !secret esp_host_x1
+    scan_interval: 300
+
+  - platform: esp_wd
+    name: bedroom
+    host: !secret bedroom
+    scan_interval: 300
+
+  #uptimerobot.com angelgabriel.branson@oou.us
+  - platform: rest
+    name: ext_port
+    resource: https://api.uptimerobot.com/v2/getMonitors
+    method: POST
+    device_class: connectivity
+    payload: api_key=m779688698-f03f19ccae5797b5123ea799&format=json&logs=0
+    headers:
+      Content-Type: application/x-www-form-urlencoded
+      Cache-Control: no-cache
+    value_template: '{{ value_json.monitors[0].status|int == 2 }}'
+    scan_interval: 300
+
+automation:
+  - alias: auto reboot all
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.isp_conn
+        to: 'off'
+    condition:
+      - condition: template
+        value_template: '{{(as_timestamp(now()) - as_timestamp(states.automation.mydelay.attributes.last_triggered)) / 60 > 90 }}'
+    action:
+      - service: script.all_notify
+        data:
+          msg: >-
+            {%- if is_state("sensor.ping_isp", "n/a") -%}
+              Cant ping isp
+            {%- else -%}
+              Isp ping {{states("sensor.ping_isp") }} ms high
+            {%- endif -%}
+              {{" - rebooting."}}
+      - service: script.reboot_all
+
+  - alias: open ports
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.ext_port
+        to: 'off'
+        for:
+          minutes: 6
+    action:
+      - service: script.all_notify
+        data:
+          msg: Open ports
+      - service: script.ports_open
+
+  - alias: mydelay
+    trigger:
+      - platform: homeassistant
+        # Event can also be 'shutdown'
+        event: start
+    action:
+      - service: script.start_up
+      - service: script.all_notify
+        data:
+          msg: HA start.
+      - delay: '00:00:10'
+      - service: script.sun_above
+      - service: script.sun_below
+      - delay: '00:00:10'
+      - service: automation.trigger
+        entity_id: automation.send_settings_hyperion
+      - service: script.ports_open
+      - service: script.start_up_delay_av_off
+
+  - alias: esp x1
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.x1
+        to: 'off'
+        for:
+          minutes:  6
+      - platform: numeric_state
+        entity_id: binary_sensor.x1
+        value_template: '{{state.attributes.mtime}}'
+        below: 15
+      #- platform: numeric_state
+        #entity_id: input_number.slider_effect_time
+        #value_template: {{states.input_number.slider_effect_time.state |int }}
+        #below: 3
+    action:
+      - service: script.all_notify
+        data_template:
+          msg: >-
+            {%- if is_state("binary_sensor.x1", "on") -%}
+              {{states.binary_sensor.x1.attributes.friendly_name }}
+              boot count: {{states.binary_sensor.x1.attributes.boot_count }}
+              rssi: {{states.binary_sensor.x1.attributes.rssi }}
+              {{states.binary_sensor.x1.attributes.boot_cause }}
+              uptime: {{states.binary_sensor.x1.attributes.uptime }}
+              time: {{now().strftime('%H:%M:%S')}}
+            {%- else -%}
+              {{states.binary_sensor.x1.attributes.friendly_name }} is down
+            {%- endif -%}
+
+  - alias: change_current_theme
+    trigger:
+      - platform: state
+        entity_id: input_select.current_theme
+    action:
+      - service: frontend.set_theme
+        data_template:
+          name: '{{states.input_select.current_theme.state}}'
+
+switch:
+  - platform: mqtt
+    name: "sonoff_1"
+    state_topic: "sonoff_1/data"
+    value_template: '{{ value_json["relay/0"] }}'
+    command_topic: "sonoff_1/relay/0/set"
+    payload_on: 1
+    payload_off: 0
+    availability_topic: "sonoff_1/status"
+    payload_available: 1
+    payload_not_available: 0
+
+  - platform: mqtt
+    name: "rf switch 1"
+    state_topic: "rf434/recv/arctech_switch_old/30"
+    value_template: '{"id":{{value_json["id"]}},"unit":{{value_json["unit"]}},"{{value_json["state"]}}":1}'
+    command_topic: "rf434/send/arctech_switch_old"
+    payload_on: '{"id":30,"unit":14,"on":1}'
+    payload_off: '{"id":30,"unit":14,"off":1}'
+
+  - platform: mqtt
+    name: "av_switch"
+    state_topic: "av_switch/data"
+    value_template: '{{ value_json["relay/0"] }}'
+    command_topic: "av_switch/relay/0/set"
+    payload_on: 1
+    payload_off: 0
+    availability_topic: "av_switch/status"
+    payload_available: 1
+    payload_not_available: 0
+
+  - platform: mqtt
+    name: "bed_switch"
+    state_topic: "bed_switch/data"
+    value_template: '{{ value_json["relay/0"] }}'
+    command_topic: "bed_switch/relay/0/set"
+    payload_on: 1
+    payload_off: 0
+    availability_topic: "bed_switch/status"
+    payload_available: 1
+    payload_not_available: 0
+
+shell_command:
+  local_reboot: "/home/hass/.homeassistant/cmds/local_reboot {{ value }}"
+  ha_update: "/home/hass/.homeassistant/cmds/ha_update"
+  port_open: "/home/hass/.homeassistant/cmds/reopen_ports"

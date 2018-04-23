@@ -1,0 +1,163 @@
+group:
+  just_home:
+    view: false
+    control: hidden
+    icon: mdi:home-variant
+    name: home in
+    entities:
+      - timer.just_home
+      - input_number.just_home_timer
+      - binary_sensor.juste_home_lights
+      - automation.just_home_auto
+      - script.just_home_light_on
+      - script.just_home_light_off
+
+automation:
+  - alias: just_home_auto
+    trigger:
+      - platform: state
+        entity_id: timer.just_home
+    action:
+      - service_template: >
+          {%- if (trigger.to_state.state ==  'active') -%}
+            script.just_home_light_on
+          {%- endif -%}
+
+          {%- if (trigger.to_state.state ==  'idle') -%}
+            script.just_home_light_off
+          {%- endif -%}
+
+  - alias: n0ll_not_home
+    trigger:
+      - platform: state
+        entity_id: device_tracker.n0ll
+        to: not_home
+        for:
+          minutes: 2
+    action:
+      - service: script.n0ll_not_home
+
+  - alias: n0ll_home
+    trigger:
+      - platform: state
+        entity_id: device_tracker.n0ll
+        from: not_home
+        to: home
+    action:
+      - service: script.n0ll_home
+
+  - alias: home_near
+    trigger:
+      - platform: numeric_state
+        entity_id: proximity.home
+        below: 25
+    condition:
+      - condition: template
+        value_template: >-
+          {{
+            is_state_attr('proximity.home', 'dir_of_travel', 'towards') or
+            is_state_attr('proximity.home', 'dir_of_travel', 'arrived')
+          }}
+    action:
+      - service: script.home_near
+
+  - alias: root_home
+    trigger:
+      - platform: zone
+        entity_id: device_tracker.m4b30x
+        zone: zone.home
+        event: enter
+    action:
+      - service: automation.turn_on
+        entity_id: automation.just_home
+
+  - alias: just_home
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.living_motion
+        to: 'on'
+      - platform: state
+        entity_id: binary_sensor.hall_motion
+        to: 'on'
+      - platform: state
+        entity_id: binary_sensor.bed_motion
+        to: 'on'
+    action:
+      - service: script.just_home
+      - service: automation.turn_off
+        entity_id:
+          - automation.just_home
+          - automation.home_motion_detect
+
+binary_sensor:
+  - platform: template
+    sensors:
+      juste_home_lights:
+        device_class: light
+        value_template: '{{ is_state("input_boolean.just_home_pause", "on") }}'
+
+script:
+  just_home:
+    sequence:
+      - service: timer.start
+        entity_id: timer.just_home
+        data_template:
+          duration: '{{states.input_number.just_home_timer.state|int * 60}}'
+      - service: script.radio_on
+      - service: input_boolean.turn_off
+        entity_id: input_boolean.home_motion
+      - service: automation.turn_on
+        entity_id: automation.all_motion_track_on
+
+  n0ll_home:
+    sequence:
+      - service: script.radio_on
+      - service: automation.trigger
+        entity_id: automation.send_rgb_hyperion
+      - condition: state
+        entity_id: media_player.htmt500501_b34d6a
+        state: 'playing'
+      - service: timer.pause
+        entity_id: timer.sound_bar
+
+  home_near_turnon:
+    sequence:
+      - service: switch.turn_on
+        entity_id:
+          - switch.av_switch
+          - switch.bed_switch
+
+  home_near:
+    sequence:
+      - service: notify.gmail
+        data:
+          message: home near trigger
+          title: 'hass'
+      - service: automation.turn_off
+        entity_id: automation.home_near
+      - service: automation.turn_on
+        entity_id: automation.home_away
+      - service: script.home_near_heating
+      - service: script.home_near_turnon
+      - delay: '00:01:30'
+      - service: homeassistant.restart
+
+input_boolean:
+  just_home_pause:
+    name: juste_home
+    initial: off
+
+timer:
+  just_home:
+    name: 'time in'
+    icon: mdi:timer
+    duration: '00:01:00'
+
+input_number:
+  just_home_timer:
+    name: 'enter time'
+    unit_of_measurement: 'min'
+    min: 1
+    max: 15
+    step: 1
+    icon: mdi:home-modern

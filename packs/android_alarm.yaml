@@ -1,0 +1,73 @@
+group:
+  android_post_alarm:
+    view: false
+    control: hidden
+    icon: mdi:alarm-plus
+    name: andoid alarm
+    entities:
+      - input_number.post_android_alarm
+      - timer.post_android_alarm
+      - automation.event_android_alarm
+      - automation.post_android_alarm
+
+automation:
+  - alias: event_android_alarm
+    trigger:
+      - platform: event
+        event_type: android_alarm
+    action:
+      - service: timer.start
+        entity_id: timer.post_android_alarm
+        data_template:
+          duration: '00:{{states.input_number.post_android_alarm.state|int}}:00'
+      - service: logbook.log
+        data_template:
+          name: 'ha_alarm'
+          message: 'timer arm {{states.input_number.post_android_alarm.state}} min'
+
+  - alias: post_android_alarm
+    trigger:
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.post_android_alarm
+    action:
+      - service: script.android_post_alarm
+
+script:
+  android_post_alarm:
+    sequence:
+      - condition: state
+        entity_id: device_tracker.m4b30x
+        state: 'home'
+      - service: logbook.log
+        data:
+          name: 'ha_alarm'
+          message: 'run'
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.select_radio_bed
+          option: Nova Bg
+      - service: automation.trigger
+        entity_id: automation.bed_music_on
+      - wait_template: "{{states.media_player.bedroom_speaker.state == 'playing'}}"
+        timeout: '00:00:15'
+      - service: media_player.volume_set
+        data:
+          entity_id: media_player.bedroom_speaker
+          volume_level: 0.15
+
+input_number:
+  post_android_alarm:
+    name: 'delay'
+    unit_of_measurement: 'min'
+    min: 1
+    max: 9
+    step: 1
+    icon: mdi:alarm-multiple
+
+timer:
+  post_android_alarm:
+    name: 'time delay'
+    icon: mdi:timer
+    duration: '00:05:00'

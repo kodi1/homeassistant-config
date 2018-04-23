@@ -1,0 +1,6 @@
+#!/bin/bash
+source $HOME/.homeassistant/set_env
+
+SSHPASS=$PASS sshpass -e \
+ssh $USERNAME@$HOST \
+'kodi-send --action=VolumeDown --action=VolumeUp'

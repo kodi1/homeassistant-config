@@ -1,0 +1,112 @@
+automation:
+  - alias: root_from_work
+    trigger:
+      - platform: zone
+        entity_id: device_tracker.m4b30x
+        zone: zone.work
+        event: leave
+    action:
+      - service: script.root_from_work
+
+  - alias: root_not_home
+    trigger:
+      - platform: zone
+        entity_id: device_tracker.m4b30x
+        zone: zone.home
+        event: leave
+    action:
+      - service: script.root_not_home
+
+  - alias: home_away
+    trigger:
+      - platform: numeric_state
+        entity_id: proximity.home
+        above: 25
+    condition:
+      - condition: template
+        value_template: >-
+          {{
+            is_state_attr('proximity.home', 'dir_of_travel', 'away_from')
+          }}
+    action:
+      - service: script.home_away
+
+script:
+  root_from_work:
+    sequence:
+      - service: logbook.log
+        data:
+          name: track
+          message: 'exit work'
+
+  root_not_home:
+    sequence:
+      - service: media_player.turn_off
+        entity_id:
+          - media_player.htmt500501_b34d6a
+          - media_player.bedroom_speaker
+      - service: script.kodi_turn_off
+      - service: automation.turn_on
+        entity_id: automation.home_motion_detect
+      - service: automation.turn_off
+        entity_id: automation.all_motion_track_on
+
+  n0ll_not_home:
+    sequence:
+      - service: timer.start
+        entity_id: timer.sound_bar
+        data:
+          duration: '00:01:00'
+      - service: script.hyperion_clear_rgb
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.select_effect
+          option: Sparks Color
+
+  home_away_turnoff:
+    sequence:
+      - service: switch.turn_off
+        entity_id:
+          - switch.av_switch
+          - switch.bed_switch
+
+  home_away:
+    sequence:
+      - service: notify.gmail
+        data:
+          message: home away trigger
+          title: 'hass'
+      - service: automation.turn_off
+        entity_id: automation.home_away
+      - service: automation.turn_on
+        entity_id: automation.home_near
+      - service: script.home_away_heating
+      - service: script.home_away_turnoff
+
+  home_near_heating:
+    sequence:
+      - condition: state
+        entity_id: input_boolean.control_heating
+        state: 'on'
+      - service: climate.set_operation_mode
+        entity_id: climate.living
+        data:
+          operation_mode: 'auto'
+      - service: climate.set_temperature
+        entity_id: climate.living
+        data_template:
+          temperature: '{{states.input_number.temp_home.state|int - 1}}'
+
+  home_away_heating:
+    sequence:
+      - condition: state
+        entity_id: input_boolean.control_heating
+        state: 'on'
+      - service: climate.set_operation_mode
+        entity_id: climate.living
+        data:
+          operation_mode: 'manual'
+      - service: climate.set_temperature
+        entity_id: climate.living
+        data_template:
+          temperature: '{{states.input_number.temp_away.state|int}}'

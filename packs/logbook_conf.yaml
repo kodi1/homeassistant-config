@@ -1,0 +1,8 @@
+logbook:
+  exclude:
+    domains:
+      - input_number
+      - input_datetime
+      - input_boolean
+      - input_select
+      - climate

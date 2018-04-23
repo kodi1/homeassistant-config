@@ -1,0 +1,248 @@
+homeassistant:
+  customize:
+    script.sound_bar_on:
+      icon: mdi:speaker
+    script.sound_bar_off:
+      icon: mdi:speaker-off
+    media_player.htmt500501_b34d6a:
+      friendly_name: Sound Bar
+    binary_sensor.sound_bar_active:
+      icon: mdi:speaker-wireless
+
+group:
+  media:
+    control: hidden
+    view: false
+    entities:
+      - input_select.select_sound_bar
+      - automation.sound_bar_music_on
+      - automation.sound_bar_music_off
+      - input_number.sound_bar_music_timer
+      - timer.sound_bar
+      - input_boolean.enable_sleep
+      - media_player.htmt500501_b34d6a
+
+binary_sensor:
+  - platform: template
+    sensors:
+      sound_bar_active:
+        device_class: sound
+        delay_off:
+          seconds: 60
+        value_template: '{{
+                            is_state("media_player.htmt500501_b34d6a", "playing") or
+                              ((is_state("switch.tv_cec", "on") or
+                                  not is_state("media_player.kodi", "idle")) and
+                                  not is_state("media_player.kodi", "off"))
+                            }}'
+
+automation:
+  - alias: sound_bar_music_on
+    trigger:
+      - platform: state
+        entity_id: media_player.htmt500501_b34d6a
+        from: 'off'
+        to: 'idle'
+        for:
+          seconds: 3
+      - platform: state
+        entity_id: input_select.select_sound_bar
+    action:
+      - service: timer.start
+        entity_id: timer.sound_bar
+        data_template:
+          duration: '00:{{states.input_number.sound_bar_music_timer.state|int}}:00'
+      - service: script.sound_bar_do_sleep_if
+      - service: media_player.play_media
+        data_template:
+          entity_id: media_player.htmt500501_b34d6a
+          media_content_type: 'audio/mp3'
+          media_content_id: >-
+            {%-
+                set play=
+                {
+                "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
+                "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
+                "State Of Trance": "http://de-hz-fal-stream07.rautemusik.fm/trance",
+                "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
+                "Ocean Radio": "http://philae.shoutca.st:8446/stream",
+                "Costa Del Mar": "http://sc-costadelmar.1.fm:10156",
+                "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
+                "Lounge FM": "http://cast.loungefm.com.ua/chillout128",
+                "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
+                "Eilo Ambient": "http://eilo.org:8000/ambient",
+                "Milano Lounge": "http://178.32.62.154:9739/stream",
+                "Lounge": "http://live.radioart.com:80/fLounge.mp3",
+                "Smooth Lounge": "http://live.radioart.com:80/fSmooth_lounge.mp3",
+                "Vocal Lounge": "http://live.radioart.com:80/fVocal_lounge.mp3",
+                "Sleep": "http://live.radioart.com:80/fSleep.mp3",
+                "New Age": "http://live.radioart.com:80/fNew_age.mp3",
+                "Ambient": "http://live.radioart.com:80/fAmbient.mp3",
+                "Ambient Sleep": "https://radio.stereoscenic.com/asp-s",
+                "Calm Radio": "http://streams.calmradio.com/api/39/128/stream",
+                "Ambi Nature Radio": "http://94.23.252.14:8067/stream",
+                "Chroma Ambient": "http://148.251.184.14:8004/;539699463556254stream.nsv"
+                }
+            -%}
+            {{ play[states("input_select.select_sound_bar")] }}
+
+  - alias: sound_bar_music_off
+    trigger:
+      - platform: state
+        entity_id: device_tracker.m4b30x
+        from: home
+        to: not_home
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.sound_bar
+    action:
+      - service: media_player.turn_off
+        entity_id: media_player.htmt500501_b34d6a
+
+  - alias: sound_bar_idle
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.sound_bar_active
+        to: 'off'
+    action:
+      - service: script.sound_bar_off
+
+input_select:
+  select_sound_bar:
+    name: sound bar radio
+    options:
+      - 1Mix Radio
+      - Nova Bg
+      - State Of Trance
+      - 1FM Amsterdam
+      - Ocean Radio
+      - Costa Del Mar
+      - 1FM Lounge Radio
+      - Lounge FM
+      - Absolute Chillout
+      - Eilo Ambient
+      - Milano Lounge
+      - Lounge
+      - Smooth Lounge
+      - Vocal Lounge
+      - Sleep
+      - New Age
+      - Ambient
+      - Ambient Sleep
+      - Calm Radio
+      - Ambi Nature Radio
+      - Chroma Ambient
+    icon: mdi:radio
+
+script:
+  sound_bar_off:
+    sequence:
+      - service: shell_command.sound_bar_off
+
+  sound_bar_on:
+    sequence:
+      - service: shell_command.sound_bar_on
+
+  radio_on:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: media_player.htmt500501_b34d6a
+            state: 'off'
+          - condition: or
+            conditions:
+            - condition: time
+              after: '18:30:00'
+              before: '00:05:00'
+              weekday:
+                - mon
+                - tue
+                - wed
+                - thu
+                - fri
+            - condition: time
+              after: '10:30:00'
+              before: '00:35:00'
+              weekday:
+                - sat
+                - sun
+      - service: media_player.turn_on
+        entity_id: media_player.htmt500501_b34d6a
+      - wait_template: "{{states.media_player.htmt500501_b34d6a.state == 'playing'}}"
+        timeout: '00:00:15'
+      - service: media_player.volume_set
+        data:
+          entity_id: media_player.htmt500501_b34d6a
+          volume_level: 0.16
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.select_effect
+          option: trails
+
+  sound_bar_do_sleep_if:
+    sequence:
+      - condition: template
+        value_template: >-
+          {%- if is_state("device_tracker.n0ll", "home") or
+          is_state("input_boolean.enable_sleep", "off") -%}
+            True
+          {%- else -%}
+            False
+          {%- endif -%}
+      - service: timer.pause
+        entity_id: timer.sound_bar
+
+  start_up_sound_bar:
+    sequence:
+      - condition: state
+        entity_id: media_player.htmt500501_b34d6a
+        state: 'playing'
+      - service: timer.start
+        entity_id: timer.sound_bar
+      - condition: state
+        entity_id: device_tracker.n0ll
+        state: 'home'
+      - service: timer.pause
+        entity_id: timer.sound_bar
+
+  sound_stop_if_play:
+    sequence:
+      - condition: state
+        entity_id: media_player.htmt500501_b34d6a
+        state: 'playing'
+      #- service: media_player.media_stop
+      - service: media_player.turn_off
+        entity_id: media_player.htmt500501_b34d6a
+shell_command:
+  sound_bar_off: "/home/hass/.homeassistant/cmds/cec_cmd 'tx 15:44:6c'"
+  sound_bar_on: "/home/hass/.homeassistant/cmds/cec_cmd 'tx 15:44:6d'"
+
+media_player:
+  - platform: cast
+    host: !secret cast_sound_bar
+
+  - platform: songpal_m
+    name: soundbar
+    endpoint: !secret songpal_soundbar
+
+input_boolean:
+  enable_sleep:
+    name: auto seep
+    icon: mdi:sleep
+
+timer:
+  sound_bar:
+    name: 'sound time'
+    icon: mdi:timer-sand
+    duration: '00:01:00'
+
+input_number:
+  sound_bar_music_timer:
+    name: 'music time'
+    unit_of_measurement: 'min'
+    min: 10
+    max: 120
+    step: 5
+    icon: mdi:av-timer

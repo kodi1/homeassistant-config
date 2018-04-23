@@ -1,0 +1,4 @@
+#!/bin/bash
+source $HOME/.homeassistant/set_env
+
+awk '{print $1 * 100}' /proc/loadavg

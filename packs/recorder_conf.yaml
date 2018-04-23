@@ -1,0 +1,60 @@
+recorder:
+  purge_interval: 1
+  purge_keep_days: 7
+
+  include:
+    entities:
+     - automation.root_home
+     - automation.root_not_home
+     - automation.n0ll_home
+     - automation.n0ll_not_home
+     - automation.auto_reboot_all
+     - automation.tv_off
+     - automation.tv_on
+     - automation.esp_x1
+     - automation.home_away
+     - automation.home_near
+     - automation.just_home
+     - automation.home_motion_detect
+     - automation.event_android_alarm
+     - automation.just_home
+     - automation.follow_on
+     - automation.follow_off
+     - automation.all_motion_track_on
+
+  exclude:
+    domains:
+      - weblink
+      - updater
+      - notify
+      - group
+      - persistent_notification
+      - camera
+      - script
+      - climate
+      - automation
+      - counter
+
+    entities:
+      - timer.living_motion_timer
+      - timer.hall_motion_timer
+      - timer.bed_motion_timer
+      - timer.light_follow
+      #- binary_sensor.living_motion
+      #- binary_sensor.hall_motion
+      #- binary_sensor.bed_motion
+      - automation.living_motion_trigger
+      - automation.hall_motion_trigger
+      - automation.bed_motion_trigger
+      - media_player.soundbar
+      - input_boolean.just_home_pause
+      - input_boolean.light_auto_follow
+      - input_boolean.home_motion
+      #- sensor.tomato_disk_free_rand
+      - binary_sensor.download_active
+      - sensor.transmission_status
+      - input_number.brightness
+      - input_number.saturation
+      - input_number.gamma_r
+      - input_number.gamma_g
+      - input_number.gamma_b

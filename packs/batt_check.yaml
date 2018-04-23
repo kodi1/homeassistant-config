@@ -1,0 +1,79 @@
+homeassistant:
+  customize:
+    binary_sensor.batts_low:
+      icon: mdi:battery-alert
+
+group:
+  batts:
+    control: hidden
+    view: false
+    entities:
+      - sensor.dht22_176e41_battery
+      - sensor.bme280_171f93_battery
+      - sensor.root_battery
+
+alert:
+  low_battery:
+    name: Battery is Low
+    done_message: Battery is Ok
+    entity_id: binary_sensor.batts_low
+    state: 'on'
+    repeat:
+      - 60
+      - 120
+      - 360
+    #can_acknowledge: True
+    #skip_first: True
+    notifiers:
+      - kodi
+      - gmail
+
+sensor:
+  - platform: template
+    sensors:
+      root_battery:
+        unit_of_measurement: '%'
+        icon_template: 'mdi:gauge'
+        value_template: >-
+            {%- if states.device_tracker.m4b30x.attributes.battery %}
+              {{ states.device_tracker.m4b30x.attributes.battery }}
+            {% else %}
+                {{ states.sensor.root_battery.state }}
+            {%- endif %}
+
+binary_sensor:
+  - platform: template
+    sensors:
+      batts_low:
+        device_class: battery
+        value_template: >-
+          {%- if states.sensor.dht22_176e41_battery.state and
+                  states.sensor.bme280_171f93_battery.state -%}
+            {%- if
+              states.sensor.dht22_176e41_battery.state|float <= states.input_number.slider_batt_level_v.state|float or
+              states.sensor.bme280_171f93_battery.state|float <= states.input_number.slider_batt_level_v.state|float or
+              states.sensor.root_battery.state|float <= states.input_number.slider_batt_level_p.state|float or
+              is_state_attr('climate.living', 'low_battery', true) -%}
+              True
+            {%- else -%}
+              False
+            {%- endif %}
+          {%- else -%}
+            True
+          {%- endif %}
+
+input_number:
+  slider_batt_level_v:
+    name: 'V alert'
+    unit_of_measurement: 'V'
+    min: 2.5
+    max: 3.2
+    step: 0.05
+    icon: mdi:battery-alert
+  slider_batt_level_p:
+    name: '% alert'
+    unit_of_measurement: '%'
+    min: 1
+    max: 20
+    step: 1
+    icon: mdi:battery-alert

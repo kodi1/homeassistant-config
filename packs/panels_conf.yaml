@@ -1,0 +1,20 @@
+panel_iframe:
+  router:
+    title: 'router'
+    icon: mdi:router-wireless
+    url: !secret url_router
+
+  hts:
+    title: 'hts'
+    icon: mdi:monitor
+    url: !secret url_hts
+
+  #transmission:
+    #title: 'transmission'
+    #icon: mdi:download-network
+    #url: !secret url_transmission
+
+  kodi:
+    title: 'kodi'
+    icon: mdi:kodi
+    url: !secret url_kodi_remote

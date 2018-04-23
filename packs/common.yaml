@@ -1,0 +1,180 @@
+notify:
+  - platform: kodi
+    name: kodi
+    host: !secret kodi_host
+    port: !secret kodi_port
+    username: !secret kodi_user
+    password: !secret kodi_pass
+
+  - platform: smtp
+    name: gmail
+    server: smtp.gmail.com
+    port: 587
+    timeout: 15
+    sender: hass@gmail.com
+    encryption: starttls
+    username: !secret g_user
+    password: !secret g_pass
+    recipient:
+      - !secret smtp_recp
+
+zone:
+  - name: Home
+    latitude: !secret home_latitude
+    longitude: !secret home_longitude
+    radius: 50
+    icon: mdi:home
+
+  - name: Work
+    latitude: !secret work_latitude
+    longitude: !secret work_longitude
+    radius: 50
+    icon: mdi:office
+    passive: true
+
+proximity:
+  home:
+    ignored_zones:
+      - work
+    devices:
+      - device_tracker.m4b30x
+    tolerance: 1000
+    unit_of_measurement: km
+
+automation:
+  - alias: updates notify
+    trigger:
+      - platform: state
+        entity_id: updater.updater
+    action:
+      - service: script.all_notify
+        data:
+          msg: Update for Home Assistant is available.
+
+device_tracker:
+  - platform: tomato
+    consider_home: 120
+    interval_seconds: 60
+    host: !secret tomato_host
+    port: !secret tomato_port
+    username: !secret tomato_user
+    password: !secret tomato_pass
+    http_id: !secret tomato_httpid
+    new_device_defaults:
+      track_new_devices: false
+      hide_if_away: false
+
+  - platform: gpslogger
+
+  - platform: google_maps
+    username: !secret g_user
+    password: !secret g_pass
+    interval_seconds: 60
+
+input_number:
+  pressure_speed:
+    name: 'hPa/h alert'
+    unit_of_measurement: 'hPa/h'
+    min: 0.8
+    max: 1.3
+    step: 0.01
+    icon: mdi:altimeter
+
+input_select:
+  current_theme:
+    options:
+      - default
+      - night
+      - midnight
+    initial: default
+    icon: mdi:theme-light-dark
+
+script:
+  all_notify:
+    sequence:
+      - service: notify.kodi
+        data_template:
+          message: '{{ msg }}'
+          data:
+            icon: 'info'
+      - service: script.mail_notify
+        data_template:
+          m: '{{ msg }}'
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: binary_sensor.kodi_screen_saver
+            state: 'on'
+          - condition: state
+            entity_id: media_player.kodi
+            state: 'idle'
+      - service: persistent_notification.create
+        data_template:
+          message: '{{ msg }}'
+
+  mail_notify:
+    sequence:
+      - condition: template
+        value_template: >-
+          {{states.device_tracker.m4b30x.state != 'home'}}
+      - service: notify.gmail
+        data_template:
+          message: '{{ m }}'
+          title: 'hass'
+
+  local_reboot:
+    sequence:
+      - service: shell_command.local_reboot
+        data_template:
+          value: '{{"now"}}'
+
+  minix_reboot:
+    sequence:
+      - service: shell_command.minix_reboot
+        data_template:
+          value: '{{"+0"}}'
+
+  ports_open:
+    sequence:
+      - service: shell_command.port_open
+
+  reboot_all:
+    sequence:
+      - delay: '00:00:05'
+      - service: script.kodi_turn_off
+      - service: shell_command.minix_reboot
+        data_template:
+          value: '{{"+3"}}'
+      - service: shell_command.local_reboot
+        data_template:
+          value: '{{"+4"}}'
+      - service: script.tomato_reboot
+
+  hass_update:
+    sequence:
+      - service: shell_command.ha_update
+      - service: homeassistant.check_config
+      - service: homeassistant.restart
+
+  sun_above:
+    sequence:
+      - condition: template
+        value_template: '{{is_state("sun.sun", "above_horizon")}}'
+      - service: automation.trigger
+        entity_id: automation.sun_rise
+
+  sun_below:
+    sequence:
+      - condition: template
+        value_template: '{{is_state("sun.sun", "below_horizon")}}'
+      - service: automation.trigger
+        entity_id: automation.sun_set
+
+  start_up:
+    sequence:
+      - service: shell_command.kodi_wakeup
+      - delay: '00:00:01'
+      - service: shell_command.kodi_screensaver
+      - service: script.start_up_sound_bar
+      - service: script.start_up_bedroom_speaker
+      - service: script.start_up_bed_led

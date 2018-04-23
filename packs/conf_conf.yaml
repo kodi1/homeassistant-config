@@ -1,0 +1,15 @@
+http:
+  # Uncomment this to add a password (recommended!)
+  api_password: !secret http_password
+  # Uncomment this if you are using SSL or running in Docker etc
+  # base_url: example.duckdns.org:8123
+  trusted_networks:
+    - 192.168.1.0/24
+
+media_extractor:
+
+system_log:
+  max_entries: 20
+
+logger:
+  default: warn

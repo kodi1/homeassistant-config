@@ -1,0 +1,8 @@
+#!/bin/bash
+source $HOME/.homeassistant/set_env
+
+#'sleep 240; kodi-send --action="Reboot"'
+
+SSHPASS=$PASS sshpass -e \
+ssh $USERNAME@$HOST \
+shutdown -r $1 'hass ...'

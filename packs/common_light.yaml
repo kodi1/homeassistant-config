@@ -1,0 +1,266 @@
+group:
+  auto_follow:
+    view: false
+    control: hidden
+    name: follow
+    entities:
+      - input_boolean.light_auto_follow
+      - input_number.light_follow_off_time
+      - timer.light_follow
+      - automation.follow_on
+      - automation.follow_off
+
+  auto_motion:
+    view: false
+    control: hidden
+    name: light_extend
+    entities:
+      - automation.all_motion_track_on
+      - automation.all_motion_tracking
+      - automation.all_motion_track_off
+      - automation.all_motion_track_detect
+      - input_number.motion_track_time
+      - input_number.motion_track_count
+      - timer.all_light_timer
+      - counter.motion_count
+
+automation:
+  - alias: light keep alive
+    trigger:
+      - platform: time
+        minutes: '/10'
+        seconds: 0
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: device_tracker.n0ll
+          state: home
+        - condition: template
+          value_template: '{{is_state("media_player.htmt500501_b34d6a", "playing")}}'
+    action:
+      - service: automation.trigger
+        entity_id: automation.send_rgb_hyperion
+
+  - alias: follow_on
+    trigger:
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.light_follow
+    action:
+      - service: input_boolean.turn_on
+        data:
+          entity_id: input_boolean.light_auto_follow
+
+  - alias: follow_off_cancel
+    trigger:
+      - platform: state
+        entity_id: input_boolean.light_auto_follow
+        to: 'on'
+    action:
+      - service: timer.cancel
+        entity_id: timer.light_follow
+
+  - alias: follow_off
+    trigger:
+      - platform: state
+        entity_id: input_boolean.light_auto_follow
+        to: 'off'
+    action:
+      - service: timer.start
+        entity_id: timer.light_follow
+        data_template:
+          duration: '00:{{states.input_number.light_follow_off_time.state|int}}:00'
+
+  - alias: all_motion_track_on
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.living_motion
+        to: 'on'
+      - platform: state
+        entity_id: binary_sensor.hall_motion
+        to: 'on'
+      - platform: state
+        entity_id: binary_sensor.bed_motion
+        to: 'on'
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: timer.all_light_timer
+          state: 'idle'
+        - condition: or
+          conditions:
+            - condition: state
+              entity_id: device_tracker.n0ll
+              state: 'home'
+            - condition: state
+              entity_id: binary_sensor.sound_bar_active
+              state: 'on'
+    action:
+      - service: timer.start
+        entity_id: timer.all_light_timer
+        data_template:
+          duration: '{{states.input_number.motion_track_time.state|int}}'
+
+  - alias: all_motion_tracking
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.living_motion
+        to: 'on'
+      - platform: state
+        entity_id: binary_sensor.hall_motion
+        to: 'on'
+      - platform: state
+        entity_id: binary_sensor.bed_motion
+        to: 'on'
+    condition:
+      condition: state
+      entity_id: timer.all_light_timer
+      state: 'active'
+    action:
+      - service: counter.increment
+        entity_id: counter.motion_count
+
+  - alias: all_motion_track_off
+    trigger:
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.all_light_timer
+    action:
+      - service: counter.reset
+        entity_id: counter.motion_count
+
+  - alias: all_motion_track_detect
+    trigger:
+      #- platform: numeric_state
+        #entity_id: counter.motion_count
+        #above: 6
+      - platform: template
+        value_template: '{{
+                           (states.counter.motion_count.state | int) >=
+                             (states.input_number.motion_track_count.state | int)
+                         }}'
+    action:
+      - service: counter.reset
+        entity_id: counter.motion_count
+      - service: timer.start
+        entity_id: timer.all_light_timer
+        data_template:
+          duration: '{{states.input_number.motion_track_time.state|int}}'
+      - service: timer.start
+        entity_id: timer.just_home
+        data_template:
+          duration: '{{states.input_number.just_home_timer.state|int * 60}}'
+
+input_boolean:
+  light_auto_follow:
+    name: follow
+    icon: mdi:track-light
+    initial: on
+
+input_number:
+  light_follow_off_time:
+    name: 'time'
+    unit_of_measurement: 'min'
+    min: 1
+    max: 15
+    step: 1
+    icon: mdi:timer-sand
+  motion_track_time:
+    name: 'time'
+    unit_of_measurement: 'sec'
+    min: 60
+    max: 600
+    step: 10
+    icon: mdi:timer-sand
+  motion_track_count:
+    name: 'count'
+    min: 1
+    max: 15
+    step: 1
+    icon: mdi:counter
+
+timer:
+  light_follow:
+    name: 'follow off time'
+    icon: mdi:timer
+    duration: '00:00:30'
+  all_light_timer:
+    name: 'detect'
+    icon: mdi:timer
+    duration: '00:00:30'
+
+history_graph:
+  motion:
+    name: motion
+    entities:
+      - binary_sensor.living_motion
+      - light.living_light
+      - binary_sensor.hall_motion
+      - light.hall_light
+      - binary_sensor.bed_motion
+      - light.bed_led
+    hours_to_show: 1
+    refresh: 60
+
+script:
+  just_home_light_on:
+    sequence:
+      #- condition: or
+        #conditions:
+          #- condition: sun
+            #after: sunset
+            #after_offset: "00:15:00"
+          #- condition: sun
+            #before: sunrise
+            #before_offset: "-00:15:00"
+      - condition: state
+        entity_id: switch.hyperion_enable
+        state: 'on'
+      - service: timer.start
+        entity_id: timer.living_light_timer
+        data_template:
+          duration: '{{states.input_number.living_light_time.state|int}}'
+      - service: timer.start
+        entity_id: timer.hall_light_timer
+        data_template:
+          duration: '{{states.input_number.hall_light_time.state|int}}'
+      - delay: '00:00:03'
+      - service: timer.pause
+        entity_id:
+          - timer.living_light_timer
+          - timer.hall_light_timer
+      - service: input_boolean.turn_on
+        entity_id: input_boolean.just_home_pause
+      - service: logbook.log
+        data:
+          name: 'Just home light'
+          message: 'On'
+
+  just_home_light_off:
+    sequence:
+      - condition: state
+        entity_id: binary_sensor.juste_home_lights
+        state: 'on'
+      - service: timer.start
+        entity_id:
+          - timer.living_light_timer
+          - timer.hall_light_timer
+      - delay: '00:00:03'
+      - service: input_boolean.turn_off
+        entity_id:
+          - input_boolean.just_home_pause
+          - input_boolean.light_auto_follow
+      - service: logbook.log
+        data:
+          name: 'Just home light'
+          message: 'Off'
+
+counter:
+  motion_count:
+    icon: mdi:counter
+    initial: 0
+    step: 1

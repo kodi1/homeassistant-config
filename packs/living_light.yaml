@@ -1,0 +1,152 @@
+group:
+  living_motion:
+    view: false
+    control: hidden
+    name: 'living motion'
+    entities:
+      - binary_sensor.living_motion
+      - automation.living_light_trigger
+      - automation.living_light_off
+      - automation.living_light_on
+      - script.living_auto_light
+      - input_number.living_light_time
+      - timer.living_light_timer
+      - light.living_light
+
+automation:
+  - alias: living_motion_trigger
+    trigger:
+      - platform: mqtt
+        topic: rf434/recv/arctech_screen_old/27
+        payload: '{"id":27,"unit":13,"state":"up"}'
+    action:
+      - service: timer.start
+        entity_id: timer.living_motion_timer
+
+  - alias: living_light_trigger
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.living_motion
+        to: 'on'
+    action:
+      - service: script.living_auto_light
+
+  - alias: living_light_on
+    trigger:
+      - platform: state
+        entity_id: timer.living_light_timer
+        to: 'active'
+        from: 'idle'
+        #for:
+          #seconds: 1
+    action:
+      - service: light.turn_on
+        entity_id: light.living_light
+
+  - alias: living_light_off
+    trigger:
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.living_light_timer
+    action:
+      #- delay: '00:00:01'
+      - service: light.turn_off
+        entity_id: light.living_light
+
+input_number:
+  living_light_time:
+    name: 'living'
+    unit_of_measurement: 'sec'
+    min: 5
+    max: 300
+    step: 5
+    icon: mdi:camera-timer
+
+binary_sensor:
+  - platform: template
+    sensors:
+      living_motion:
+        device_class: motion
+        value_template: '{{ is_state("timer.living_motion_timer", "active") }}'
+
+script:
+  living_auto_light:
+    sequence:
+      - service: script.hall_clear_timer
+      - service: script.bed_clear_timer
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: switch.hyperion_enable
+            state: 'on'
+          - condition: state
+            entity_id: device_tracker.n0ll
+            state: 'not_home'
+          - condition: state
+            entity_id: binary_sensor.sound_bar_active
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.juste_home_lights
+            state: 'off'
+          - condition: template
+            value_template: >-
+              {%- if (states.script.living_auto_light.attributes.last_triggered != None) -%}
+                {{
+                  (as_timestamp(now()) -
+                  as_timestamp(states.script.living_auto_light.attributes.last_triggered)) > 5
+                }}
+              {%- else -%}
+                True
+              {%- endif -%}
+      - service: logbook.log
+        data:
+          name: 'Living light'
+          message: 'On'
+      - service: timer.start
+        entity_id: timer.living_light_timer
+        data_template:
+          duration: '{{states.input_number.living_light_time.state|int}}'
+
+  living_clear_timer:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: timer.living_light_timer
+            state: 'active'
+          - condition: state
+            entity_id: binary_sensor.juste_home_lights
+            state: 'off'
+          - condition: state
+            entity_id: input_boolean.light_auto_follow
+            state: 'on'
+          #- condition: template
+            #value_template: >-
+              #{%- if (states.automation.living_light_on.attributes.last_triggered != None) -%}
+                #{{
+                  #(as_timestamp(now()) -
+                  #as_timestamp(states.automation.living_light_on.attributes.last_triggered)) > 30
+                #}}
+              #{%- else -%}
+                #True
+              #{%- endif -%}
+      - service: timer.finish
+        entity_id: timer.living_light_timer
+
+light:
+  - platform: mqtt
+    name: "living light"
+    command_topic: "rf434/send/arctech_switch"
+    payload_on: '{"id":10,"unit":10,"on":1}'
+    payload_off: '{"id":10,"unit":10,"off":1}'
+
+timer:
+  living_motion_timer:
+    name: 'motion timer'
+    icon: mdi:timer
+    duration: '00:00:10'
+  living_light_timer:
+    name: 'light time'
+    icon: mdi:timer
+    duration: '00:00:30'
