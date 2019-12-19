@@ -1,0 +1,17 @@
+/deps
+/tts
+.uuid
+home-assistant.log
+home-assistant_v2.db*
+secrets.yaml
+mqtt_passwd
+known_devices.yaml
+set_env
+.HA_VERSION
+__pycache__
+.google_maps*
+entity_registry.yaml
+/.storage
+/python_scripts
+/www
+/custom_components

@@ -1,0 +1,8 @@
+#!/bin/bash
+source /config/set_env
+
+SSHPASS=$PASS sshpass -e \
+ssh -oStrictHostKeyChecking=no $USERNAME@$HOST \
+'kodi-send --action="ActivateScreensaver" &&\
+  sleep 1 && \
+  /storage/.config/system.d/ha_start.sh'

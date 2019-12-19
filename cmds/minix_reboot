@@ -1,0 +1,8 @@
+#!/bin/bash
+source /config/set_env
+
+#'sleep 240; kodi-send --action="Reboot"'
+
+SSHPASS=$PASS sshpass -e \
+ssh -oStrictHostKeyChecking=no $USERNAME@$HOST \
+shutdown -r $1 'hass ...'

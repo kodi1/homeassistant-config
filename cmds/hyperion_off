@@ -1,0 +1,4 @@
+#!/bin/bash
+source /config/set_env
+
+echo '{"color": [0,0,0], "command": "color", "priority": 0}' | nc -w 1 $HYPERION_HOST $HYPERION_PORT

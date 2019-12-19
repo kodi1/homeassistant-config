@@ -1,0 +1,1 @@
+rsync -avz -e ssh hass:~/homeassistant/ ./ --exclude-from=exclude_list --delete --force

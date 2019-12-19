@@ -1,0 +1,44 @@
+homeassistant:
+  customize:
+    alert.cpu_overheat:
+      icon: mdi:thermometer-lines
+
+alert:
+  cpu_overheat:
+    name: cpu
+    title: cpu {{states('sensor.cpu_temp')}}{{state_attr('sensor.cpu_temp', 'unit_of_measurement')}}
+    message: overheat
+    done_message: cool
+    entity_id: binary_sensor.cpu_overheat
+    state: 'on'
+    repeat:
+      - 5
+      - 5
+      - 10
+    skip_first: True
+    can_acknowledge: True
+    notifiers:
+      - kodi
+      - gmail
+
+binary_sensor:
+  - platform: template
+    sensors:
+      cpu_overheat:
+        friendly_name: 'Cpu'
+        device_class: heat
+        delay_on:
+          seconds: 10
+        delay_off:
+          seconds: 5
+        value_template: >-
+         {{states('sensor.cpu_temp') >= states('input_number.cpu_temp_level')}} 
+
+input_number:
+  cpu_temp_level:
+    name: 'cpu'
+    unit_of_measurement: '°C'
+    min: 45
+    max: 70
+    step: 1
+    icon: mdi:thermometer-lines

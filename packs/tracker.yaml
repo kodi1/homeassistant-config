@@ -1,0 +1,177 @@
+homeassistant:
+  customize:
+    sensor.mapbox_key:
+      hidden: true
+    device_tracker.google_maps_107209225675467950565:
+      icon: mdi:google-maps
+    device_tracker.qp1a_191105_004:
+      icon: mdi:android-head
+    device_tracker.asus_x00qd:
+      icon: mdi:map-marker-path
+    device_tracker.n0ll:
+      icon: mdi:laptop
+    device_tracker.minix:
+      icon: mdi:kodi
+    device_tracker.sgs4:
+      icon: mdi:cellphone-wireless
+
+python_script:
+
+sensor:
+  - platform: template
+    sensors:
+      gps_accuracy_g:
+        entity_id:
+          - device_tracker.asus_x00qd
+        friendly_name: 'g_user'
+        unit_of_measurement: 'm'
+        icon_template: 'mdi:map-marker-radius'
+        value_template: >-
+            {%- if state_attr('device_tracker.asus_x00qd', 'gps_accuracy') %}
+              {{ state_attr('device_tracker.asus_x00qd', 'gps_accuracy') }}
+            {% else %}
+                {{ states('sensor.gps_accuracy_g') }}
+            {%- endif %}
+
+      gps_accuracy_t:
+        entity_id:
+          - device_tracker.qp1a_191105_004
+        friendly_name: 'tasker'
+        unit_of_measurement: 'm'
+        icon_template: 'mdi:map-marker-radius'
+        value_template: >-
+            {%- if state_attr('device_tracker.qp1a_191105_004', 'gps_accuracy') %}
+              {{ state_attr('device_tracker.qp1a_191105_004', 'gps_accuracy') }}
+            {% else %}
+                {{ states('sensor.gps_accuracy_t') }}
+            {%- endif %}
+
+      mapbox_key:
+        value_template: !secret mapbox_apikey
+
+automation:
+  - alias: track_merge
+    initial_state: off
+    trigger:
+      - platform: state
+        entity_id: device_tracker.qp1a_191105_004
+      - platform: state
+        entity_id: device_tracker.asus_x00qd
+    action:
+      - service: python_script.device_tracker_merge
+        data_template:
+          device_name: 'root'
+          master_device: device_tracker.qp1a_191105_004
+          slave_device: device_tracker.asus_x00qd
+          trigger_id: '{{trigger.entity_id}}'
+          time: "{{ states('input_number.tracker_delay') | float * 60 }}"
+          force_update: "{{ states('input_number.tracker_force_update') | float * 60 }}"
+          accuracy: "{{ states('input_number.tracker_accuracy') | float * 1000 }}"
+          distance: "{{ distance(states.device_tracker.qp1a_191105_004, states.device_tracker.asus_x00qd) }}"
+
+  - alias: track_merge_startup
+    trigger:
+      - platform: homeassistant
+        event: start
+    action:
+      - service: python_script.device_tracker_merge
+        data_template:
+          device_name: 'root'
+          master_device: device_tracker.qp1a_191105_004
+          slave_device: device_tracker.asus_x00qd
+          trigger_id: 'device_tracker.qp1a_191105_004'
+          time: "{{ states('input_number.tracker_delay') | float * 60 }}"
+          force_update: "{{ states('input_number.tracker_force_update') | float * 60 }}"
+          accuracy: "{{ states('input_number.tracker_accuracy') | float * 1000 }}"
+          distance: "{{ distance(states.device_tracker.qp1a_191105_004, states.device_tracker.asus_x00qd) }}"
+      - delay: '00:00:05'
+      - service: automation.turn_on
+        entity_id: automation.track_merge
+
+input_number:
+  tracker_delay:
+    name: 'delay'
+    unit_of_measurement: 'min'
+    min: 5
+    max: 30
+    step: 1
+    icon: mdi:timelapse
+
+  tracker_accuracy:
+    name: 'accuracy'
+    unit_of_measurement: 'km'
+    min: 0.2
+    max: 2.0
+    step: 0.1
+    icon: mdi:counter
+
+  tracker_force_update:
+    name: 'update'
+    unit_of_measurement: 'min'
+    min: 5
+    max: 30
+    step: 1
+    icon: mdi:timer
+
+camera:
+  name: tracker
+  platform: generic
+  still_image_url: >-
+    {%- set pitch = state_attr('sensor.view_root', 'pitch') -%}
+    {%- set c_longitude = state_attr('sensor.view_root', 'c_longitude') -%}
+    {%- set c_latitude = state_attr('sensor.view_root', 'c_latitude') -%}
+    {%- set o_longitude = state_attr('sensor.view_root', 'o_longitude') -%}
+    {%- set o_latitude = state_attr('sensor.view_root', 'o_latitude') -%}
+    {%- set m_longitude = state_attr('sensor.view_root', 'm_longitude') -%}
+    {%- set m_latitude = state_attr('sensor.view_root', 'm_latitude') -%}
+    {%- set pitch = state_attr('sensor.view_root', 'pitch') -%}
+    {%- set zoom = state_attr('sensor.view_root', 'zoom') -%}
+    {%- set bearing = state_attr('sensor.view_root', 'bearing') -%}
+    {%- set key = states('sensor.mapbox_key') -%}
+    {%- if zoom == 'auto' -%}
+      https://api.mapbox.com/styles/v1/mapbox/outdoors-v10/static/pin-s-o+2ecc71({{o_longitude}},{{o_latitude}}),pin-s-c+3498db({{c_longitude}},{{c_latitude}})/auto/400x400?access_token={{key}}
+    {%- else -%}
+      https://api.mapbox.com/styles/v1/mapbox/outdoors-v10/static/pin-s-o+2ecc71({{o_longitude}},{{o_latitude}}),pin-s-c+3498db({{c_longitude}},{{c_latitude}})/{{m_longitude}},{{m_latitude}},{{zoom}},{{bearing}},{{pitch}}/400x400?access_token={{key}}
+    {%- endif -%}
+  limit_refetch_to_url_change: true
+
+device_tracker:
+  - platform: tomato
+    consider_home: 120
+    interval_seconds: 60
+    host: !secret tomato_host
+    port: !secret tomato_port
+    username: !secret tomato_user
+    password: !secret tomato_pass
+    http_id: !secret tomato_httpid
+    new_device_defaults:
+      track_new_devices: false
+      hide_if_away: false
+
+  - platform: google_maps
+    username: !secret g_user
+    scan_interval: 180
+
+zone:
+  - name: Home
+    latitude: !secret home_latitude
+    longitude: !secret home_longitude
+    radius: 50
+    icon: mdi:home
+
+  - name: Work
+    latitude: !secret work_latitude
+    longitude: !secret work_longitude
+    radius: 50
+    icon: mdi:office
+    passive: true
+
+proximity:
+  home:
+    zone: home
+    ignored_zones:
+      - work
+    devices:
+      - device_tracker.root
+    tolerance: 500
+    unit_of_measurement: km

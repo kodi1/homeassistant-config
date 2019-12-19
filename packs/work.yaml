@@ -1,0 +1,120 @@
+homeassistant:
+  customize:
+    script.root_to_work:
+      icon: mdi:clock-start
+    script.root_from_work:
+      icon: mdi:clock-end
+    alert.work_acc_update:
+      icon: mdi:account-alert
+    automation.work_end_notify:
+      icon: mdi:clock-out
+    automation.root_work:
+      icon: mdi:clock-in
+
+alert:
+  work_acc_update:
+    name: work acc
+    title: work
+    entity_id: binary_sensor.work_acc
+    state: 'on'
+    repeat:
+      - 5
+      - 15
+    can_acknowledge: True
+    message: miss {{state_attr('sensor.work_acc', 'miss_count')}}
+    done_message: end miss {{state_attr('sensor.work_acc', 'miss_count')}}
+    notifiers:
+      - gmail
+
+binary_sensor:
+  - platform: template
+    sensors:
+      work_acc:
+        delay_on:
+          seconds: 30
+        delay_off:
+          seconds: 5
+        icon_template: >-
+          {%- if is_state('sensor.work_acc', 'Friday') -%}
+            {%- if is_state_attr('sensor.work_acc', 'miss_count', 0) -%}
+              mdi:timetable
+            {%- else -%}
+              mdi:table-search
+            {%- endif -%}
+          {%- else -%}
+            mdi:table-edit
+          {%- endif -%}
+        value_template: >-
+          {%- if states('sensor.work_acc') and
+                 state_attr('sensor.work_acc', 'miss_count') -%}
+            {{ is_state('sensor.work_acc', 'Friday') and
+                 is_state('input_boolean.at_work', 'on') and
+                 not is_state_attr('sensor.work_acc', 'miss_count', 0) }}
+          {%- else -%}
+            False
+          {%- endif -%}
+
+automation:
+  - alias: root_work
+    trigger:
+      - platform: zone
+        entity_id: device_tracker.root
+        zone: zone.work
+        event: enter
+      - platform: zone
+        entity_id: device_tracker.root
+        zone: zone.work
+        event: leave
+    action:
+      - service_template: >-
+          {% if trigger.event == 'enter' %}
+            script.root_to_work
+          {% endif %}
+          {% if trigger.event == 'leave' %}
+            script.root_from_work
+          {% endif %}
+
+  - alias: work_end_notify
+    initial_state: off
+    trigger:
+      - platform: state
+        entity_id: sensor.work_acc
+    condition:
+      condition: and
+      conditions:
+        - condition: template
+          value_template: >-
+            {{ trigger.to_state.state not in ['Friday', 'Saturday', 'Sunday'] }}
+    action:
+      - service: notify.gmail
+        data_template:
+          title: '{{ trigger.to_state.state | lower }}'
+          message: "{{ state_attr('sensor.work_acc', 'miss_count') }} days miss"
+
+input_boolean:
+  at_work:
+    initial: off
+    icon: mdi:office-building 
+
+script:
+  root_from_work:
+    sequence:
+      - service: logbook.log
+        data:
+          name: track
+          message: 'work exit'
+      - service: input_boolean.turn_off
+        entity_id: input_boolean.at_work
+      - service: automation.turn_off
+        entity_id: automation.work_end_notify
+
+  root_to_work:
+    sequence:
+      - service: logbook.log
+        data:
+          name: track
+          message: 'work enter'
+      - service: input_boolean.turn_on
+        entity_id: input_boolean.at_work
+      - service: automation.turn_on
+        entity_id: automation.work_end_notify

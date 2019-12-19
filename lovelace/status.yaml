@@ -1,0 +1,78 @@
+title: status
+icon: mdi:monitor-dashboard
+path: status
+
+cards:
+  - type: entities
+    title: batts
+    show_header_toggle: false
+    entities:
+      - sensor.dht22_176e41_battery
+      - sensor.bme280_171f93_battery
+      - sensor.root_battery
+
+  - type: entities
+    title: other
+    show_header_toggle: false
+    entities:
+      - sensor.hts_recording_sensor
+      - sensor.pressure_history
+      - sensor.transmission_state
+      - binary_sensor.bravia
+      - binary_sensor.sound_bar_active
+      - binary_sensor.kodi_screen_saver
+      - binary_sensor.smb_online
+      - binary_sensor.isp_conn
+      - binary_sensor.ext_port
+      - binary_sensor.village
+      - binary_sensor.batts_low
+      - binary_sensor.cpu_overheat
+      - binary_sensor.open_living
+      - binary_sensor.home_heating
+      - binary_sensor.climate_online
+      - binary_sensor.home_motion
+
+  - type: entities
+    title: system
+    show_header_toggle: false
+    entities:
+      - sensor.cpu_usage
+      - sensor.cpu_temp
+      - sensor.mem_free
+      - sensor.disk_free
+      - sensor.ping_isp
+      - sensor.tomato_disk_free
+      - sensor.home_assistant_v2_db
+
+  - type: conditional
+    conditions:
+      - entity: binary_sensor.climate_online
+        state: 'on'
+    card:
+      type: history-graph
+      title: climate
+      hours_to_show: 8
+      refresh: 300
+      entities:
+        - sensor.bme280_171f93_temperature
+        - sensor.dht22_176e41_temperature
+        - sensor.temperature_living
+        - sensor.valve_living
+
+  - type: conditional
+    conditions:
+      - entity: input_boolean.at_work
+        state: 'on'
+    card:
+      title: work acc
+      type: entities
+      show_header_toggle: false
+      entities:
+        - automation.root_work
+        - automation.work_end_notify
+        - input_boolean.at_work
+        - binary_sensor.work_acc
+        - sensor.work_acc
+        - script.root_to_work
+        - script.root_from_work
+        - alert.work_acc_update

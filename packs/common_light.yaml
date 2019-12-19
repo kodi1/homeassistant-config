@@ -1,0 +1,237 @@
+homeassistant:
+  customize:
+    binary_sensor.juste_home_lights:
+      icon: mdi:lightbulb-group
+    binary_sensor.home_light_extend:
+      icon: mdi:set-all
+    binary_sensor.light_video_pause:
+      icon: mdi:television-pause
+    binary_sensor.light_h:
+      icon: mdi:coach-lamp
+    binary_sensor.day:
+      icon: mdi:weather-sunset-up
+    input_boolean.light_auto_follow:
+      icon: mdi:track-light
+    timer.light_follow:
+      icon: mdi:timer
+    timer.just_home_light:
+      icon: mdi:timer
+    input_number.light_follow_off_time:
+      icon: mdi:timer-sand
+    input_number.just_home_light_timer:
+      icon: mdi:home-modern
+
+automation:
+  - alias: just_home_auto
+    trigger:
+      - platform: state
+        entity_id: timer.just_home_light
+    action:
+      - service_template: >
+          {%- if (trigger.to_state.state == 'active') -%}
+            script.just_home_light_on
+          {%- endif -%}
+
+          {%- if (trigger.to_state.state == 'idle') -%}
+            script.just_home_light_off
+          {%- endif -%}
+
+  - alias: follow_on
+    trigger:
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.light_follow
+    action:
+      - service: input_boolean.turn_on
+        data:
+          entity_id: input_boolean.light_auto_follow
+
+  - alias: follow_off_cancel
+    trigger:
+      - platform: state
+        entity_id: input_boolean.light_auto_follow
+        to: 'on'
+    action:
+      - service: timer.cancel
+        entity_id: timer.light_follow
+
+  - alias: follow_off
+    trigger:
+      - platform: state
+        entity_id: input_boolean.light_auto_follow
+        to: 'off'
+    action:
+      - service: timer.start
+        entity_id: timer.light_follow
+        data_template:
+          duration: "00:{{ states('input_number.light_follow_off_time') | int }}:00"
+
+  - alias: motion_light_extend
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.home_light_extend
+        to: 'on'
+        for:
+          seconds: 60
+    action:
+      - service: timer.start
+        entity_id: timer.just_home_light
+        data_template:
+          duration: "{{states('input_number.just_home_light_timer') | int * 60}}"
+
+binary_sensor:
+  - platform: tod
+    name: day
+    after: sunrise
+    after_offset: '-00:15:00'
+    before: sunset
+    before_offset: '+00:15:00'
+
+  - platform: template
+    sensors:
+      home_light_extend:
+        delay_off:
+          seconds: 5
+        device_class: light
+        value_template: "{{
+                            (
+                              is_state('binary_sensor.living_motion', 'on') or
+                              is_state('binary_sensor.hall_motion', 'on') or
+                              is_state('binary_sensor.bed_motion', 'on')
+                            )
+                          }}"
+
+      juste_home_lights:
+        device_class: light
+        value_template: "{{ is_state('input_boolean.just_home_pause', 'on') }}"
+
+      light_video_pause:
+        device_class: light
+        delay_on:
+          seconds: 1
+        delay_off:
+          seconds: 5
+        value_template: "{{
+                            (
+                              is_state('binary_sensor.day', 'off') and
+                              is_state('media_player.kodi', 'paused') and
+                              is_state('binary_sensor.kodi_screen_saver', 'on')
+                            )
+                          }}"
+
+      light_h:
+        device_class: light
+        value_template: "{{
+                            is_state('binary_sensor.day', 'off') and
+                            is_state('binary_sensor.kodi_screen_saver', 'on') and (
+                              not is_state('media_player.ht_mt500_501_b34d6a', 'off') or
+                              is_state('device_tracker.n0ll', 'home')
+                            )
+                          }}"
+
+input_boolean:
+  light_auto_follow:
+    name: follow
+    initial: on
+
+  just_home_pause:
+    name: juste_home
+    initial: off
+
+input_number:
+  light_follow_off_time:
+    name: 'time'
+    unit_of_measurement: 'min'
+    min: 1
+    max: 10
+    step: 1
+
+  just_home_light_timer:
+    name: 'time'
+    unit_of_measurement: 'min'
+    min: 1
+    max: 10
+    step: 1
+
+timer:
+  light_follow:
+    name: 'follow off time'
+    duration: '00:00:30'
+
+  just_home_light:
+    name: 'time'
+    duration: '00:01:00'
+
+script:
+  finish_lights:
+    sequence:
+      - service: script.just_home_clear
+      - service: script.bed_clear_timer
+      - service: script.hall_clear_timer
+      - service: script.living_clear_timer
+
+  just_home_light_on:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: binary_sensor.day
+            state: 'off'
+          - condition: state
+            entity_id: device_tracker.root
+            state: 'home'
+          - condition: template
+            value_template: "{{
+                                is_state('media_player.kodi', 'idle') or
+                                  is_state('media_player.kodi', 'off')
+                              }}"
+      - service: input_boolean.turn_on
+        entity_id: input_boolean.just_home_pause
+      - service: timer.start
+        entity_id:
+         - timer.hall_light_timer
+         - timer.living_light_timer
+        data_template:
+          duration: '00:00:10'
+      - delay: '00:00:03'
+      - service: timer.pause
+        entity_id:
+          - timer.living_light_timer
+          - timer.hall_light_timer
+      - service: logbook.log
+        data:
+          name: 'Just home light'
+          message: 'On'
+
+  just_home_light_off:
+    sequence:
+      - condition: state
+        entity_id: binary_sensor.juste_home_lights
+        state: 'on'
+      - service: input_boolean.turn_off
+        entity_id:
+          - input_boolean.just_home_pause
+          - input_boolean.light_auto_follow
+      - delay: '00:00:03'
+      - service: timer.start
+        entity_id:
+          - timer.living_light_timer
+          - timer.hall_light_timer
+      - service: logbook.log
+        data:
+          name: 'Just home light'
+          message: 'Off'
+
+  just_home_clear:
+    sequence:
+      - condition: state
+        entity_id: timer.just_home_light
+        state: 'active'
+      - service: timer.finish
+        entity_id: timer.just_home_light
+      - wait_template: "{{ is_state('timer.light_follow', 'active') }}"
+        timeout: '00:00:10'
+        continue_on_timeout: 'true'
+      - service: input_boolean.turn_on
+        entity_id: input_boolean.light_auto_follow

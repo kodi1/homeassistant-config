@@ -1,0 +1,230 @@
+homeassistant:
+  customize:
+    binary_sensor.bedlight:
+      icon: mdi:candle
+    binary_sensor.bedmusic:
+      icon: mdi:speaker-wireless
+
+binary_sensor:
+  - platform: template
+    sensors:
+      bedmusic:
+        device_class: sound
+        delay_on:
+          seconds: 60
+        delay_off:
+          seconds: 60
+        value_template: >-
+          {%-if is_state('binary_sensor.day', 'off') and
+              is_state('device_tracker.root', 'home') -%}
+            {%- set  t =  (as_timestamp(now()) - as_timestamp(now().strftime('%Y-%m-%d 00:00')))-%}
+            {%- set  ts =  state_attr('input_datetime.bedm_time_start', 'timestamp') -%}
+            {%- set  te =  state_attr('input_datetime.bedm_time_end', 'timestamp') -%}
+            {{
+                is_state('binary_sensor.sound_bar_active', 'off') and
+                not is_state('device_tracker.n0ll', 'home') and
+                (ts < t or t < te)
+              }}
+          {%- else -%}
+            False
+          {%- endif -%}
+
+automation:
+  - alias: bed_sleep_on
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.bedmusic
+        to: 'on'
+    action:
+      - service: timer.start
+        entity_id: timer.bed_music
+        data_template:
+          duration: "00:{{ states('input_number.bed_music_timer') | int }}:00"
+      - service: media_extractor.play_media
+        data_template:
+          entity_id: media_player.bedroom_speaker
+          media_content_type: 'audio/mp3'
+          media_content_id: >-
+            {%-
+              set play= [
+                  '-i8IMw5WeXc',
+                  'AsD5u6k6dKI',
+                  'hwsEjtlr9yw',
+                  'kygoJiJAWG4',
+                  'T9IJKwEspI8',
+                  'wiajNg7EnOA',
+                  'Mr9T-943BnE',
+                  'cO_IFJaWmhA',
+                  'V9Xu6mkacg8',
+                  'YTptl9pp5Es',
+                  '_TDntJT1CU4'
+                ]
+            -%}
+            https://www.youtube.com/watch?v={{ play | random }}
+      - delay: '00:00:05'
+      - service: media_player.volume_set
+        data:
+          entity_id: media_player.bedroom_speaker
+          volume_level: 0.12
+
+  - alias: bed_music_on
+    trigger:
+      - platform: state
+        entity_id: media_player.bedroom_speaker
+        from: 'off'
+        to: 'idle'
+        for:
+          seconds: 3
+      - platform: state
+        entity_id: input_select.select_radio_bed
+    condition:
+      condition: and
+      conditions:
+        - condition: template
+          value_template: >-
+            {%- if state_attr('automation.bed_sleep_on', 'last_triggered') != None -%}
+              {{(as_timestamp(now()) - as_timestamp(state_attr('automation.bed_sleep_on', 'last_triggered'))) > 9}}
+            {%- else -%}
+              True
+            {%- endif -%}
+        - condition: template
+          value_template: >-
+            {%- if state_attr('automation.bed_music_on', 'last_triggered') != None -%}
+              {{(as_timestamp(now()) - as_timestamp(state_attr('automation.bed_music_on', 'last_triggered'))) > 1}}
+            {%- else -%}
+              True
+            {%- endif -%}
+    action:
+      - service: timer.start
+        entity_id: timer.bed_music
+        data_template:
+          duration: "00:{{ states('input_number.bed_music_timer') | int }}:00"
+      - service: media_player.play_media
+        data_template:
+          entity_id: media_player.bedroom_speaker
+          media_content_type: 'audio/mp3'
+          media_content_id: >-
+            {%-
+                set play=
+                {
+                "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
+                "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
+                "State Of Trance": "http://de-hz-fal-stream07.rautemusik.fm/trance",
+                "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
+                "Ocean Radio": "http://philae.shoutca.st:8446/stream",
+                "Costa Del Mar": "http://sc-costadelmar.1.fm:10156",
+                "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
+                "Lounge FM": "http://cast.loungefm.com.ua/chillout128",
+                "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
+                "Eilo Ambient": "http://eilo.org:8000/ambient",
+                "Milano Lounge": "http://178.32.62.154:9739/stream",
+                "Lounge": "http://live.radioart.com:80/fLounge.mp3",
+                "Smooth Lounge": "http://live.radioart.com:80/fSmooth_lounge.mp3",
+                "Vocal Lounge": "http://live.radioart.com:80/fVocal_lounge.mp3",
+                "Sleep": "http://live.radioart.com:80/fSleep.mp3",
+                "New Age": "http://live.radioart.com:80/fNew_age.mp3",
+                "Ambient": "http://live.radioart.com:80/fAmbient.mp3",
+                "Ambient Sleep": "https://radio.stereoscenic.com/asp-s",
+                "Calm Radio": "http://streams.calmradio.com/api/39/128/stream",
+                "Ambi Nature Radio": "http://94.23.252.14:8067/stream",
+                "Chroma Ambient": "http://148.251.184.14:8004/;539699463556254stream.nsv"
+                }
+            -%}
+            {{ play[states("input_select.select_radio_bed")] }}
+      - service: media_player.volume_set
+        data:
+          entity_id: media_player.bedroom_speaker
+          volume_level: 0.10
+
+  - alias: bed_music_off
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.bedmusic
+        to: 'off'
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.bed_music
+    action:
+      - service: media_player.turn_off
+        entity_id: media_player.bedroom_speaker
+
+  - alias: bed_music_clear_timer
+    trigger:
+      - platform: state
+        entity_id: media_player.bedroom_speaker
+        to: 'off'
+        for:
+          seconds: 5
+    condition:
+      - condition: template
+        value_template: "{{ not is_state('timer.bed_music', 'idle') }}"
+    action:
+      - service: timer.cancel
+        entity_id: timer.bed_music
+
+input_select:
+  select_radio_bed:
+    name: bed online radio
+    options:
+      - 1Mix Radio
+      - Nova Bg
+      - State Of Trance
+      - 1FM Amsterdam
+      - Ocean Radio
+      - Costa Del Mar
+      - 1FM Lounge Radio
+      - Lounge FM
+      - Absolute Chillout
+      - Eilo Ambient
+      - Milano Lounge
+      - Lounge
+      - Smooth Lounge
+      - Vocal Lounge
+      - Sleep
+      - New Age
+      - Ambient
+      - Ambient Sleep
+      - Calm Radio
+      - Ambi Nature Radio
+      - Chroma Ambient
+    icon: mdi:radio
+
+script:
+  start_up_bedroom_speaker:
+    sequence:
+      - condition: state
+        entity_id: media_player.bedroom_speaker
+        state: 'playing'
+      - service: timer.start
+        entity_id: timer.bed_music
+
+cast:
+  media_player:
+    - host: !secret cast_bedroom
+
+timer:
+  bed_music:
+    name: 'music time'
+    icon: mdi:timer-sand
+    duration: '00:01:00'
+
+input_datetime:
+  bedm_time_start:
+    name: music start
+    has_date: false
+    has_time: true
+
+  bedm_time_end:
+    name: music end
+    has_date: false
+    has_time: true
+
+input_number:
+  bed_music_timer:
+    name: 'music time'
+    unit_of_measurement: 'min'
+    min: 5
+    max: 60
+    step: 5
+    icon: mdi:av-timer

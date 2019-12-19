@@ -1,0 +1,124 @@
+homeassistant:
+  auth_providers:
+    - type: legacy_api_password
+      api_password: !secret http_password
+    - type: homeassistant
+    #- type: trusted_networks
+      #trusted_networks:
+        #- 127.0.0.1
+        #- 192.168.1.0/24
+
+  # Name of the location where Home Assistant is running
+  name: Home
+  # Location required to calculate the time the sun rises and sets
+  latitude: !secret home_latitude
+  longitude: !secret home_longitude  
+  # Impacts weather/sunrise data (altitude above sea level in meters)
+  elevation: !secret home_elevation
+  # metric for Metric, imperial for Imperial
+  unit_system: metric
+  # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  time_zone: Europe/Sofia
+  # Customization file
+  customize: !include customize.yaml
+  whitelist_external_dirs: !secret white_dirs
+  packages:
+    all_common: !include packs/common.yaml
+    tracker: !include packs/tracker.yaml
+    batt_check: !include packs/batt_check.yaml
+    common_light: !include packs/common_light.yaml
+    bed_light: !include packs/bed_light.yaml
+    hall_light: !include packs/hall_light.yaml
+    living_light: !include packs/living_light.yaml
+    heating: !include packs/heating.yaml
+    ha_security: !include packs/ha_security.yaml
+    android_alarm: !include packs/android_alarm.yaml
+    home: !include packs/home.yaml
+    not_home: !include packs/not_home.yaml
+    work: !include packs/work.yaml
+    sound_bar: !include packs/sound_bar.yaml
+    sound_bed: !include packs/sound_bed.yaml
+    kodi_tv: !include packs/kodi_tv.yaml
+    hyperion: !include packs/hyperion.yaml
+    environment: !include packs/environment.yaml
+    system: !include packs/system.yaml
+    mqtt_conf: !include packs/mqtt_conf.yaml
+    frontend_conf: !include packs/frontend_conf.yaml
+    panels_conf: !include packs/panels_conf.yaml
+    conf_conf: !include packs/conf_conf.yaml
+    history_conf: !include packs/history_conf.yaml
+    logbook_conf: !include packs/logbook_conf.yaml
+    recorder_conf: !include packs/recorder_conf.yaml
+    tomato_dl: !include packs/tomato_dl.yaml
+    tomato: !include packs/tomato.yaml
+    in_call: !include packs/in_call.yaml
+    tasmota: !include packs/tasmota_devices.yaml
+    kodi_video_db: !include packs/kodi_video_db.yaml
+    cpu_temp_alarm: !include packs/cpu_temp_alarm.yaml
+    hts: !include packs/hts.yaml
+    startup: !include packs/up_down.yaml
+    octobot: !include packs/octobot.yaml
+
+# Show links to resources in log and frontend
+#introduction:
+
+# Enables the frontend
+frontend:
+
+lovelace:
+  mode: yaml
+
+# Enables configuration UI
+config:
+
+http:
+  # Secrets are defined in the file secrets.yaml
+  # api_password: !secret http_password
+  # Uncomment this if you are using SSL/TLS, running in Docker container, etc.
+  # base_url: example.duckdns.org:8123
+
+# Checks for available updates
+# Note: This component will send some information about your system to
+# the developers to assist with development of Home Assistant.
+# For more information, please see:
+# https://home-assistant.io/blog/2016/10/25/explaining-the-updater/
+updater:
+  # Optional, allows Home Assistant developers to focus on popular components.
+  # include_used_components: true
+
+# Discover some devices automatically
+#discovery:
+
+# Allows you to issue voice commands from the frontend in enabled browsers
+#conversation:
+
+# Enables support for tracking state changes over time
+history:
+
+# View all events in a logbook
+logbook:
+
+# Enables a map showing the location of tracked devices
+map:
+
+# Track the sun
+sun:
+
+# Allow diagnosing system problems
+system_health:
+
+# Weather prediction
+#sensor:
+#  - platform: yr
+
+# Text to speech
+tts:
+  - platform: google_translate
+    service_name: google_say
+
+# Cloud
+#cloud:
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml

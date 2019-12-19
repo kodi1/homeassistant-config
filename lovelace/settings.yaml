@@ -1,0 +1,77 @@
+title: settings
+icon: mdi:developer-board
+path: settings
+cards:
+  - type: entities
+    title: warn levels
+    show_header_toggle: false
+    entities:
+      - input_number.slider_batt_level_p
+      - input_number.slider_batt_level_v
+      - input_number.pressure_speed
+      - input_number.cpu_temp_level
+
+  - type: entities
+    title: media_control
+    show_header_toggle: false
+    entities:
+      - script.tv_hdmi1
+      - script.tv_hdmi1_audio
+      - script.sound_bar_on
+      - script.sound_bar_off
+      - switch.tv_cec
+      - switch.tv_mode_uhd
+      - automation.kodi_auto_out
+
+  - type: entities
+    title: video_db
+    show_header_toggle: false
+    entities:
+      - automation.kodi_clear_tv_db
+      - automation.sonarr_radarr_notify
+      - automation.sonarr_radarr_db
+      - automation.update_video_db
+
+  - type: conditional
+    conditions:
+      - entity: binary_sensor.climate_online
+        state: 'on'
+    card:
+      type: entities
+      title: heating
+      show_header_toggle: false
+      entities:
+        - input_boolean.home_heating
+        - input_number.temp_home
+        - input_number.temp_away
+        - automation.living_heating_auto
+
+  - type: conditional
+    conditions:
+      - entity: binary_sensor.climate_online
+        state: 'on'
+    card:
+      type: custom:simple-thermostat
+      entity: climate.living
+      icon: mdi:thermostat
+      control:
+        _headings: false
+        hvac:
+          'off': false
+          auto:
+            icon: mdi:campfire
+          heat:
+            icon: mdi:fireplace
+        preset:
+          away: false
+          boost:
+            icon: mdi:thermometer-lines
+      sensors:
+        - entity: sensor.valve_living
+          name: valve
+
+  - title: theme
+    type: entities
+    show_header_toggle: false
+    entities:
+      - input_select.current_theme

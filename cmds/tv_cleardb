@@ -1,0 +1,6 @@
+#!/bin/bash
+source /config/set_env
+
+SSHPASS=$PASS sshpass -e \
+ssh -oStrictHostKeyChecking=no $USERNAME@$HOST \
+/storage/.config/system.d/clean_tv_db.py

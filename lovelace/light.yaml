@@ -1,0 +1,67 @@
+title: light
+icon: mdi:ceiling-light
+path: light
+
+cards:
+  - type: entities
+    title: lights
+    show_header_toggle: false
+    entities:
+      - binary_sensor.day
+      - switch.hyperion_enable
+      - binary_sensor.light_h
+      - binary_sensor.light_video_pause
+      - binary_sensor.juste_home_lights
+      - input_number.just_home_light_timer
+      - timer.just_home_light
+      - binary_sensor.home_light_extend
+      - input_boolean.light_auto_follow
+      - input_number.light_follow_off_time
+      - timer.light_follow
+      - automation.motion_light_extend
+      - automation.follow_on
+      - automation.just_home_auto
+      - script.just_home_light_on
+      - script.just_home_light_off
+
+  - title: bed motion
+    type: entities
+    show_header_toggle: false
+    entities:
+      - binary_sensor.bed_motion
+      - automation.bed_light_trigger
+      - script.bed_auto_light
+      - input_number.bed_light_time
+      - timer.bed_light_timer
+      - light.bed_led
+
+  - type: entities
+    title: living motion
+    show_header_toggle: false
+    entities:
+      - binary_sensor.living_motion
+      - automation.living_light_trigger
+      - automation.living_light_off
+      - automation.living_light_on
+      - script.living_auto_light
+      - input_number.living_light_time
+      - timer.living_light_timer
+      - light.hama_living
+      - light.living_light
+      - light.xp_top_1
+      - light.xp_top_2
+      - light.xp_bar_1
+      - light.xp_bar_2
+
+  - type: entities
+    title: hall motion
+    show_header_toggle: false
+    entities:
+      - binary_sensor.hall_motion
+      - automation.hall_light_trigger
+      - automation.hall_light_off
+      - automation.hall_light_on
+      - script.hall_auto_light
+      - input_number.hall_light_time
+      - timer.hall_light_timer
+      - light.hall_light

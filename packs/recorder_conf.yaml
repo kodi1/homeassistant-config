@@ -1,0 +1,86 @@
+recorder:
+  purge_interval: 1
+  purge_keep_days: 7
+
+  include:
+    entities:
+      - automation.n0ll_home
+      - automation.n0ll_not_home
+      - automation.auto_reboot_all
+      - automation.home_away
+      - automation.home_near
+      - automation.just_home
+      - automation.home_motion_detect
+      - automation.event_android_alarm
+      - automation.just_home
+      - automation.follow_on
+      - automation.follow_off
+      - automation.motion_light_extend
+      - automation.just_home_auto
+      - automation.minix_home
+      - automation.restore_backup_cfg
+      - automation.update_video_db
+
+  exclude:
+    domains:
+      - weblink
+      - updater
+      - notify
+      - group
+      - persistent_notification
+      - camera
+      - script
+      - climate
+      - automation
+      - alert
+
+    entities:
+      - switch.tv_mode_uhd
+      - switch.hyperion_enable
+      - switch.tv_cec
+      - sensor.view_root
+      - sensor.transmission_status
+      - sensor.mapbox_key
+      - sensor.backup_age
+      - sensor.w_alert
+      - sensor.tasmota_r_v
+      - sensor.tasmota_l_v
+      - sensor.pressure_history_mean
+      - sensor.hts_recording_sensor
+      - sensor.custom_card_tracker
+      - sensor.custom_component_tracker
+      - sensor.custom_python_script_tracker
+      - sensor.work_acc
+      - timer.living_motion_timer
+      - timer.hall_motion_timer
+      - timer.bed_motion_timer
+      - timer.light_follow
+      - timer.start_up_delay
+      - media_player.soundbar
+      - input_boolean.just_home_pause
+      - input_boolean.light_auto_follow
+      - input_boolean.in_call
+      - input_boolean.home_motion
+      - input_boolean.at_work
+      - binary_sensor.download_active
+      - binary_sensor.in_call
+      - binary_sensor.light_h
+      - binary_sensor.light_video_pause
+      - binary_sensor.tasmota_update
+      - binary_sensor.kodi_notify
+      - binary_sensor.work_acc
+      - binary_sensor.day
+      - binary_sensor.climate_online
+      - input_number.brightness
+      - input_number.saturation
+      - input_number.gamma_r
+      - input_number.gamma_g
+      - input_number.gamma_b
+      - input_number.sound_bar_save_volume
+      - input_select.hyperion_select_mode
+      - input_select.hyperion_select_effect
+      - light.xp_bar_1
+      - light.xp_bar_2
+      - light.xp_top_1
+      - light.xp_top_2
+      - light.hama_living

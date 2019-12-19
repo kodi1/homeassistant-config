@@ -1,0 +1,8 @@
+#!/bin/bash
+source /config/set_env
+
+SSHPASS=$TOMATOPASS sshpass -e \
+ssh -oConnectTimeout=5 -oStrictHostKeyChecking=no $TOMATOUSER@$TOMATOHOST \
+df -m /dev/sda2 | awk 'END {srand(); printf("%.f", $4);}'
+
+#df -m /dev/sda2 | awk 'END {srand(); printf("%.2f", $4+rand());}'

@@ -1,0 +1,45 @@
+﻿homeassistant:
+  customize:
+    sensor.octobot_daily:
+      icon: mdi:currency-eth
+      friendly_name: profit
+    sensor.octobot:
+      icon: mdi:currency-eth
+      friendly_name: total
+    automation.octobot_notify:
+      icon: mdi:currency-usd
+
+sensor:
+  - platform: rest 
+    name: octobot
+    resource: !secret octobot_url
+    value_template: >-
+      {{
+          value_json['simulated_portfolio_holdings'].values() | sum | round(1)
+      }}
+    unit_of_measurement: usdt
+    scan_interval: 1800
+    force_update: true
+
+utility_meter:
+  octobot_daily:
+    source: sensor.octobot
+    cycle: daily
+    net_consumption: true
+
+automation:
+  - alias: octobot_notify
+    trigger:
+      - platform: state
+        entity_id: sensor.octobot_daily
+    condition:
+      condition: and
+      conditions:
+        - condition: template
+          value_template: >-
+            {{ '0' == trigger.to_state.state }}
+    action:
+      - service: script.all_notify
+        data_template:
+          tit: 'octobot'
+          msg: "{{states('sensor.octobot')}} / {{trigger.from_state.state}}"

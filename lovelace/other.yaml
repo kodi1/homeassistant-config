@@ -1,0 +1,55 @@
+title: other
+icon: mdi:nuke
+path: other
+
+cards:
+  - type: history-graph
+    title: motion
+    hours_to_show: 1
+    refresh: 60
+    entities:
+      - binary_sensor.juste_home_lights
+      - binary_sensor.home_light_extend
+      - binary_sensor.living_motion
+      - light.living_light
+      - binary_sensor.hall_motion
+      - light.hall_light
+      - binary_sensor.bed_motion
+      - light.bed_led
+
+  - type: entities
+    title: input
+    show_header_toggle: false
+    entities:
+      - input_boolean.control_heating
+      - input_boolean.in_call
+
+  - type: entities
+    title: switch
+    show_header_toggle: false
+    entities:
+      - switch.av_switch
+      - switch.bed_switch
+      - switch.rf_switch_1
+      - switch.fan_living
+      - switch.sonoff_1
+      - type: divider
+      - input_select.power_down_restart
+
+  - type: conditional
+    conditions:
+      - entity: switch.av_switch
+        state: 'on'
+    card:
+      type: media-control
+      entity: media_player.soundbar
+
+  - type: conditional
+    conditions:
+      - entity: switch.av_switch
+        state: 'on'
+    card:
+      type: media-control
+      entity: media_player.kodi
+
+  - type: custom:tracker-card

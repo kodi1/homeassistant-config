@@ -1,0 +1,125 @@
+automation:
+  - alias: hall_motion_trigger
+    trigger:
+      - platform: mqtt
+        topic: rf434/recv/ev1527
+        payload: '{"unitcode":882544,"state":"closed"}'
+        #.piolibdeps/ESPiLight_ID996/src/pilight/libs/pilight/protocols/433.92/ev1527.c
+        #MIN_PULSE_LENGTH  251
+        #MAX_PULSE_LENGTH        355
+        #AVG_PULSE_LENGTH        300
+    action:
+      - service: timer.start
+        entity_id: timer.hall_motion_timer
+  - alias: hall_light_trigger
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.hall_motion
+        to: 'on'
+    action:
+      - service: script.hall_auto_light
+
+  - alias: hall_light_on
+    trigger:
+      - platform: state
+        entity_id: timer.hall_light_timer
+        to: 'active'
+        from: 'idle'
+    action:
+      - service: light.turn_on
+        entity_id: light.hall_light
+
+  - alias: hall_light_off
+    trigger:
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.hall_light_timer
+    action:
+      #- delay: '00:00:01'
+      - service: light.turn_off
+        entity_id: light.hall_light
+
+input_number:
+  hall_light_time:
+    name: 'hall'
+    unit_of_measurement: 'sec'
+    min: 5
+    max: 180
+    step: 5
+    icon: mdi:camera-timer
+
+binary_sensor:
+  - platform: template
+    sensors:
+      hall_motion:
+        device_class: motion
+        value_template: "{{ is_state('timer.hall_motion_timer', 'active') }}"
+
+script:
+  hall_auto_light:
+    sequence:
+      - service: script.hall_auto_on_light
+      - service: script.living_clear_timer
+      - service: script.bed_clear_timer
+
+  hall_auto_on_light:
+    sequence:
+      - condition: and
+        conditions:
+        - condition: state
+          entity_id: binary_sensor.juste_home_lights
+          state: 'off'
+        - condition: or
+          conditions:
+            - condition: state
+              entity_id: device_tracker.root
+              state: 'home'
+            - condition: state
+              entity_id: binary_sensor.day
+              state: 'off'
+      - service: logbook.log
+        data:
+          name: 'Hall light'
+          message: 'On'
+      - service: timer.start
+        entity_id: timer.hall_light_timer
+        data_template:
+          duration: "{{ states('input_number.hall_light_time') | int }}"
+
+  hall_clear_timer:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: timer.hall_light_timer
+            state: 'active'
+          - condition: state
+            entity_id: binary_sensor.juste_home_lights
+            state: 'off'
+          - condition: state
+            entity_id: input_boolean.just_home_pause
+            state: 'off'
+          - condition: state
+            entity_id: input_boolean.light_auto_follow
+            state: 'on'
+      - service: timer.finish
+        entity_id: timer.hall_light_timer
+
+light:
+  - platform: mqtt
+    name: 'hall light'
+    command_topic: 'rf434/send/arctech_switch'
+    payload_on: '{"id":20,"unit":10,"on":1}'
+    payload_off: '{"id":20,"unit":10,"off":1}'
+
+timer:
+  hall_motion_timer:
+    name: 'motion timer'
+    icon: mdi:timer
+    duration: '00:00:05'
+
+  hall_light_timer:
+    name: 'light time'
+    icon: mdi:timer
+    duration: '00:00:30'

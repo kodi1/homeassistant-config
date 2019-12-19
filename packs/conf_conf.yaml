@@ -1,0 +1,43 @@
+http:
+  # Uncomment this to add a password (recommended!)
+  # Uncomment this if you are using SSL or running in Docker etc
+  # base_url: example.duckdns.org:8123
+
+mobile_app:
+
+media_extractor:
+  customize:
+    media_player.ht_mt500_501_b34d6a:
+      music: bestaudio[ext=m4a]
+    media_player.bedroom_speaker:
+      music: bestaudio[ext=m4a]
+
+#zha:
+#  radio_type: xbee
+#  usb_path: socket://xbee:2323
+#  baudrate: 115200
+#  database_path: /config/zigbee.db
+
+system_log:
+  max_entries: 20
+
+logger:
+  default: warn
+  #logs:
+  #  homeassistant.core: debug
+  #  homeassistant.components.zha: debug
+  #  zigpy: debug
+  #  zigpy_xbee: debug
+  #  zigpy_xbee.api: debug
+  #  zigpy_xbee.uart: debug
+  #  zigpy_xbee.zigbee.application: debug
+
+custom_updater:
+  track:
+    - components
+    - python_scripts
+    - cards
+  component_urls:
+    - https://raw.githubusercontent.com/kodi1/custom_components/master/custom_components.json
+  card_urls:
+    - https://raw.githubusercontent.com/sgttrs/lovelace-weather-card-chart/master/custom-updater.json

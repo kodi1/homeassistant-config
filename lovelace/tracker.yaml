@@ -1,0 +1,44 @@
+title: tracker
+icon: mdi:radar
+path: tracker
+
+badges:
+  - device_tracker.qp1a_191105_004
+  - device_tracker.asus_x00qd
+  - device_tracker.minix
+  - device_tracker.n0ll
+  - device_tracker.sgs4
+  - device_tracker.google_maps_107209225675467950565
+
+cards:
+  - type: entities
+    title: track
+    show_header_toggle: false
+    entities:
+      - automation.track_merge_startup
+      - automation.track_merge
+
+  - type: picture-entity
+    entity: camera.tracker
+
+  - type: history-graph
+    title: accuracy
+    hours_to_show: 6
+    refresh: 300
+    entities:
+      - sensor.gps_accuracy_g
+      - sensor.gps_accuracy_t
+
+  - type: entities
+    title: settings
+    show_header_toggle: false
+    entities:
+      - input_number.tracker_delay
+      - input_number.tracker_accuracy
+      - input_number.tracker_force_update
+
+  - type: entities
+    title: proximity
+    show_header_toggle: false
+    entities:
+      - proximity.home

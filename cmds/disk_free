@@ -1,0 +1,6 @@
+#!/bin/bash
+source /config/set_env
+
+SSHPASS=$LOCALPASS sshpass -e \
+ssh -oStrictHostKeyChecking=no -p2222 $LOCALUSER@$LOCALHOST \
+df -m /dev/sda1 | awk 'END { print $4}'

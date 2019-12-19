@@ -1,0 +1,48 @@
+homeassistant:
+  customize:
+    sensor.ping_isp:
+      icon: mdi:earth
+
+sensor:
+  - platform: command_line
+    name: ping isp
+    command: '/config/cmds/test_isp'
+    unit_of_measurement: 'ms'
+    scan_interval: 300
+
+binary_sensor:
+  - platform: command_line
+    command: '/config/cmds/tomato_smb_check'
+    name: 'Smb online'
+    device_class: connectivity
+    payload_on: 'success'
+    payload_off: 'fail'
+    scan_interval: 600
+
+automation:
+  - alias: tomato smb restart
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.smb_online
+        to: 'off'
+        for:
+          minutes: 11
+    action:
+      - service: script.all_notify
+        data:
+          tit: 'router'
+          msg: 'smbd restart'
+      - service: script.tomato_smb_restart
+
+script:
+  tomato_smb_restart:
+    sequence:
+      - service: shell_command.tomato_smb_restart
+
+  tomato_reboot:
+    sequence:
+      - service: shell_command.tomato_reboot
+
+shell_command:
+  tomato_reboot: '/config/cmds/tomato_reboot'
+  tomato_smb_restart: '/config/cmds/tomato_smb_restart'
