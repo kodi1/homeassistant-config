@@ -1,0 +1,197 @@
+title: home
+icon: mdi:home-variant
+path: home
+
+badges:
+  - device_tracker.root
+  - sensor.change_pressure
+  - sensor.w_alert
+
+cards:
+  - type: custom:weather-card-chart
+    weather: weather.dark_skym
+    mode: daily
+
+  - type: entities
+    title: out
+    show_header_toggle: false
+    entities:
+      - sensor.temp_out
+      - sensor.hum_out
+      - type: divider
+      - sensor.sea_level_pressure
+      - sensor.temp_idx
+      - type: divider
+      - sensor.darksky_clouds
+
+  - type: entities
+    title: living
+    show_header_toggle: false
+    entities:
+      - sensor.temp_living
+      - sensor.hum_living
+      - sensor.press_living
+
+  - type: entities
+    title: bed
+    show_header_toggle: false
+    entities:
+      - sensor.temp_bed
+      - sensor.hum_bed
+
+  - type: conditional
+    conditions:
+      - entity: switch.av_switch
+        state: 'on'
+    card:
+      type: entities
+      title: media
+      show_header_toggle: false
+      entities:
+        - input_select.select_sound_bar
+        - automation.sound_bar_music_on
+        - automation.sound_bar_music_off
+        - input_number.sound_bar_music_timer
+        - timer.sound_bar
+        - input_boolean.enable_sleep
+
+  - type: conditional
+    conditions:
+      - entity: switch.av_switch
+        state: 'on'
+    card:
+      type: media-control
+      entity: media_player.ht_mt500_501_b34d6a
+
+  - type: custom:upcoming-media-card
+    entity: sensor.hts_recording_sensor
+    image_style: fanart
+    date: ddmm
+    clock: 24
+    hide_empty: true
+
+  - type: conditional
+    conditions:
+      - entity: alert.low_battery
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.low_battery
+
+  - type: conditional
+    conditions:
+      - entity: alert.home_motion
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.home_motion
+
+  - type: conditional
+    conditions:
+      - entity: alert.cpu_overheat
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.cpu_overheat
+
+  - type: conditional
+    conditions:
+      - entity: alert.tasmota_update
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.tasmota_update
+
+  - type: conditional
+    conditions:
+      - entity: alert.work_acc_update
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.work_acc_update
+
+  - type: conditional
+    conditions:
+      - entity: input_boolean.in_call
+        state: 'on'
+    card:
+      title: in_call
+      type: entities
+      show_header_toggle: false
+      entities:
+        - binary_sensor.in_call
+        - input_boolean.in_call
+        - automation.in_call
+        - input_number.sound_bar_save_volume
+        - script.in_call_on
+        - script.in_call_off
+
+  #- type: conditional
+  #  conditions:
+  #    - entity: sensor.w_alert
+  #      state_not: '0'
+  #  card:
+  #    type: custom:flex-table-card
+  #    title: alert
+  #    entities:
+  #      include: weather.dark_skym
+  #    columns:
+  #      - attr_as_list: alerts
+  #        modify: x.severity
+  #        name: level
+  #      - attr_as_list: alerts
+  #        modify: x.title.concat('. ', x.description, '. ', x.expires)
+  #        name: info
+  #      - attr_as_list: alerts
+  #        modify: x.uri
+  #        name: uri
+
+  - type: conditional
+    conditions:
+      - entity: sensor.w_alert
+        state_not: '0'
+    card:
+      type: custom:flex-table-card
+      title: today
+      entities:
+        include: sensor.w_alert
+      columns:
+        - attr_as_list: today
+          modify: x.code.concat(' ', x.event)
+          name: event
+        - attr_as_list: today
+          modify: x.txt
+          name: description
+        - attr_as_list: today
+          modify: x.end
+          name: expire
+
+  - type: conditional
+    conditions:
+      - entity: sensor.w_alert
+        state_not: '0'
+    card:
+      type: custom:flex-table-card
+      title: tomorrow
+      entities:
+        include: sensor.w_alert
+      columns:
+        - attr_as_list: tomorrow
+          modify: x.code.concat(' ', x.event)
+          name: event
+        - attr_as_list: tomorrow
+          modify: x.txt
+          name: description
+        - attr_as_list: tomorrow
+          modify: x.end
+          name: expire

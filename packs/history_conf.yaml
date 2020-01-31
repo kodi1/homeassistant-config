@@ -1,0 +1,27 @@
+history:
+  include:
+    #domains:
+    entities:
+      - sensor.change_pressure
+      - sensor.cpu_temp
+      - sensor.cpu_usage
+      - sensor.dark_sky_wind_speed
+      - sensor.disk_free
+      - sensor.mem_free
+      - sensor.ping_isp
+      - sensor.root_battery
+      - sensor.sea_level_pressure
+      - sensor.press_living
+      - sensor.temp_bed
+      - sensor.hum_bed
+      - sensor.temp_out
+      - sensor.hum_out
+      - sensor.batt_out
+      - sensor.temp_living
+      - sensor.hum_living
+      - sensor.batt_living
+      - sensor.lumi_lumi_sensor_motion_aq2_eca7ed02_illuminance
+      - weather.dark_skym
+      - sensor.darksky_clouds
+      - binary_sensor.ext_port
+      - binary_sensor.village

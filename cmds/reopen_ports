@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+#upnpc=$(upnpc -u http://192.168.1.1:44393/rootDesc.xml)
+#
+
+upnpc -d \
+2222 TCP \
+9981 TCP \
+9982 TCP \
+8123 TCP \
+1883 TCP \
+7878 TCP \
+8989 TCP \
+9091 TCP
+
+# ip=$(upnpc -l | grep "Local LAN ip address" | cut -d: -f2)
+#
+# upnpc -e "service hbox" -a $ip 2222 2222 TCP
+# upnpc -e "service hbox" -a $ip 9981 9981 TCP
+# upnpc -e "service hbox" -a $ip 9982 9982 TCP
+# upnpc -e "service hbox" -a $ip 8123 8123 TCP
+# upnpc -e "service hbox" -a $ip 1883 1883 TCP
+# upnpc -e "service hbox" -a $ip 7878 7878 TCP
+# upnpc -e "service hbox" -a $ip 8989 8989 TCP
+# upnpc -e "service hbox" -a $ip 9091 9091 TCP
+
+upnpc -e "service hbox" -r \
+2222 TCP \
+9981 TCP \
+9982 TCP \
+8123 TCP \
+1883 TCP \
+7878 TCP \
+8989 TCP \
+9091 TCP

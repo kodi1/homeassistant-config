@@ -1,0 +1,407 @@
+homeassistant:
+  customize:
+    switch.hyperion_enable:
+      icon: mdi:led-strip-variant
+
+automation:
+  - alias: kodi_hyperion_control
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.day
+      - platform: event
+        event_type: event_kodi_startup
+    condition:
+      condition: or
+      conditions:
+        - condition: state
+          entity_id: device_tracker.minix
+          state: home
+    action:
+      - service_template: >-
+          {% if is_state('binary_sensor.day', 'off') %}
+            script.hyperion_turn_on
+          {% else %}
+            script.hyperion_turn_off
+          {% endif %}
+
+  - alias: hyperion_clear_effects
+    trigger:
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.hyperion_effect_timer
+    action:
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.hyperion_select_effect
+          option: None
+
+  - alias: hyperion_clear_rgb
+    trigger:
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.hyperion_rgb_timer
+    action:
+      - service: script.hyperion_clear_rgb
+
+  - alias: send_rgb_hyperion
+    trigger:
+      - platform: state
+        entity_id: input_number.slider_r
+      - platform: state
+        entity_id: input_number.slider_g
+      - platform: state
+        entity_id: input_number.slider_b
+    action:
+      - service: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+                  '{
+                  "color": [
+                              {{ states('input_number.slider_r') | int - 5 }},
+                              {{ states('input_number.slider_g') | int - 5 }},
+                              {{ states('input_number.slider_b') | int - 5 }}
+                            ],
+                  "command" : "color",
+                  "priority": {{ states('input_number.slider_rgb_priority') | int }}
+                  }'
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.hyperion_select_mode
+          option: light
+      - service: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+                  '{
+                    "color": [
+                                {{ states('input_number.slider_r') | int }},
+                                {{ states('input_number.slider_g') | int }},
+                                {{ states('input_number.slider_b') | int }}],
+                    "command": "color",
+                    "priority": {{ states('input_number.slider_rgb_priority') | int }}
+                  }'
+
+  - alias: send_effect_hyperion
+    trigger:
+      - platform: state
+        entity_id: input_select.hyperion_select_effect
+    condition:
+      - condition: template
+        value_template: "{{ trigger.to_state.state != 'None' }}"
+    action:
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.hyperion_select_mode
+          option: effect
+      - service: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+            '{
+                "command": "effect",
+                "priority": {{ states('input_number.slider_effect_priority') | int }},
+                "duration": {{ states('input_number.slider_effect_time') | int * 60000 }},
+                "effect": { "name" : "{{ states('input_select.hyperion_select_effect') }}"}
+              }'
+      - service: timer.start
+        entity_id: timer.hyperion_effect_timer
+        data_template:
+          duration: "{{ states('input_number.slider_effect_time') | int * 60}} "
+
+  - alias: send_effect_hyperion_none
+    trigger:
+      - platform: state
+        entity_id: input_select.hyperion_select_effect
+        to: 'None'
+        for:
+          seconds: 3
+    action:
+      - service: timer.cancel
+        entity_id: timer.hyperion_effect_timer
+      - service: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+            '{"command": "clear", "priority": {{ states('input_number.slider_effect_priority') | int }}}'
+      # Workaround clear twice to diasble effects
+      - service: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+            '{"command": "clear", "priority": {{ states('input_number.slider_effect_priority') | int }}}'
+      - service: script.none_effect_kodi_paused
+      - service: script.none_effect_kodi_play
+
+  - alias: send_settings_hyperion
+    trigger:
+      - platform: state
+        entity_id: input_select.hyperion_select_mode
+    action:
+      - service: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+            {%-
+              set brightness =
+                {
+                  'video': states('input_number.video_brightness'),
+                  'effect': states('input_number.effect_brightness'),
+                  'light': states('input_number.light_brightness')
+                }
+              -%}
+            {%-
+              set saturation =
+                {
+                  'video': states('input_number.video_saturation'),
+                  'effect': states('input_number.effect_saturation'),
+                  'light': states('input_number.light_saturation')
+                }
+              -%}
+            {%-
+              set gamma =
+                {
+                  'video': states('input_number.video_gamma'),
+                  'effect': states('input_number.effect_gamma'),
+                  'light': states('input_number.light_gamma')
+                }
+            -%}
+            '{
+            "command":"transform",
+            "transform":
+                {
+                  "gamma":
+                      [
+                          {{ gamma[states('input_select.hyperion_select_mode')] | float }},
+                          {{ gamma[states('input_select.hyperion_select_mode')] | float }},
+                          {{ gamma[states('input_select.hyperion_select_mode')] | float }}
+                      ],
+                  "luminanceGain":{{brightness[states('input_select.hyperion_select_mode')] | float }},
+                  "saturationLGain":{{saturation[states('input_select.hyperion_select_mode')] | float }}
+                  }
+            }'
+
+input_select:
+  hyperion_select_mode:
+    name: mode
+    icon: mdi:unfold-more-horizontal
+    initial: effect
+    options:
+      - video
+      - effect
+      - light
+
+  hyperion_select_effect:
+    name: effect
+    icon: mdi:led-on
+    initial: 'None'
+    options:
+      - Cinema brighten lights
+      - Cinema dim lights
+      - Knight rider
+      - Blue mood blobs
+      - Cold mood blobs
+      - Full color mood blobs
+      - Green mood blobs
+      - Red mood blobs
+      - Warm mood blobs
+      - Police Lights Single
+      - Police Lights Solid
+      - Rainbow mood
+      - Rainbow swirl fast
+      - Rainbow swirl
+      - Random
+      - Running dots
+      - System Shutdown
+      - Snake
+      - Sparks Color
+      - Sparks
+      - Strobe blue
+      - Strobe Raspbmc
+      - Strobe white
+      - Color traces
+      - trails
+      - trails_color
+      - X-Mas
+      - 'None'
+
+script:
+  hyperion_turn_on:
+    sequence:
+      - service: switch.turn_on
+        entity_id: switch.hyperion_enable
+      - condition: or
+        conditions:
+          - condition: template
+            value_template: "{{not is_state('media_player.kodi', 'playing')}}"
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.hyperion_select_effect
+          option: Color traces
+      - delay: '00:00:03'
+      - service: timer.start
+        data:
+          entity_id: timer.hyperion_effect_timer
+          duration: '00:00:10'
+
+  hyperion_turn_off:
+    sequence:
+      - service: script.hyperion_clear_rgb
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.hyperion_select_effect
+          option: None
+      - service: switch.turn_off
+        entity_id: switch.hyperion_enable
+
+  hyperion_clear_rgb:
+    sequence:
+      - service: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+            '{"command": "clear", "priority": {{ states('input_number.slider_rgb_priority') | int }}}'
+
+  none_effect_kodi_play:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ not is_state('input_select.hyperion_select_mode', 'video') }}"
+          - condition: state
+            entity_id: media_player.kodi
+            state: 'playing'
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.hyperion_select_mode
+          option: video
+
+  none_effect_kodi_paused:
+    sequence:
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: media_player.kodi
+            state: 'paused'
+      - service: automation.trigger
+        entity_id: automation.send_rgb_hyperion
+
+timer:
+  hyperion_effect_timer:
+    name: 'effect time'
+    icon: mdi:timer
+    duration: '00:00:05'
+
+  hyperion_rgb_timer:
+    name: 'rgb time'
+    icon: mdi:timer
+    duration: '00:00:05'
+
+input_number:
+  slider_r:
+    name: red
+    min: 50
+    max: 100
+    step: 5
+    icon: mdi:invert-colors
+
+  slider_g:
+    name: green
+    min: 50
+    max: 100
+    step: 5
+    icon: mdi:invert-colors
+
+  slider_b:
+    name: blue
+    min: 50
+    max: 100
+    step: 5
+    icon: mdi:invert-colors
+
+  slider_effect_priority:
+    name: effect priority
+    min: 100
+    max: 120
+    step: 5
+    icon: mdi:checkbox-multiple-blank-outline
+
+  slider_rgb_priority:
+    name: rgb priority
+    min: 100
+    max: 120
+    step: 5
+    icon: mdi:checkbox-multiple-blank-outline
+
+  slider_effect_time:
+    name: effect time
+    min: 3
+    max: 10
+    step: 1
+    icon: mdi:timer-sand
+
+  slider_rgb_time:
+    name: color time
+    min: 5
+    max: 10
+    step: 1
+    icon: mdi:timer-sand
+
+  video_gamma:
+    min: 1.4
+    max: 2.2
+    step: 0.05
+    icon: mdi:chart-bar-stacked
+
+  video_brightness:
+    min: 0.2
+    max: 0.5
+    step: 0.01
+    icon: mdi:brightness-6
+
+  video_saturation:
+    min: 0.8
+    max: 1.0
+    step: 0.01
+    icon: mdi:palette-advanced
+
+  light_gamma:
+    min: 1.4
+    max: 2.2
+    step: 0.05
+    icon: mdi:chart-bar-stacked
+
+  light_brightness:
+    min: 0.2
+    max: 0.5
+    step: 0.01
+    icon: mdi:brightness-6
+
+  light_saturation:
+    min: 0.8
+    max: 1.0
+    step: 0.01
+    icon: mdi:palette-advanced
+
+  effect_gamma:
+    min: 1.4
+    max: 2.2
+    step: 0.05
+    icon: mdi:chart-bar-stacked
+
+  effect_brightness:
+    min: 0.2
+    max: 0.5
+    step: 0.01
+    icon: mdi:brightness-6
+
+  effect_saturation:
+    min: 0.8
+    max: 1.0
+    step: 0.01
+    icon: mdi:palette-advanced
+
+switch:
+  - platform: command_line
+    switches:
+      hyperion_enable:
+        command_on: '/config/cmds/hyperion_on'
+        command_off: '/config/cmds/hyperion_off'
+
+shell_command:
+  hyperion_cmd: '/config/cmds/hyperion_cmd {{ value }}'

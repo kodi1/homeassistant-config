@@ -1,0 +1,7 @@
+title: zha
+icon: mdi:zigbee
+path: zha
+panel: true
+
+cards:
+  - type: custom:zha-network-visualization-card

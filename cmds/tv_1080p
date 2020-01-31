@@ -1,0 +1,14 @@
+#!/bin/bash
+source /config/set_env
+
+curl --user $HTTPUSER:$HTTPPASS -H 'content-type: application/json;' -s --data-binary \
+'{
+  "jsonrpc": "2.0",
+  "method": "Settings.SetSettingValue",
+  "params": {
+                "setting": "videoscreen.screenmode",
+                "value": "00192001080050.00000pstd"
+              },
+  "id": 1
+  }' \
+http://$HOST:80/jsonrpc &

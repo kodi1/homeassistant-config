@@ -1,0 +1,43 @@
+title: hyperion
+icon: 'mdi:led-strip'
+path: hyperion
+
+cards:
+  - type: entities
+    title: hyperion
+    show_header_toggle: false
+    entities:
+      - input_select.hyperion_select_effect
+      - input_select.hyperion_select_mode
+      - input_number.slider_effect_time
+      - input_number.slider_effect_priority
+      - timer.hyperion_effect_timer
+
+  - type: entities
+    title: color
+    show_header_toggle: false
+    entities:
+      - input_number.slider_r
+      - input_number.slider_g
+      - input_number.slider_b
+      - input_number.slider_rgb_time
+      - input_number.slider_rgb_priority
+      - script.hyperion_clear_rgb
+      - timer.hyperion_rgb_timer
+
+  - type: entities
+    title: transform
+    show_header_toggle: false
+    entities:
+      - type: divider
+      - input_number.video_brightness
+      - input_number.video_saturation
+      - input_number.video_gamma
+      - type: divider
+      - input_number.effect_brightness
+      - input_number.effect_saturation
+      - input_number.effect_gamma
+      - type: divider
+      - input_number.light_brightness
+      - input_number.light_saturation
+      - input_number.light_gamma

@@ -1,0 +1,3 @@
+frontend:
+  extra_html_url: !include extra_url.yaml
+  javascript_version: auto

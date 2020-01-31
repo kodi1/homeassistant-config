@@ -1,0 +1,15 @@
+title: switch
+icon: mdi:dip-switch
+path: switch
+
+cards:
+  - type: entities
+    title: lumi_double_switch_1
+    show_header_toggle: false
+    entities:
+      - input_boolean.lumi_double_switch_1
+      - input_number.lumi_double_switch_1_time
+      - automation.lumi_switch_double_trigger_1
+      - script.lumi_double_switch_on
+      - script.lumi_double_switch_off
+      - timer.lumi_double_switch_1_timer

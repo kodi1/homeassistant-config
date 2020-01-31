@@ -1,0 +1,79 @@
+homeassistant:
+  customize:
+    binary_sensor.batts_low:
+      icon: mdi:battery-alert
+    alert.low_battery:
+      icon: mdi:battery-10
+
+alert:
+  low_battery:
+    name: batt
+    title: batt
+    message: low
+    done_message: ok
+    entity_id: binary_sensor.batts_low
+    state: 'on'
+    repeat:
+      - 60
+      - 120
+      - 360
+    notifiers:
+      - kodi
+      - gmail
+
+sensor:
+  - platform: template
+    sensors:
+      root_battery:
+        entity_id:
+          - device_tracker.root
+        friendly_name: 'Batt'
+        unit_of_measurement: '%'
+        icon_template: 'mdi:gauge'
+        value_template: >-
+            {%- set batt = state_attr('device_tracker.root', 'battery_level') -%}
+            {%- if batt  %}
+                {{ batt }}
+            {% else %}
+                {{ states('sensor.root_battery') }}
+            {%- endif %}
+
+binary_sensor:
+  - platform: template
+    sensors:
+      batts_low:
+        friendly_name: 'Batt'
+        device_class: battery
+        delay_on:
+          seconds: 30
+        delay_off:
+          seconds: 5
+        value_template: >-
+          {%- if states('sensor.batt_living') != 'unknown' and
+                  states('sensor.batt_out') != 'unknown' -%}
+            {{
+                states('sensor.batt_living') | float <= states('input_number.slider_batt_level_p') | float or
+                states('sensor.batt_out') | float <= states('input_number.slider_batt_level_p') | float or
+                states('sensor.lumi_lumi_sensor_motion_c6632702_power') | float <= states('input_number.slider_batt_level_p') | float or
+                states('sensor.lumi_lumi_sensor_motion_c56e2702_power') | float <= states('input_number.slider_batt_level_p') | float or
+                states('sensor.lumi_lumi_sensor_motion_aq2_eca7ed02_power') | float <= states('input_number.slider_batt_level_p') | float or
+                states('sensor.lumi_lumi_sensor_switch_aq3_427ab002_power') | float <= states('input_number.slider_batt_level_p') | float or
+                states('sensor.lumi_lumi_sensor_cube_9f21a702_power') | float <= states('input_number.slider_batt_level_p') | float or
+                (
+                    states('sensor.root_battery') | float <= states('input_number.slider_batt_level_p') | float and
+                    is_state_attr('device_tracker.root', 'charging', 'false')
+                ) or
+                is_state_attr('climate.living', 'low_battery', 'true')
+              }}
+          {%- else -%}
+            {{ is_state('timer.start_up_delay', 'idle') }}
+          {%- endif %}
+
+input_number:
+  slider_batt_level_p:
+    name: 'alert %'
+    unit_of_measurement: '%'
+    min: 3
+    max: 10
+    step: 1
+    icon: mdi:battery-alert

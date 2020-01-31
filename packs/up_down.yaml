@@ -1,0 +1,137 @@
+automation:
+  - alias: timer_startup
+    trigger:
+     - platform: event
+       event_type: timer.finished
+       event_data:
+         entity_id: timer.start_up_delay
+    condition:
+      condition: or
+      conditions:
+        - condition: state
+          entity_id: 'input_select.power_down_restart'
+          state: 'pending'
+    action:
+      - service: homeassistant.restart
+
+  - alias: shutdown
+    trigger:
+      - platform: homeassistant
+        event: shutdown
+    condition:
+      condition: or
+      conditions:
+        - condition: state
+          entity_id: 'input_select.power_down_restart'
+          state: 'on'
+    action:
+      - service: logbook.log
+        data_template:
+          name: 'shudown'
+          message: 'power down restart off'
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.power_down_restart
+          option: 'off'
+
+  - alias: startup
+    trigger:
+      - platform: homeassistant
+        event: start
+    action:
+      - service_template: >
+          {%-
+              set scr = {
+                'off': 'script.startup',
+                'on': 'script.restart',
+                'pending': 'script.powerup'
+              }
+             -%}
+          {{ scr[states('input_select.power_down_restart')] }}
+
+script:
+  restart:
+    sequence:
+      - service: script.all_notify
+        data:
+          tit: 'hass'
+          msg: 'restart in 5 min'
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.power_down_restart
+          option: 'pending'
+      - service: timer.start
+        data:
+          entity_id: timer.start_up_delay
+          duration: '00:05:00'
+
+  powerup:
+    sequence:
+      - service: script.all_notify
+        data:
+          tit: 'hass'
+          msg: 'power start up'
+      - service: script.startup
+
+  startup:
+    sequence:
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.power_down_restart
+          option: 'on'
+      - service: timer.start
+        data:
+          entity_id: timer.start_up_delay
+          duration: '00:10:00'
+      - wait_template: "{{states('device_tracker.root') != None}}"
+        timeout: '00:05:00'
+        continue_on_timeout: 'true'
+      - service: script.ports_open
+      - service: automation.turn_on
+        entity_id:
+          - automation.root_home
+          - automation.root_not_home
+      - service: mqtt.publish
+        data:
+          topic: 'cmnd/tasmotas/state'
+          payload: ''
+      - service: script.all_notify
+        data:
+          tit: 'hass'
+          msg: 'start'
+      - service: script.start_up_sound_bar
+      - service: script.start_up_bedroom_speaker
+      - service: script.start_up_bed_led
+      - service: script.kodi_wakeup
+      - delay: '00:00:01'
+      - service: shell_command.kodi_screensaver
+      - delay: '00:00:01'
+      - service: automation.turn_on
+        entity_id:
+          - automation.tv_off
+          - automation.tv_on
+      - service: automation.trigger
+        entity_id:
+          - automation.send_settings_hyperion
+          - automation.kodi_hyperion_control
+          - automation.living_light_off
+      - service: light.turn_off
+        data:
+          entity_id:
+            - light.ikea_of_sweden_tradfri_bulb_e27_cws_opal_600lm_c66d14fe_level_light_color_on_off
+            - light.ikea_of_sweden_tradfri_bulb_gu10_ws_400lm_bd3600fe_level_light_color_on_off
+            - light.ikea_of_sweden_tradfri_bulb_gu10_ws_400lm_6aa35efe_level_light_color_on_off
+            - light.ikea_of_sweden_tradfri_bulb_gu10_ws_400lm_d7e032fe_level_light_color_on_off
+      - service: script.start_up_delay_av_off
+
+input_select:
+  power_down_restart:
+    name: restart
+    icon: mdi:restart-alert
+    options:
+      - 'off'
+      - 'pending'
+      - 'on'
+
+timer:
+  start_up_delay:

@@ -1,0 +1,6 @@
+#!/bin/bash
+source /config/set_env
+
+SSHPASS=$TOMATOPASS sshpass -e \
+ssh -oConnectTimeout=5 -oStrictHostKeyChecking=no $TOMATOUSER@$TOMATOHOST \
+reboot &

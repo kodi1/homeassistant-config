@@ -1,0 +1,8 @@
+sensor:
+  - platform: tvh_rec
+    name: hts_recording_sensor
+    username: !secret hts_user
+    password: !secret hts_pass
+    url: !secret hts_host
+    scan_interval: 300
+    count: 3

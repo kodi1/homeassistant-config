@@ -1,0 +1,32 @@
+resources:
+  - url: /community_plugin/simple-thermostat/simple-thermostat.js
+    type: module
+  - url: /community_plugin/upcoming-media-card/upcoming-media-card.js
+    type: js
+  - url: /community_plugin/flex-table-card/flex-table-card.js
+    type: js
+  - url: /community_plugin/lovelace-weather-card-chart/weather-card-chart.js
+    type: module
+  - url: /community_plugin/zha-network-visualization-card/zha-network-visualization-card.js
+    type: module
+
+title: home
+views:
+  - !include lovelace/home.yaml
+  - !include lovelace/bed.yaml
+  - !include lovelace/status.yaml
+  - !include lovelace/settings.yaml
+  - !include lovelace/weather.yaml
+  - !include lovelace/automations.yaml
+  - !include lovelace/hyperion.yaml
+  - !include lovelace/light.yaml
+  - !include lovelace/tracker.yaml
+  - !include lovelace/other.yaml
+  - !include lovelace/xiaomi.yaml
+  - !include lovelace/zha.yaml
+  #- title: xxx
+   #path: xxx
+   #icon: mdi:keyboard-variant
+   #cards:
+     #- type: iframe
+       #url: 'https://embed.windy.com/embed2.html?lat=42.614&lon=25.115&zoom=6&level=surface&overlay=temp&calendar=24&pressure=true&type=map&location=coordinates&detail=&detailLat=42.614&detailLon=25.115&metricWind=km%2Fh&metricTemp=%C2%B0C'

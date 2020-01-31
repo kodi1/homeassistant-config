@@ -1,0 +1,4 @@
+#!/bin/bash
+source /config/set_env
+
+echo '{"command": "clear", "priority": 0}' | nc -w 1 $HYPERION_HOST $HYPERION_PORT

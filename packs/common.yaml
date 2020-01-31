@@ -1,0 +1,103 @@
+notify:
+  - platform: kodi
+    name: kodi
+    host: !secret kodi_host
+    port: !secret kodi_port
+    username: !secret kodi_user
+    password: !secret kodi_pass
+
+  - platform: smtp
+    name: gmail
+    server: smtp.gmail.com
+    port: 587
+    timeout: 15
+    sender: hass@gmail.com
+    encryption: starttls
+    username: !secret g_user
+    password: !secret g_pass
+    recipient:
+      - !secret smtp_recp
+
+input_select:
+  current_theme:
+    options:
+      - default
+      - midnight
+      - AMOLED Blue
+    initial: default
+    icon: mdi:theme-light-dark
+
+script:
+  all_notify:
+    sequence:
+      - service: script.turn_on
+        entity_id:
+          - script.kodi_notify
+          - script.mail_notify
+          - script.web_notify
+        data_template:
+          variables:
+            t: '{{ tit }}'
+            m: '{{ msg }}'
+
+  mail_notify:
+    sequence:
+      - condition: template
+        value_template: >-
+          {{states('device_tracker.root') != 'home'}}
+      - service: notify.gmail
+        data_template:
+          title: '{{ t }}'
+          message: '{{ m }}'
+
+  kodi_notify:
+    sequence:
+      - condition: state
+        entity_id: binary_sensor.kodi_notify
+        state: 'on'
+      - service: notify.kodi
+        data:
+          data:
+            icon: 'info'
+            displaytime: 15000
+        data_template:
+          title: '{{ t }}'
+          message: '{{ m }}'
+
+  web_notify:
+    sequence:
+      - condition: state
+        entity_id: binary_sensor.kodi_notify
+        state: 'off'
+      - service: persistent_notification.create
+        data_template:
+          title: '{{ t }}'
+          message: '{{ m }}'
+
+  local_reboot:
+    sequence:
+      - service: shell_command.local_reboot
+        data:
+          value: 'now'
+
+  minix_reboot:
+    sequence:
+      - service: shell_command.minix_reboot
+        data:
+          value: '+0'
+
+  ports_open:
+    sequence:
+      - service: shell_command.port_open
+
+  reboot_all:
+    sequence:
+      - delay: '00:00:05'
+      - service: script.kodi_turn_off
+      - service: shell_command.minix_reboot
+        data:
+          value: '+3'
+      - service: shell_command.local_reboot
+        data:
+          value: '+5'
+      - service: script.tomato_reboot

@@ -1,0 +1,16 @@
+title: weather
+icon: mdi:image-filter-hdr
+path: weather
+cards:
+  - type: iframe
+    aspect_ratio: 100%
+    url: 'https://embed.windy.com/embed2.html?lat=42.614&lon=25.115&zoom=6&level=surface&overlay=rain&calendar=24&pressure=true&type=map&location=coordinates&detail=&detailLat=42.614&detailLon=25.115&metricWind=km%2Fh&metricTemp=%C2%B0C'
+
+  - type: picture-entity
+    entity: camera.24sat_image
+
+  - type: picture-entity
+    entity: camera.weathermod
+
+  #- type: picture-entity
+  #  entity: camera.meteo_sat

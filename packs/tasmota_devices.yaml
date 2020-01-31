@@ -1,0 +1,232 @@
+homeassistant:
+  customize:
+    switch.fan_living:
+      icon: mdi:fan
+    switch.sonoff_1:
+      icon: mdi:power-socket-eu
+    switch.bed_switch:
+      icon: mdi:speaker-wireless
+    switch.av_switch:
+      icon: mdi:amplifier
+    light.xp_bar_1:
+      icon: mdi:ceiling-light
+    light.xp_bar_2:
+      icon: mdi:ceiling-light
+    light.xp_top_1:
+      icon: mdi:wall-sconce-flat
+    light.xp_top_2:
+      icon: mdi:wall-sconce-flat
+    alert.tasmota_update:
+      icon: mdi:update
+
+alert:
+  tasmota_update:
+    name: tasmota check
+    entity_id: binary_sensor.tasmota_update
+    state: 'on'
+    repeat:
+      - 60
+    can_acknowledge: true
+    title: "tasmota version {{ states('sensor.tasmota_r_v') }}"
+    message: available
+    done_message: done
+    notifiers:
+      - kodi
+      - gmail
+
+sensor:
+  - platform: rest
+    name: 'tasmota_r_v'
+    method: 'GET'
+    headers:
+      User-Agent: 'Home Assistant REST sensor'
+      Accept: 'application/vnd.github.v3+json'
+      Content-Type: 'application/json'
+    scan_interval: 10800
+    resource: 'https://api.github.com/repos/arendst/Sonoff-Tasmota/releases/latest'
+    value_template: "{{ value_json['tag_name'][1:] }}"
+
+  - platform: rest
+    name: 'tasmota_l_v'
+    scan_interval: 10800
+    resource: !secret url_tasmota
+    value_template: "{{value_json['StatusFWR'].Version[:5] }}"
+
+binary_sensor:
+  - platform: template
+    sensors:
+      tasmota_update:
+        delay_on:
+          seconds: 10
+        delay_off:
+          seconds: 5
+        value_template: >-
+          {{
+            states('sensor.tasmota_l_v') != states('sensor.tasmota_r_v')
+          }}
+
+switch:
+  - platform: mqtt
+    name: 'fan_living'
+    state_topic: 'tele/fan_living/STATE'
+    value_template: '{{ value_json.POWER }}'
+    command_topic: 'cmnd/fan_living/POWER'
+    payload_on: 'ON'
+    payload_off: 'OFF'
+    availability_topic: 'tele/fan_living/LWT'
+    payload_available: 'Online'
+    payload_not_available: 'Offline'
+    retain: false
+
+  - platform: mqtt
+    name: 'sonoff_1'
+    state_topic: 'tele/sonoff_1/STATE'
+    value_template: '{{ value_json.POWER }}'
+    command_topic: 'cmnd/sonoff_1/POWER'
+    payload_on: 'ON'
+    payload_off: 'OFF'
+    availability_topic: 'tele/sonoff_1/LWT'
+    payload_available: 'Online'
+    payload_not_available: 'Offline'
+    retain: false
+
+  - platform: mqtt
+    name: 'av_switch'
+    state_topic: 'tele/av_switch/STATE'
+    value_template: '{{ value_json.POWER }}'
+    command_topic: 'cmnd/av_switch/POWER'
+    payload_on: 'ON'
+    payload_off: 'OFF'
+    availability_topic: 'tele/av_switch/LWT'
+    payload_available: 'Online'
+    payload_not_available: 'Offline'
+    retain: false
+
+  - platform: mqtt
+    name: 'bed_switch'
+    state_topic: 'tele/bed_switch/STATE'
+    value_template: '{{ value_json.POWER }}'
+    command_topic: 'cmnd/bed_switch/POWER'
+    payload_on: 'ON'
+    payload_off: 'OFF'
+    availability_topic: 'tele/bed_switch/LWT'
+    payload_available: 'Online'
+    payload_not_available: 'Offline'
+    retain: false
+
+light:
+  - platform: mqtt
+    name: 'xp_bar_1'
+    command_topic: 'cmnd/xp_bar_1/POWER'
+    state_topic: 'tele/xp_bar_1/STATE'
+    state_value_template: '{{value_json.POWER}}'
+    availability_topic: 'tele/xp_bar_1/LWT'
+    brightness_command_topic: 'cmnd/xp_bar_1/Dimmer'
+    brightness_state_topic: 'tele/xp_bar_1/STATE'
+    brightness_scale: 100
+    on_command_type: 'brightness'
+    brightness_value_template: '{{value_json.Dimmer}}'
+    color_temp_command_topic: 'cmnd/xp_bar_1/CT'
+    color_temp_state_topic: 'tele/xp_bar_1/STATE'
+    color_temp_value_template: '{{value_json.CT|int}}'
+    payload_on: 'ON'
+    payload_off: 'OFF'
+    payload_available: 'Online'
+    payload_not_available: 'Offline'
+
+  - platform: mqtt
+    name: 'xp_bar_2'
+    command_topic: 'cmnd/xp_bar_2/POWER'
+    state_topic: 'tele/xp_bar_2/STATE'
+    state_value_template: '{{value_json.POWER}}'
+    availability_topic: 'tele/xp_bar_2/LWT'
+    brightness_command_topic: 'cmnd/xp_bar_2/Dimmer'
+    brightness_state_topic: 'tele/xp_bar_2/STATE'
+    brightness_scale: 100
+    on_command_type: 'brightness'
+    brightness_value_template: '{{value_json.Dimmer}}'
+    color_temp_command_topic: 'cmnd/xp_bar_2/CT'
+    color_temp_state_topic: 'tele/xp_bar_2/STATE'
+    color_temp_value_template: '{{value_json.CT|int}}'
+    payload_on: 'ON'
+    payload_off: 'OFF'
+    payload_available: 'Online'
+    payload_not_available: 'Offline'
+
+  - platform: mqtt
+    name: 'xp_top_1'
+    command_topic: 'cmnd/xp_top_1/POWER'
+    state_topic: 'tele/xp_top_1/STATE'
+    state_value_template: '{{value_json.POWER}}'
+    availability_topic: 'tele/xp_top_1/LWT'
+    brightness_command_topic: 'cmnd/xp_top_1/Dimmer'
+    brightness_state_topic: 'tele/xp_top_1/STATE'
+    brightness_scale: 100
+    on_command_type: 'brightness'
+    brightness_value_template: '{{value_json.Dimmer}}'
+    color_temp_command_topic: 'cmnd/xp_top_1/CT'
+    color_temp_state_topic: 'tele/xp_top_1/STATE'
+    color_temp_value_template: '{{value_json.CT|int}}'
+    payload_on: 'ON'
+    payload_off: 'OFF'
+    payload_available: 'Online'
+    payload_not_available: 'Offline'
+
+  - platform: mqtt
+    name: 'xp_top_2'
+    command_topic: 'cmnd/xp_top_2/POWER'
+    state_topic: 'tele/xp_top_2/STATE'
+    state_value_template: '{{value_json.POWER}}'
+    availability_topic: 'tele/xp_top_2/LWT'
+    brightness_command_topic: 'cmnd/xp_top_2/Dimmer'
+    brightness_state_topic: 'tele/xp_top_2/STATE'
+    brightness_scale: 100
+    on_command_type: 'brightness'
+    brightness_value_template: '{{value_json.Dimmer}}'
+    color_temp_command_topic: 'cmnd/xp_top_2/CT'
+    color_temp_state_topic: 'tele/xp_top_2/STATE'
+    color_temp_value_template: '{{value_json.CT|int}}'
+    payload_on: 'ON'
+    payload_off: 'OFF'
+    payload_available: 'Online'
+    payload_not_available: 'Offline'
+
+  - platform: group
+    name: 'living light'
+    entities:
+      - light.xp_bar_1
+      - light.xp_bar_2
+      - light.xp_top_1
+      - light.xp_top_2
+
+  - platform: mqtt
+    name: 'hama_living'
+    command_topic: "cmnd/hama_living/POWER"
+    state_topic: "tele/hama_living/STATE"
+    state_value_template: "{{value_json.POWER}}"
+    availability_topic: "tele/hama_living/LWT"
+    brightness_command_topic: "cmnd/hama_living/Dimmer"
+    brightness_state_topic: "tele/hama_living/STATE"
+    brightness_scale: 100
+    on_command_type: "brightness"
+    brightness_value_template: "{{value_json.Dimmer}}"
+    white_value_state_topic: "tele/hama_living/STATE"
+    white_value_command_topic: "cmnd/hama_living/White"
+    white_value_scale: 100
+    white_value_template: "{{ value_json.Channel[3] }}"
+    rgb_command_topic: "cmnd/hama_living/Color2"
+    rgb_state_topic: "tele/hama_living/STATE"
+    rgb_value_template: "{{value_json.Color.split(',')[0:3]|join(',')}}"
+    effect_command_topic: "cmnd/hama_living/Scheme"
+    effect_state_topic: "tele/hama_living/STATE"
+    effect_value_template: "{{value_json.Scheme}}"
+    effect_list:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+    payload_on: "ON"
+    payload_off: "OFF"
+    payload_available: "Online"
+    payload_not_available: "Offline"

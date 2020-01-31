@@ -1,0 +1,258 @@
+homeassistant:
+  customize:
+    sensor.pressure_history:
+      icon: mdi:gauge
+      friendly_name: Pressure
+    binary_sensor.climate_online:
+      icon: mdi:thermostat-box
+
+weather:
+  - platform: darksky_m
+    api_key: !secret darksky_key
+    units: si
+    mode: daily
+
+binary_sensor:
+  - platform: template
+    sensors:
+      climate_online:
+        device_class: connectivity
+        value_template: >-
+          {{
+            not (
+                  states.climate.living == None or
+                  is_state('climate.living', 'unavailable')
+                  )
+          }}
+
+sensor:
+  - platform: meteoalarm_m
+    id: !secret meteoalarm_id
+    name: w_alert
+    scan_interval: 3600
+
+  - platform: template
+    sensors:
+      #w_alert:
+      #  unit_of_measurement: 'events'
+      #  icon_template: 'mdi:weather-lightning-rainy'
+      #  value_template: "{{state_attr('weather.dark_skym', 'alert_cnt')|int}}"
+
+      darksky_clouds:
+        friendly_name: 'clouds'
+        unit_of_measurement: '%'
+        icon_template: 'mdi:weather-partly-cloudy'
+        value_template: "{{state_attr('weather.dark_skym', 'cloud_cover')}}"
+
+      sea_level_pressure:
+        entity_id:
+          - sensor.pressure_history
+        friendly_name: 'sea pressure'
+        unit_of_measurement: 'hPa'
+        icon_template: 'mdi:gauge'
+        value_template: >-
+            {%- if states('sensor.pressure_history') != 'unknown' and
+                    states('sensor.temp_out') != 'unknown' %}
+                {% set p1 = states('sensor.pressure_history') | float %}
+                {% set t = states('sensor.temp_out') | float %}
+                {% set h = 603 | float %}
+                {{ (p1 *  ( (1 - (0.0065 * h) / (t + (0.0065 * h) + 273.15)) **  -5.257)) | round(2) }}
+            {% else %}
+                {{ states('sensor.sea_level_pressure') }}
+            {%- endif %}
+
+      change_pressure:
+        friendly_name: 'change'
+        unit_of_measurement: 'hPa/h'
+        value_template: >-
+          {{ state_attr('sensor.pressure_history', 'change') | round(2) }}
+        icon_template: >-
+          {%if state_attr('sensor.pressure_history', 'change') | float > 0.33 %}
+            {{'mdi:trending-up'}}
+          {% elif state_attr('sensor.pressure_history', 'change') | float < -0.33 %}
+            {{'mdi:trending-down'}}
+          {% else %}
+            {{'mdi:trending-neutral'}}
+          {% endif %}
+
+  - platform: mqtt
+    name: 'hum bed'
+    state_topic: '/bedroom_led/env/humidity'
+    unit_of_measurement: '%'
+    device_class: 'humidity'
+    expire_after: 660
+
+  - platform: mqtt
+    name: 'temp bed'
+    state_topic: '/bedroom_led/env/temperature'
+    unit_of_measurement: '°C'
+    device_class: 'temperature'
+    expire_after: 660
+
+  - platform: mqtt
+    name: 'hum living'
+    state_topic: 'bme280_171f93'
+    value_template: "{{ value_json.humidity | round(2) }}"
+    unit_of_measurement: '%'
+    device_class: 'humidity'
+    expire_after: 660
+
+  - platform: mqtt
+    name: ' temp living'
+    state_topic: 'bme280_171f93'
+    value_template: "{{ value_json.temperature | round(2) }}"
+    device_class: 'temperature'
+    unit_of_measurement: '°C'
+    expire_after: 660
+
+  - platform: mqtt
+    name: 'press living'
+    state_topic: 'bme280_171f93'
+    value_template: "{{ value_json.pressure | round(2) }}"
+    device_class: 'pressure'
+    unit_of_measurement: 'hPa'
+    expire_after: 660
+
+  - platform: mqtt
+    name: 'batt living'
+    state_topic: 'bme280_171f93'
+    value_template: "{{ value_json.batt_p | round(1) }}"
+    device_class: 'battery'
+    unit_of_measurement: '%'
+    expire_after: 660
+
+  - platform: mqtt
+    name: 'hum out'
+    state_topic: 'dht22_176e41'
+    value_template: "{{ value_json.humidity }}"
+    unit_of_measurement: '%'
+    device_class: 'humidity'
+    expire_after: 660
+
+  - platform: mqtt
+    name: 'temp out'
+    state_topic: 'dht22_176e41'
+    value_template: "{{ value_json.temperature }}"
+    device_class: 'temperature'
+    unit_of_measurement: '°C'
+    expire_after: 660
+
+  - platform: mqtt
+    name: 'temp idx'
+    state_topic: 'dht22_176e41'
+    value_template: "{{ value_json.temp_idx }}"
+    device_class: 'temperature'
+    unit_of_measurement: '°C'
+    expire_after: 660
+
+  - platform: mqtt
+    name: 'batt out'
+    state_topic: 'dht22_176e41'
+    value_template: "{{ value_json.batt_p | round(1) }}"
+    device_class: 'battery'
+    unit_of_measurement: '%'
+    expire_after: 660
+
+  - platform: mqtt
+    name: 'wifi rssi'
+    state_topic: 'dht22_176e41'
+    value_template: "{{ value_json.rssi }}"
+    device_class: 'signal_strength'
+    unit_of_measurement: 'dBm'
+    expire_after: 660
+
+  - platform: mqtt
+    name: 'wifi ch'
+    state_topic: 'dht22_176e41'
+    value_template: "{{ value_json.channel }}"
+    icon: mdi:antenna
+    unit_of_measurement: 'ch'
+    expire_after: 660
+
+  - platform: statistics
+    name: pressure history
+    entity_id: sensor.press_living
+    sampling_size: 6
+
+input_number:
+  pressure_speed:
+    name: 'hPa/h alert'
+    unit_of_measurement: 'hPa/h'
+    min: 0.9
+    max: 1.1
+    step: 0.01
+    icon: mdi:altimeter
+
+automation:
+  - alias: change_pressure
+    trigger:
+      - platform: state
+        entity_id: sensor.change_pressure
+    condition:
+      condition: and
+      conditions:
+        - condition: template
+          value_template: >-
+            {%- if states('sensor.change_pressure') | float > 0 -%}
+              {{states('sensor.change_pressure') | float > states('input_number.pressure_speed') | float}}
+            {%- else -%}
+              {{states('sensor.change_pressure') | float * -1 > states('input_number.pressure_speed') | float}}
+            {%- endif -%}
+        - condition: template
+          value_template: >-
+            {%- if state_attr('automation.change_pressure', 'last_triggered') != None -%}
+              {{(as_timestamp(now()) - as_timestamp(state_attr('automation.change_pressure', 'last_triggered'))) / 60 > 60}}
+            {%- else -%}
+              True
+            {%- endif -%}
+    action:
+      - service: script.all_notify
+        data_template:
+          tit: 'pressure change'
+          msg: '{{states.sensor.change_pressure.state}}'
+
+  - alias: weather_alert
+    trigger:
+      - platform: state
+        entity_id: sensor.w_alert
+    condition:
+      - condition: template
+        value_template: '{{trigger.from_state.state != trigger.to_state.state}}'
+    action:
+      - service: script.all_notify
+        data_template:
+          tit: 'weather'
+          msg: >-
+            {%- if not is_state('sensor.w_alert', '0') -%}
+              {%- for s  in ['today', 'tomorrow'] -%}
+                {%- set v = state_attr('sensor.w_alert', s) -%}
+                {%- if v -%}
+                  {% for d  in v -%}
+                    {{s}} - {{d['code']}} {{d['event']}} {{d['end']}}
+                  {% endfor -%}
+                {%- endif -%}
+              {% endfor -%}
+            {% else %}
+              alert expired
+            {% endif %}
+          #msg: >-
+          #  {%- if state_attr('weather.dark_skym', 'alert_cnt') != 0 and state_attr('weather.dark_skym', 'alerts') -%}
+          #    {%- for i in state_attr('weather.dark_skym', 'alerts') -%}
+          #     {{i['title']}} {{i['expires']}} {{i['severity']}}
+          #    {%- endfor -%}
+          #  {% else %}
+          #    alert expired
+          #  {% endif %}
+
+camera:
+  #- platform: generic
+  #  name: 'meteo sat'
+  #  still_image_url: http://info.meteo.bg/i/meteo/IR.gif
+
+  - platform: generic
+    name: '24sat image'
+    still_image_url: https://api.sat24.com/crop?type=visual5hdcomplete&lat={{ state_attr('device_tracker.root', 'latitude') }}&lon={{ state_attr('device_tracker.root', 'longitude') }}&width=300&height=300&zoom=0.50&continent=eu
+
+  - platform: generic
+    name: 'weathermod'
+    still_image_url: http://cap.weathermod-bg.eu/KZNCAP_G.jpg

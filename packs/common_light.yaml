@@ -1,0 +1,88 @@
+homeassistant:
+  customize:
+    binary_sensor.home_light_extend:
+      icon: mdi:lightbulb-group
+    binary_sensor.light_video_pause:
+      icon: mdi:television-pause
+    binary_sensor.light_h:
+      icon: mdi:coach-lamp
+    binary_sensor.day:
+      icon: mdi:weather-sunset-up
+    input_number.just_home_light_timer:
+      icon: mdi:home-modern
+
+automation:
+  - alias: motion_light_extend
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.home_light_extend
+        to: 'on'
+        for:
+          seconds: 5
+    action:
+      - service: script.lumi_double_switch_on
+        data_template:
+          time_t: "{{ (states('input_number.just_home_light_timer') | float * 60) | int }}"
+
+binary_sensor:
+  - platform: tod
+    name: day
+    after: sunrise
+    after_offset: '-00:15:00'
+    before: sunset
+    before_offset: '+00:15:00'
+
+  - platform: template
+    sensors:
+      home_light_extend:
+        friendly_name: 'all lights'
+        device_class: light
+        value_template: "{{
+                            (
+                              is_state('binary_sensor.day', 'off') and
+                              is_state('binary_sensor.lumi_lumi_sensor_motion_c6632702_occupancy', 'on') and
+                              is_state('binary_sensor.lumi_lumi_sensor_motion_aq2_eca7ed02_occupancy', 'on')
+                            )
+                          }}"
+
+      light_video_pause:
+        friendly_name: 'video'
+        device_class: light
+        delay_on:
+          seconds: 1
+        delay_off:
+          seconds: 5
+        value_template: "{{
+                            (
+                              is_state('binary_sensor.day', 'off') and
+                              is_state('media_player.kodi', 'paused') and
+                              is_state('binary_sensor.kodi_screen_saver', 'on')
+                            )
+                          }}"
+
+      light_h:
+        friendly_name: 'light h'
+        device_class: light
+        value_template: "{{
+                            is_state('binary_sensor.day', 'off') and
+                            is_state('binary_sensor.kodi_screen_saver', 'on') and
+                            (
+                              is_state('media_player.ht_mt500_501_b34d6a', 'playing') or
+                              is_state('device_tracker.n0ll', 'home')
+                            )
+                          }}"
+
+input_number:
+  just_home_light_timer:
+    name: 'just home'
+    unit_of_measurement: 'min'
+    min: 1
+    max: 10
+    step: 0.5
+
+script:
+  finish_lights:
+    sequence:
+      - service: script.bed_clear_timer
+      - service: script.hall_clear_timer
+      - service: script.living_clear_timer

@@ -1,0 +1,137 @@
+automation:
+  - alias: n0ll_home
+    trigger:
+      - platform: state
+        entity_id: device_tracker.n0ll
+        from: not_home
+        to: home
+    action:
+      - service: script.n0ll_home
+
+  - alias: home_near
+    trigger:
+      - platform: numeric_state
+        entity_id: proximity.home
+        below: 35
+    condition:
+      - condition: template
+        value_template: >-
+          {{
+            is_state_attr('proximity.home', 'dir_of_travel', 'towards') or
+            is_state_attr('proximity.home', 'dir_of_travel', 'arrived')
+          }}
+    action:
+      - service: script.home_near
+
+  - alias: root_home
+    initial_state: off
+    trigger:
+      - platform: zone
+        entity_id: device_tracker.root
+        zone: zone.home
+        event: enter
+    action:
+      - service: automation.turn_on
+        entity_id: automation.just_home
+
+  - alias: just_home
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.lumi_lumi_sensor_motion_c56e2702_ias_zone
+        to: 'on'
+      - platform: state
+        entity_id: binary_sensor.lumi_lumi_sensor_motion_c6632702_ias_zone
+        to: 'on'
+      - platform: state
+        entity_id: binary_sensor.lumi_lumi_sensor_motion_aq2_eca7ed02_ias_zone
+        to: 'on'
+    action:
+      - service: input_boolean.turn_off
+        entity_id: input_boolean.home_motion
+      - service: automation.turn_on
+        entity_id:
+          - automation.motion_light_extend
+      - service: script.radio_on
+      - service: script.just_home_lumi_double_switch_on
+      - service: automation.turn_off
+        entity_id:
+          - automation.just_home
+
+  - alias: minix_home
+    trigger:
+      - platform: state
+        entity_id: device_tracker.minix
+        to: home
+        for:
+          seconds: 90
+    action:
+      - service: script.minix_home
+
+script:
+  n0ll_home:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: media_player.kodi
+            state: 'idle'
+      - service_template: >-
+          {%- if is_state('binary_sensor.kodi_screen_saver', 'off')  -%}
+            shell_command.kodi_screensaver
+          {%- else -%}
+            script.radio_on
+          {%- endif -%}
+      - condition: state
+        entity_id: media_player.ht_mt500_501_b34d6a
+        state: 'playing'
+      - service: timer.pause
+        entity_id: timer.sound_bar
+
+  home_near_turnon:
+    sequence:
+      - service: switch.turn_on
+        entity_id:
+          - switch.av_switch
+          - switch.bed_switch
+
+  home_near:
+    sequence:
+      - service: notify.gmail
+        data:
+          message: home near trigger
+          title: 'hass'
+      - service: automation.turn_off
+        entity_id: automation.home_near
+      - service: automation.turn_on
+        entity_id:
+          - automation.home_away
+          - automation.minix_home
+      - service: script.home_near_heating
+      - service: script.home_near_turnon
+
+  minix_home:
+    sequence:
+      - service: notify.gmail
+        data:
+          message: minix near trigger
+          title: 'hass'
+      - service: automation.turn_off
+        entity_id: automation.minix_home
+      - delay: '00:00:30'
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.power_down_restart
+          option: 'off'
+      - service: homeassistant.restart
+
+  just_home_lumi_double_switch_on:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: input_boolean.lumi_double_switch_1
+            state: 'off'
+      - service: script.lumi_double_switch_on
+        data_template:
+          time_t: >-
+            {{ (states('input_number.just_home_light_timer') | float * 60) | int }}

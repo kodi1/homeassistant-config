@@ -1,0 +1,204 @@
+homeassistant:
+  customize:
+    switch.rf_switch_1:
+      icon: mdi:power-socket-eu
+    sensor.cpu_usage:
+      icon: mdi:chip
+    sensor.cpu_temp:
+      icon: mdi:oil-temperature
+    sensor.disk_free:
+      icon: mdi:harddisk
+    sensor.mem_free:
+      icon: mdi:memory
+    sensor.home_assistant_v2_db:
+      friendly_name: 'hass db'
+      icon: mdi:database
+    binary_sensor.ext_port:
+      friendly_name: 'Ext port'
+
+sensor:
+  - platform: command_line
+    name: Cpu Temp
+    command: '/config/cmds/cpu_temp'
+    unit_of_measurement: '°C'
+    scan_interval: 300
+
+  - platform: command_line
+    name: Disk Free
+    command: '/config/cmds/disk_free'
+    unit_of_measurement: 'MB'
+    scan_interval: 300
+
+  - platform: command_line
+    name: Cpu Usage
+    command: '/config/cmds/cpu_usage'
+    unit_of_measurement: '%'
+    scan_interval: 300
+
+  - platform: command_line
+    name: Mem Free
+    command: '/config/cmds/mem_free'
+    unit_of_measurement: 'MB'
+    scan_interval: 300
+
+  - platform: filesize
+    file_paths:
+      - /config/home-assistant_v2.db
+    scan_interval: 600
+
+binary_sensor:
+  - platform: command_line
+    command: '/config/cmds/bravia_check'
+    name: 'Bravia'
+    device_class: plug
+    payload_on: 'success'
+    payload_off: 'fail'
+    scan_interval: 300
+
+  - platform: esp_wd
+    name: bedroom
+    host: !secret bedroom
+    scan_interval: 600
+
+  - platform: uptimerobot
+    api_key: !secret uptimerobot
+    scan_interval: 600
+
+  - platform: template
+    sensors:
+      isp_conn:
+        friendly_name: 'Isp'
+        device_class: connectivity
+        value_template: >-
+          {%- if is_state('sensor.ping_isp', 'n/a') or
+            states('sensor.ping_isp') | float > 150 -%}
+            False
+          {%- else -%}
+            True
+          {%- endif %}
+
+automation:
+  - alias: auto reboot all
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.isp_conn
+        to: 'off'
+        for:
+          minutes: 6
+    condition:
+      - condition: template
+        value_template: "{{(as_timestamp(now()) - as_timestamp(state_attr('automation.mydelay', 'last_triggered'))) / 60 > 90 }}"
+    action:
+      - service: script.all_notify
+        data:
+          tit: 'reboot all'
+          msg: >-
+            {%- if is_state('sensor.ping_isp', 'n/a') -%}
+              cant ping isp
+            {%- else -%}
+              high isp ping {{states('sensor.ping_isp') }} ms
+            {%- endif -%}
+      - service: script.reboot_all
+
+  - alias: open ports
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.ext_port
+        to: 'off'
+        for:
+          minutes: 11
+    action:
+      - service: script.all_notify
+        data:
+          tit: 'router'
+          msg: 'open ports'
+      - service: script.ports_open
+
+  - alias: village_notify
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.village
+        to: 'on'
+        for:
+          minutes: 11
+      - platform: state
+        entity_id: binary_sensor.village
+        to: 'off'
+        for:
+          minutes: 11
+    action:
+      - service: script.all_notify
+        data:
+          tit: 'village connection'
+        data_template:
+          msg: >-
+            {%-
+              set sts = {
+                    'on': 'up',
+                    'off': 'down',
+                  }
+              -%}
+            {{ sts[trigger.to_state.state] }}
+
+  - alias: change_current_theme
+    trigger:
+      - platform: state
+        entity_id: input_select.current_theme
+    action:
+      - service: frontend.set_theme
+        data_template:
+          name: "{{ states('input_select.current_theme') }}"
+
+  - alias: theme_switch
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.day
+      - platform: homeassistant
+        event: start
+    action:
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.current_theme
+        data_template:
+          option: >-
+            {%- set _map = {'on': 'default', 'off': 'midnight'} -%}
+            {{ _map[states('binary_sensor.day')] }}
+
+  - alias: updates notify
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.updater
+        to: 'on'
+      - platform: numeric_state
+        entity_id: sensor.hacs
+        above: 0
+    action:
+      - service: script.all_notify
+        data:
+          tit: 'Update'
+        data_template:
+          msg: >-
+            {%- set s = {
+                          "hass": state_attr('binary_sensor.updater' ,'newest_version'),
+                          "hacs": states('sensor.hacs')
+                        }
+              -%}
+            {%- set ignore_state = ['0', 'unknown'] -%}
+            {%- for _k, _s in s.items() -%}
+              {%- if _s not in ignore_state -%}
+                {{_k}} {{_s}}.
+              {% endif -%}
+            {%- endfor -%}
+
+switch:
+  - platform: mqtt
+    name: 'rf switch 1'
+    state_topic: 'rf434/recv/arctech_switch_old/30'
+    value_template: '{"id":{{value_json["id"]}},"unit":{{value_json["unit"]}},"{{value_json["state"]}}":1}'
+    command_topic: 'rf434/send/arctech_switch_old'
+    payload_on: '{"id":30,"unit":14,"on":1}'
+    payload_off: '{"id":30,"unit":14,"off":1}'
+
+shell_command:
+  local_reboot: '/config/cmds/local_reboot {{ value }}'
+  port_open: '/config/cmds/reopen_ports'

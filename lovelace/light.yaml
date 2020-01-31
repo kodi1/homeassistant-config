@@ -1,0 +1,51 @@
+title: light
+icon: mdi:ceiling-light
+path: light
+
+cards:
+  - type: entities
+    title: lights
+    show_header_toggle: false
+    entities:
+      - binary_sensor.day
+      - sensor.lumi_lumi_sensor_motion_aq2_eca7ed02_illuminance
+      - switch.hyperion_enable
+      - binary_sensor.light_h
+      - binary_sensor.light_video_pause
+      - input_number.just_home_light_timer
+      - binary_sensor.home_light_extend
+
+  - title: bed motion
+    type: entities
+    show_header_toggle: false
+    entities:
+      - binary_sensor.lumi_lumi_sensor_motion_c6632702_ias_zone
+      - automation.bed_light_trigger
+      - automation.bed_light_other_clear
+      - input_number.bed_light_time
+      - timer.bed_light_timer
+      - light.bed_led
+      - light.ikea_of_sweden_tradfri_bulb_e27_cws_opal_600lm_c66d14fe_level_light_color_on_off
+
+  - type: entities
+    title: living motion
+    show_header_toggle: false
+    entities:
+      - binary_sensor.lumi_lumi_sensor_motion_aq2_eca7ed02_ias_zone
+      - automation.living_light_trigger
+      - automation.living_light_other_clear
+      - input_number.living_light_time
+      - timer.living_light_timer
+      - light.hama_living
+      - light.living_light
+
+  - type: entities
+    title: hall motion
+    show_header_toggle: false
+    entities:
+      - binary_sensor.lumi_lumi_sensor_motion_c56e2702_ias_zone
+      - automation.hall_light_trigger
+      - automation.hall_light_other_clear
+      - input_number.hall_light_time
+      - timer.hall_light_timer
+      - light.hall_light
