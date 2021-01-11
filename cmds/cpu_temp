@@ -1,0 +1,4 @@
+#!/bin/bash
+source /config/set_env
+
+awk '{printf "%.1f\n", $1 / 1000}' /sys/class/thermal/thermal_zone1/temp

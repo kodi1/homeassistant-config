@@ -1,0 +1,154 @@
+title: other
+icon: mdi:robot-vacuum
+path: vacuum
+
+cards:
+  - type: vertical-stack
+    cards:
+      - type: conditional
+        conditions:
+          - entity: alert.vacuum_clean
+            state_not: 'idle'
+        card:
+          type: entities
+          show_header_toggle: false
+          state_color: true
+          entities:
+            - alert.vacuum_clean
+            - binary_sensor.clean_vacuum
+            - counter.clean_counter
+            - type: divider
+            - binary_sensor.rockrobo_dustbin
+            - automation.reset_bin_counter
+
+      - type: custom:xiaomi-vacuum-card
+        entity: vacuum.valetudo_rockrobo
+        image: false
+        name: false
+        vendor: valetudo
+        state:
+          status:
+            key: state
+          mode:
+            icon: mdi:fan
+        attributes:
+          main_brush:
+            key: main_brush
+            unit: false
+          side_brush:
+            key: right_brush
+            unit: false
+          filter:
+            key: main_filter
+            unit: false
+          sensor:
+            key: sensor_cleaning
+            unit: false
+        buttons:
+          start: false
+          pause: false
+          stop: false
+          spot: false
+          locate: false
+          return: false
+          all:
+            icon: mdi:floor-plan
+            label: all
+            service: script.turn_on
+            service_data:
+              entity_id: script.all_clean
+          sofa:
+            icon: mdi:sofa
+            label: living
+            service: script.turn_on
+            service_data:
+              entity_id: script.living_clean
+          office:
+            icon: mdi:chair-rolling
+            label: office
+            service: script.turn_on
+            service_data:
+              entity_id: script.office_clean
+          hall:
+            icon: mdi:shoe-print
+            label: hall
+            service: script.turn_on
+            service_data:
+              entity_id: script.hall_clean
+          bed:
+            icon: mdi:bed-king
+            label: bed
+            service: script.turn_on
+            service_data:
+              entity_id: script.bed_clean
+          bath:
+            icon: mdi:shower-head
+            label: bath
+            service: script.turn_on
+            service_data:
+              entity_id: script.bath_clean
+          reboot:
+            icon: mdi:restart-alert
+            label: reboot
+            service: script.turn_on
+            service_data:
+              entity_id: script.roborock_reboot
+
+      - type: custom:valetudo-map-card
+        vacuum: valetudo_rockrobo
+        title: false
+        vacuum_icon: mdi:death-star-variant
+        dock_icon: mdi:gas-station
+        show_status: false
+        show_battery_level: false
+        show_start_button: false
+        show_stop_button: false
+        rotate: 90
+        map_scale: 2.48
+        crop:
+          top: 0
+          bottom: 25
+          left: 20
+          right: 0
+
+      - type: entities
+        show_header_toggle: false
+        entities:
+          - type: button
+            icon: mdi:floor-plan
+            name: all
+            action_name: clean
+            tap_action:
+              action: call-service
+              service: script.turn_on
+              data:
+                entity_id: script.table_kitchen_clean
+              confirmation:
+                text: you want to start vacumm ?
+
+          - type: button
+            icon: mdi:table-furniture
+            name: table
+            action_name: clean
+            tap_action:
+              action: call-service
+              service: script.turn_on
+              data:
+                entity_id: script.table_clean
+              confirmation:
+                text: you want to start vacumm ?
+
+          - type: button
+            icon: mdi:countertop
+            name: kitchen
+            action_name: clean
+            tap_action:
+              action: call-service
+              service: script.turn_on
+              data:
+                entity_id: script.kitchen_clean
+              confirmation:
+                text: you want to start vacumm ?
+
+          - type: divider
+          - automation.auto_clean

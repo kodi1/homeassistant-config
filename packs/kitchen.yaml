@@ -1,0 +1,351 @@
+homeassistant:
+  customize:
+    light.kitchen:
+      icon: mdi:track-light
+    automation.kitchen_light:
+      friendly_name: kitchen
+      icon: mdi:lightbulb-auto
+    automation.kitchen_light_1:
+      friendly_name: kitchen
+      icon: mdi:lightbulb-auto
+
+automation:
+  - alias: kitchen_light
+    id: kitchen_light
+    initial_state: false
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.kitchen_motion
+        to: 'on'
+        id: light_on
+      - trigger: state
+        entity_id: binary_sensor.kitchen_occupancy
+        to: 'off'
+        for:
+          seconds: >-
+            {%- if int(states('counter.kitchen_motion'), 30) > 14 -%}
+              120
+            {%- elif int(states('counter.kitchen_motion'), 30) > 10 -%}
+              90
+            {%- elif int(states('counter.kitchen_motion'), 30 ) > 6 -%}
+              60
+            {%- else -%}
+              15
+            {%- endif -%}
+        id: kitchen_light_off
+      - trigger: state
+        entity_id: binary_sensor.office_motion
+        to: 'on'
+        id: light_off
+      - trigger: state
+        entity_id: binary_sensor.bed_motion
+        to: 'on'
+        id: light_off
+      - trigger: event
+        event_type: lights_check
+        event_data:
+          light: turn_off
+        id: light_off
+
+    mode: restart
+    actions:
+      - variables:
+          brightness_pct: >-
+            {%- if is_state('binary_sensor.night_mode', 'off') -%}
+              {{ range(80, 90, 1) | random }}
+            {%- else -%}
+              {{ range(30, 40, 1) | random }}
+            {%- endif -%}
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: light.kitchen_led
+            state: 'off'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.kitchen_led
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id: light.kitchen_led
+              data:
+                brightness_pct: >-
+                  {{ brightness_pct }}
+
+        - conditions:
+          - condition: trigger
+            id:
+              - kitchen_light_off
+              - light_off
+          - condition: state
+            entity_id: light.kitchen_led
+            state: 'on'
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: binary_sensor.kitchen_occupancy
+                state: 'off'
+              - condition: state
+                entity_id: binary_sensor.kodi_active
+                state: 'on'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.kitchen_led
+              data:
+                brightness_pct: 15
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_off
+              target:
+                entity_id:
+                  - light.kitchen_led
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          sequence:
+            - action: counter.increment
+              data:
+                entity_id:
+                  - counter.kitchen_motion
+
+        - conditions:
+          - condition: trigger
+            id:
+              - kitchen_light_off
+              - light_off
+          - condition: state
+            entity_id: binary_sensor.kitchen_occupancy
+            state: 'off'
+          sequence:
+            - action: counter.reset
+              data:
+                entity_id:
+                  - counter.kitchen_motion
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: binary_sensor.kodi_active
+            state: 'off'
+          sequence:
+            - event: kitchen_light_1
+              event_data:
+                ctrl: kitchen_on
+                brightness_pct: >-
+                  {{ range(85, 95, 2) | random }}
+                temp: >-
+                  {{ 4000 }}
+                transition: >-
+                  {{ 1 }}
+
+        - conditions:
+          - condition: trigger
+            id:
+              - kitchen_light_off
+          sequence:
+            - event: kitchen_light_1
+              event_data:
+                ctrl: kitchen_off
+                transition: >-
+                  {{ 1 }}
+
+  - alias: kitchen_light_1
+    id: kitchen_light_1
+    initial_state: true
+    triggers:
+      - trigger: event
+        event_type: kitchen_light_1
+      - trigger: event
+        event_type: lights_check
+        event_data:
+          light: turn_off
+        id: light_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: >-
+              {{ trigger.event.data.ctrl == 'kitchen_on' }}
+          - condition: numeric_state
+            entity_id: sensor.living_window_lux
+            value_template: >-
+              {{ float(state.state, 20) }}
+            below: 30
+          - condition: state
+            entity_id: binary_sensor.night_mode
+            state: 'off'
+          - condition: template
+            value_template: >-
+              {{ not is_state_attr('light.kitchen', 'color_temp_kelvin', 4000) }}
+          sequence:
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id: light.kitchen
+              data:
+                brightness_pct: 1
+                transition: 0
+                color_temp_kelvin: >-
+                  {{ trigger.event.data.temp }}
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id: light.kitchen
+              data:
+                brightness_pct: >-
+                  {{ trigger.event.data.brightness_pct }}
+                transition: >-
+                  {{ trigger.event.data.transition }}
+
+        - conditions:
+          - condition: template
+            value_template: >-
+              {{ trigger.event.data.ctrl == 'living_on' }}
+          - condition: numeric_state
+            entity_id: sensor.living_window_lux
+            value_template: >-
+              {{ float(state.state, 10) }}
+            below: 20
+          - condition: state
+            entity_id: binary_sensor.night_mode
+            state: 'off'
+          - condition: state
+            entity_id: light.kitchen
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.kodi_active
+            state: 'off'
+          sequence:
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id: light.kitchen
+              data:
+                brightness_pct: 1
+                transition: 0
+                color_temp_kelvin: >-
+                  {{ trigger.event.data.temp }}
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id: light.kitchen
+              data:
+                brightness_pct: >-
+                  {{ trigger.event.data.brightness_pct }}
+                transition: >-
+                  {{ trigger.event.data.transition }}
+
+        - conditions:
+          - condition: template
+            value_template: >-
+              {{ trigger.event.data.ctrl == 'kitchen_off' }}
+          # - condition: state
+          #   entity_id: binary_sensor.living_occupancy
+          #   state: 'on'
+          - condition: state
+            entity_id: light.living
+            state: 'on'
+          - condition: state
+            entity_id: binary_sensor.kodi_active
+            state: 'off'
+          - condition: numeric_state
+            entity_id: sensor.living_window_lux
+            value_template: >-
+              {{ float(state.state, 20) }}
+            below: 30
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.kitchen
+              data:
+                transition: 3
+                brightness: >-
+                  {{ state_attr('light.living', 'brightness') | int(220) }}
+                color_temp_kelvin: >-
+                  {{ state_attr('light.living', 'color_temp_kelvin') | int(3000) }}
+
+        - conditions:
+          - condition: template
+            value_template: >-
+              {{
+                  trigger.event.data.ctrl in ['kitchen_off', 'living_off'] or
+                    trigger.id == 'light_off'
+                }}
+          - condition: state
+            entity_id: light.kitchen
+            state: 'on'
+          - condition: or
+            conditions:
+              - condition: and
+                conditions:
+                  - condition: template
+                    value_template: >-
+                      {{
+                          not is_state ('binary_sensor.living_occupancy', 'on')
+                        }}
+                  - condition: numeric_state
+                    entity_id: counter.kitchen_motion
+                    below: 1
+              - condition: state
+                entity_id: binary_sensor.kodi_active
+                state: 'on'
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id: light.kitchen
+              data:
+                transition: 5
+
+light:
+  - platform: group
+    name: kitchen
+    entities:
+      - light.kitchen_1
+      - light.kitchen_2
+      - light.kitchen_3
+      - light.kitchen_4
+      - light.kitchen_5
+      - light.kitchen_6
+      - light.kitchen_7
+
+counter:
+  kitchen_motion:
+    name: motion
+    icon: mdi:motion-sensor
+    restore: false

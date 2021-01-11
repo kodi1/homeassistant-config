@@ -1,0 +1,77 @@
+homeassistant:
+  customize:
+    sensor.monthly_energy_peak:
+      friendly_name: month
+    sensor.monthly_energy_offpeak:
+      friendly_name: month
+    utility_meter.monthly_energy:
+      friendly_name: month
+    sensor.daily_energy_peak:
+      friendly_name: day
+    sensor.daily_energy_offpeak:
+      friendly_name: day
+    utility_meter.daily_energy:
+      friendly_name: day
+    automation.tariff_switch:
+      icon: mdi:swap-horizontal
+      friendly_name: tariff
+
+utility_meter:
+  daily_energy:
+    source: sensor.mains_energy
+    cycle: daily
+    tariffs:
+      - peak
+      - offpeak
+  monthly_energy:
+    source: sensor.mains_energy
+    cron: '0 0 10 * *'
+    tariffs:
+      - peak
+      - offpeak
+
+automation:
+  - alias: tariff_switch
+    id: tariff_switch
+    triggers:
+      - trigger: time
+        at: '06:00:00'
+        id: peak
+        variables:
+          s: win
+      - trigger: time
+        at: '07:00:00'
+        id: peak
+        variables:
+          s: sum
+      - trigger: time
+        at: '22:00:00'
+        id: offpeak
+        variables:
+          s: win
+      - trigger: time
+        at: '23:00:00'
+        id: offpeak
+        variables:
+          s: sum
+
+    conditions:
+      - condition: template
+        value_template: >-
+          {%- set data = {
+                  'win' : [1, 2, 3, 11, 12],
+                  'sum' : [4, 5, 6, 7, 8, 9, 10],
+                }
+            -%}
+          {{ now().month in data[s] }}
+
+    mode: restart
+    actions:
+      - action: select.select_option
+        target:
+          entity_id:
+            - select.monthly_energy
+            - select.daily_energy
+        data:
+          option: >-
+            {{ trigger.id }}

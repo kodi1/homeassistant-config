@@ -1,0 +1,55 @@
+homeassistant:
+  customize:
+    sensor.hts_recording_sensor:
+      friendly_name: hts
+    sensor.video_rec:
+      friendly_name: last
+
+sensor:
+  - platform: tvh_rec
+    name: hts_recording_sensor
+    username: !secret hts_user
+    password: !secret hts_pass
+    url: !secret hts_host
+    scan_interval: 300
+    count: 3
+
+mqtt:
+  sensor:
+    - name: video_rec
+      icon: mdi:record
+      state_topic: hts
+      value_template: '{{value_json.format.size |filesizeformat }}'
+      json_attributes_topic: 'hts'
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'edl': value_json.edl,
+          'fname': value_json.format.filename,
+          'duration': (value_json.format.duration |float(0) / 60) |round(1, 'ceil'),
+          'date': value_json.date
+          }
+          -%}
+        {{ attrs | to_json }}
+
+automation:
+  - alias: notify_record
+    id: notify_record
+    triggers:
+      - trigger: state
+        entity_id: sensor.video_rec
+    actions:
+      - action: script.all_notify
+        data_template:
+          icon_notify: record-rec
+          tit: video rec
+          msg: >-
+            {%- if states.sensor.video_rec -%}
+              dur: {{ state_attr('sensor.video_rec', 'duration') }}
+              size: {{ states('sensor.video_rec') }}
+              edl: {{ state_attr('sensor.video_rec', 'edl') }}
+              name: {{ state_attr('sensor.video_rec', 'fname') }}
+              date: {{ state_attr('sensor.video_rec', 'date') }}
+            {% else %}
+              err record
+            {% endif %}

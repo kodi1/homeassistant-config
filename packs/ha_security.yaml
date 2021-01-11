@@ -1,0 +1,71 @@
+homeassistant:
+  customize:
+    alert.home_motion:
+      icon: mdi:home-alert
+    automation.home_motion_detect:
+      friendly_name: security
+      icon: mdi:security
+    binary_sensor.home_motion:
+      friendly_name: Home
+
+alert:
+  home_motion:
+    name: 'unexpected move'
+    title: 'move'
+    message: 'detected'
+    done_message: 'clear'
+    entity_id: binary_sensor.home_motion
+    state: 'on'
+    repeat:
+      - 5
+      - 30
+      - 120
+      - 360
+    skip_first: true
+    can_acknowledge: true
+    notifiers:
+      - gmail
+
+input_boolean:
+  home_motion:
+    name: home_motion
+    initial: off
+
+template:
+  - binary_sensor:
+    - name: home_motion
+      device_class: safety
+      state: "{{ is_state('input_boolean.home_motion', 'on') }}"
+
+automation:
+  - alias: home_motion_detect
+    id: home_motion_detect
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.bed_motion
+        to: 'on'
+      - trigger: state
+        entity_id: binary_sensor.living_motion
+        to: 'on'
+      - trigger: state
+        entity_id: binary_sensor.hall_motion
+        to: 'on'
+      - trigger: state
+        entity_id: binary_sensor.office_motion
+        to: 'on'
+      - trigger: state
+        entity_id: input_boolean.home_motion
+        to: 'off'
+    conditions:
+      - condition: template
+        value_template: >-
+          {{
+              not (
+                      is_state('device_tracker.root', 'home') or
+                        states.device_tracker.root == None
+                    )
+
+            }}
+    actions:
+      - action: input_boolean.turn_on
+        entity_id: input_boolean.home_motion
