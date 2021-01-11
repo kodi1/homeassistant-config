@@ -1,0 +1,215 @@
+homeassistant:
+  customize:
+    light.wash:
+      friendly_name: wash
+      icon: mdi:door-closed
+    automation.wash_light:
+      friendly_name: wash
+      icon: mdi:lightbulb-auto
+    automation.wash_fan:
+      friendly_name: wash
+      icon: mdi:fan-auto
+
+automation:
+  - alias: wash_light
+    id: wash_light
+    initial_state: false
+    trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.hall_motion
+          - binary_sensor.wash_door
+        to: 'on'
+        id: light_on
+      - platform: state
+        entity_id: binary_sensor.hall_occupancy
+        to: 'off'
+        for:
+          seconds: 30
+        id: light_off
+      - platform: state
+        entity_id: binary_sensor.wash_door
+        to: 'off'
+        for:
+          seconds: 3
+        id: light_off
+      - platform: event
+        event_type: lights_check
+        event_data:
+          light: turn_off
+        id: light_off
+
+    mode: restart
+    action:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id: light_on
+          - condition: state
+            entity_id: binary_sensor.wash_door
+            state: 'on'
+          - condition: state
+            entity_id: light.wash
+            state: 'off'
+          sequence:
+            - service: script.wash_light_on
+
+        - conditions:
+          - condition: trigger
+            id: light_off
+          - condition: state
+            entity_id: light.wash
+            state: 'on'
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: binary_sensor.hall_occupancy
+                state: 'off'
+              - condition: state
+                entity_id: binary_sensor.wash_door
+                state: 'off'
+          sequence:
+            - service: light.turn_off
+              target:
+                entity_id: light.wash
+
+  - alias: wash_fan
+    id: wash_fan
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.wash_fan
+        to: 'on'
+        id: dryer_on
+      - platform: state
+        entity_id: binary_sensor.wash_fan
+        to: 'off'
+        id: dryer_off
+      - platform: numeric_state
+        entity_id: sensor.bath_hum_change
+        above: 10.0
+        id: shower_on
+      - platform: state
+        entity_id: binary_sensor.showering
+        to: 'off'
+        id: shower_off
+      - platform: state
+        entity_id: input_boolean.fan_wash_time
+        to: 'on'
+        id: manual_on
+      - platform: state
+        entity_id: input_boolean.fan_wash_time
+        to: 'on'
+        for:
+          minutes: >-
+            {{
+                states('input_number.fan_wash_time') | int(0)
+              }}
+        id: manual_off
+      - platform: event
+        event_type: up_down_my
+        event_data:
+          data: start
+        id: manual_off
+
+    mode: restart
+    action:
+      - choose:
+        - conditions:
+          - condition: and
+            conditions:
+              - condition: or
+                conditions:
+                  - condition: trigger
+                    id: shower_on
+                  - condition: trigger
+                    id: dryer_on
+                  - condition: trigger
+                    id: manual_on
+          - condition: state
+            entity_id: switch.wash_fan
+            state: 'off'
+          sequence:
+            - service: switch.turn_on
+              data:
+                entity_id:
+                  - switch.wash_fan
+
+        - conditions:
+          - condition: and
+            conditions:
+              - condition: or
+                conditions:
+                  - condition: trigger
+                    id: shower_off
+                  - condition: trigger
+                    id: dryer_off
+                  - condition: trigger
+                    id: manual_off
+              - condition: and
+                conditions:
+                  - condition: state
+                    entity_id: binary_sensor.showering
+                    state: 'off'
+                  - condition: state
+                    entity_id: binary_sensor.wash_fan
+                    state: 'off'
+          - condition: state
+            entity_id: switch.wash_fan
+            state: 'on'
+          sequence:
+            - service: switch.turn_off
+              data:
+                entity_id:
+                  - switch.wash_fan
+
+      - choose:
+        - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id: shower
+              - condition: trigger
+                id: manual_off
+          - condition: state
+            entity_id: input_boolean.fan_wash_time
+            state: 'on'
+          sequence:
+            - service: input_boolean.turn_off
+              data:
+                entity_id:
+                  - input_boolean.fan_wash_time
+
+script:
+  wash_light_on:
+    mode: restart
+    sequence:
+      choose:
+        - conditions:
+          - condition: state
+            entity_id: light.wash
+            state: 'off'
+          sequence:
+            - service: light.turn_on
+              target:
+                entity_id:
+                  - light.wash
+
+light:
+  - platform: group
+    name: wash
+    entities:
+      - light.wash_1
+
+input_boolean:
+  fan_wash_time:
+     initial: false
+     icon: mdi:fan-plus
+     name: wash
+
+input_number:
+  fan_wash_time:
+    name: wash time
+    icon: mdi:timer-outline
+    min: 2
+    max: 20
+    step: 2

@@ -1,0 +1,125 @@
+homeassistant:
+  customize:
+    automation.sonarr_radarr_db:
+      icon: mdi:download-network
+    automation.update_video_db:
+      icon: mdi:database-search
+    automation.kodi_clear_tv_db:
+      icon: mdi:delete-variant
+    automation.bazarr_subs:
+      icon: mdi:subtitles-outline
+
+automation:
+  - alias: kodi_clear_tv_db
+    id: kodi_clear_tv_db
+    trigger:
+      - platform: event
+        event_type: tv_cec_control_done
+        event_data:
+          cec: 'off'
+    condition:
+      - condition: state
+        entity_id: media_player.livingtv
+        state: idle
+    action:
+      - service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: Addons.SetAddonEnabled
+          addonid: pvr.hts
+          enabled: false
+      - delay:
+          seconds: 5
+      - service: shell_command.tv_cleardb
+      - delay:
+          seconds: 5
+      - service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: Addons.SetAddonEnabled
+          addonid: pvr.hts
+          enabled: true
+      - delay:
+          seconds: 5
+      - service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: VideoLibrary.Clean
+
+  - alias: update_video_db
+    id: update_video_db
+    trigger:
+      - platform: event
+        event_type: tv_cec_control_done
+        event_data:
+          cec: 'on'
+      - platform: state
+        entity_id: media_player.livingtv
+        to: 'idle'
+        for:
+          seconds: 10
+      - platform: state
+        entity_id: media_player.livingtv
+        to: 'paused'
+        for:
+          seconds: 10
+    action:
+      - service: script.update_video_db
+      - service: logbook.log
+        data_template:
+          name: 'videodb'
+          message: 'trigger update'
+      - service: automation.turn_off
+        entity_id: automation.update_video_db
+
+  - alias: sonarr_radarr_db
+    id: sonarr_radarr_db
+    trigger:
+      - platform: event
+        event_type: update_video_db
+    mode: queued
+    action:
+      - service: script.all_notify
+        data_template:
+          icon_notify: download-outline
+          tit: >-
+            {{
+                trigger.event.data.name
+              }}
+          msg: >-
+            {{
+                trigger.event.data.eventtype
+              }}
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: >-
+              {{
+                  trigger.event.data.eventtype in ['Download', 'Rename']
+                }}
+          sequence:
+            - service: automation.turn_on
+              entity_id: automation.update_video_db
+
+  - alias: bazarr_subs
+    id: bazarr_subs
+    trigger:
+      - platform: event
+        event_type: bazarr_subs
+    action:
+      - service: script.all_notify
+        data_template:
+          icon_notify: subtitles-outline
+          tit: 'bazarr'
+          msg: '{{trigger.event.data.message}}'
+
+script:
+  update_video_db:
+    sequence:
+      - service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: VideoLibrary.Scan
+
+shell_command:
+  tv_cleardb: '/config/cmds/tv_cleardb'

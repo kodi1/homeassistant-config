@@ -1,0 +1,1166 @@
+# https://github.com/kotope/esphome_eink_dashboard/blob/main/eink-dashboard.yaml
+substitutions:
+  device_name: eink
+  friendly_name: eink
+  sleep_time: 10min
+  run_time: 15s
+  gpio_spi_clk_pin: GPIO13
+  gpio_spi_mosi_pin: GPIO14
+  gpio_cs_pin: GPIO15
+  gpio_dc_pin: GPIO27
+  gpio_reset_pin: GPIO26
+  gpio_busy_pin: GPIO25
+  gpio_adc: GPIO34
+  gpio_pwr_batt: GPIO32
+  gpio_led: GPIO2
+  gpio_pwr_display: GPIO4
+
+esp32:
+  board: esp32dev
+  framework:
+    # type: arduino
+    type: esp-idf
+
+# Enable logging
+logger:
+  # level: DEBUG
+  level: ERROR
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "Sl6RcztzDJGUZig0FZPMjcWMl9C6N0sbUm1z0Q5GAtE="
+  on_client_disconnected:
+    - logger.log: "API client disconnected!"
+    - logger.log: 'disable wifi'
+    - wifi.disable
+
+ota:
+  - platform: esphome
+    password: "e09c202eb3995a9d3b2caab531404770"
+    on_begin:
+      then:
+        - script.stop: show_ota
+        - script.execute: runing_ota
+
+    on_end:
+      then:
+        - logger.log: 'ota end'
+        - homeassistant.service:
+            service: script.all_notify
+            data:
+              tit: ${friendly_name}
+              msg: sleep enabled
+        - script.execute: end_ota
+        - homeassistant.service:
+            service: input_boolean.turn_off
+            data:
+              entity_id: input_boolean.eink_disable_sleep
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Eink Fallback Hotspot"
+    password: "ZGdAMwIVzLQ7"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  platformio_options:
+    lib_deps:
+      - bblanchon/ArduinoJson
+  includes:
+    - eink_common.h
+  on_boot:
+    - priority: -100
+      then:
+        - wait_until:
+            condition:
+              and:
+                - lambda: |-
+                    return (id(updates) >= 2);
+                - api.connected
+                - wifi.connected
+            timeout: 10s
+        - switch.turn_on: pwr_batt
+        - switch.turn_on: pwr_display
+        - component.update: batt_volt
+        - switch.turn_off: pwr_batt
+        - component.update: batt
+        - component.update: core_temp
+        - component.update: signal_level
+        - if:
+            condition:
+              - lambda: |-
+                  return (id(updates) >= 2);
+            then:
+              - logger.log: 'api connected'
+              - if:
+                  condition:
+                    binary_sensor.is_on: disable_sleep
+                  then:
+                    - homeassistant.service:
+                        service: script.all_notify
+                        data:
+                          tit: ${friendly_name}
+                          msg: sleep disabled
+                  else:
+                    - logger.log: 'disable api'
+                    - lambda: |-
+                        api_apiserver_id->on_shutdown();
+
+              - if:
+                  condition:
+                    lambda: |-
+                      return !id(disable_sleep).state;
+                  then:
+                    - script.execute: show_data
+                    - logger.log: 'enter deep sleep'
+                    - switch.turn_off: pwr_display
+                    - deep_sleep.enter: deep_sleep_1
+                  else:
+                    - logger.log: 'skip deep sleep'
+                    - script.execute: show_ota
+            else:
+              - display.page.show: display_fail
+              - component.update: epaper
+              - logger.log: 'api not connected'
+              - switch.turn_off: pwr_display
+              - deep_sleep.enter: deep_sleep_1
+
+globals:
+  - id: updates
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+switch:
+  - platform: gpio
+    pin:
+      number: ${gpio_pwr_batt}
+    id: pwr_batt
+    internal: true
+
+  - platform: gpio
+    pin:
+      number: ${gpio_pwr_display}
+    id: pwr_display
+    internal: true
+
+light:
+  - platform: status_led
+    pin:
+      number: $gpio_led
+      ignore_strapping_warning: true
+    id: led
+    internal: true
+
+deep_sleep:
+  run_duration: ${run_time}
+  sleep_duration: ${sleep_time}
+  id: deep_sleep_1
+
+script:
+  - id: show_data
+    then:
+      - light.turn_on: led
+      - display.page.show: display_main
+      - component.update: epaper
+      - light.turn_off: led
+
+  - id: show_ota
+    then:
+      - while:
+          condition:
+            binary_sensor.is_on: disable_sleep
+          then:
+            - display.page.show: display_ota
+            - component.update: epaper
+            - delay: 30s
+            - script.execute: show_data
+            - delay: 30s
+            - switch.turn_on: pwr_batt
+            - component.update: batt_volt
+            - switch.turn_off: pwr_batt
+            - component.update: batt
+            - component.update: core_temp
+            - component.update: signal_level
+
+  - id: runing_ota
+    then:
+      - switch.turn_on: pwr_batt
+      - component.update: batt_volt
+      - switch.turn_off: pwr_batt
+      - component.update: batt
+      - component.update: core_temp
+      - component.update: signal_level
+      - display.page.show: display_download
+      - component.update: epaper
+
+  - id: end_ota
+    then:
+      - display.page.show: end_download
+      - component.update: epaper
+
+time:
+  - platform: homeassistant
+    id: ntp
+    timezone: Europe/Sofia
+
+binary_sensor:
+  - platform: homeassistant
+    entity_id: input_boolean.eink_disable_sleep
+    id: disable_sleep
+    publish_initial_state: true # This is important!
+    on_state:
+      then:
+        if:
+          condition:
+            lambda: return x;
+          then:
+            - logger.log: 'Preventing deep sleep'
+            - deep_sleep.prevent: deep_sleep_1
+          else:
+            - logger.log: 'Allowing deep sleep'
+            - deep_sleep.allow: deep_sleep_1
+
+  - platform: homeassistant
+    entity_id: binary_sensor.eink_notification
+    id: notification
+    internal: true
+
+sensor:
+  - platform: adc
+    pin: $gpio_adc
+    id: batt_volt
+    attenuation: auto
+    update_interval: never
+    internal: true
+    filters:
+      - multiply: 2.5
+
+  - platform: template
+    name: "${friendly_name} Battery"
+    id: batt
+    unit_of_measurement: "%"
+    device_class: battery
+    lambda: |-
+      return id(batt_volt).state;
+    filters:
+      - calibrate_linear:
+          - 3.0 -> 0.0 # 2.9
+          - 4.2 -> 100 # 4.294
+      - clamp:
+          min_value: 0
+          max_value: 100
+          ignore_out_of_range: false
+    accuracy_decimals: 0
+    update_interval: never
+
+  - platform: internal_temperature
+    id: core_temp
+    update_interval: never
+    internal: true
+
+  - platform: wifi_signal
+    id: signal_level
+    update_interval: never
+    internal: true
+
+  - platform: homeassistant
+    entity_id: weather.local
+    attribute: wind_speed
+    id: wind_speed
+    internal: true
+
+  - platform: homeassistant
+    entity_id: weather.local
+    attribute: temperature
+    id: weather_temp
+    internal: true
+
+  - platform: homeassistant
+    entity_id: weather.local
+    attribute: wind_bearing
+    id: wind_bearing
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.temp_living
+    id: temp_living
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.hum_living
+    id: hum_living
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.office_temp
+    id: office_temp
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.office_hum
+    id: office_hum
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.bed_temp
+    id: bed_temp
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.bed_hum
+    id: bed_hum
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.bath_temp
+    id: bath_temp
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.bath_hum
+    id: bath_hum
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.living_window_lux
+    id: out_light
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.mains_voltage
+    id: mains_voltage
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.mains_power
+    id: mains_power
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.daily_water
+    id: daily_water
+    internal: true
+
+  - platform: homeassistant
+    entity_id: climate.hot_water
+    attribute: current_temperature
+    id: hot_water
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.shutters_open_speed_wind
+    id: shutters_open_speed_wind
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.wind_vibration
+    id: wind_vibration
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.shutters_vibration
+    id: shutters_vibration
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.change_pressure
+    id: change_pressure
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.sea_level_pressure
+    id: sea_level_pressure
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.hum_out
+    id: hum_out
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.hum_diff
+    id: hum_diff
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.cpu_usage
+    id: cpu_usage
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.cpu_temp
+    id: cpu_temp
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.mem_free
+    id: pc_mem_free
+    filters:
+      - multiply: 0.001
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.ping_isp
+    id: ping_isp
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.owrt_disk_free
+    id: owrt_disk_free
+    filters:
+      - multiply: 0.001
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.disk_free
+    id: disk_free
+    filters:
+      - multiply: 0.001
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.daily_energy_offpeak
+    id: daily_energy_offpeak
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.daily_energy_peak
+    id: daily_energy_peak
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.water_living_climate
+    id: water_living_climate
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.wash_temp
+    id: wash_temp
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.wash_hum
+    id: wash_hum
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.octobot
+    id: octobot
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.octobot
+    attribute: value
+    id: octobot_value
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.temp_out
+    id: temp_out
+    internal: true
+    on_value:
+      lambda: |-
+        id(updates)++;
+
+text_sensor:
+  - platform: homeassistant
+    entity_id: sensor.dummy_local
+    id: weather
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sensor.dummy_local
+    attribute: forecast
+    id: forecast
+    internal: true
+
+  - platform: homeassistant
+    entity_id: binary_sensor.eink_notification
+    attribute: title
+    id: title
+    internal: true
+
+  - platform: homeassistant
+    entity_id: binary_sensor.eink_notification
+    attribute: message
+    id: message
+    internal: true
+
+  - platform: homeassistant
+    entity_id: binary_sensor.eink_notification
+    attribute: icon_notify
+    id: icon_notify
+    internal: true
+
+  # sun
+  - platform: homeassistant
+    entity_id: sun.sun
+    id: next_rising
+    attribute: next_rising
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sun.sun
+    attribute: next_setting
+    id: next_setting
+    internal: true
+
+  - platform: homeassistant
+    entity_id: sun.sun
+    id: sun
+    internal: true
+    on_value:
+      lambda: |-
+        id(updates)++;
+
+spi:
+  clk_pin: $gpio_spi_clk_pin
+  mosi_pin: $gpio_spi_mosi_pin
+  id: epaper_display
+
+display:
+  - platform: waveshare_epaper
+    id: epaper
+    cs_pin:
+      number: $gpio_cs_pin
+      ignore_strapping_warning: true
+    busy_pin:
+      number: $gpio_busy_pin
+      inverted: true
+    reset_pin: $gpio_reset_pin
+    dc_pin: $gpio_dc_pin
+    update_interval: never
+    reset_duration: 2ms
+    data_rate: 20MHz
+    model: 7.50inV2alt
+    pages:
+      - id: display_main
+        lambda: |-
+          // helper variables
+          int y = 0;
+          int x = 0;
+          int x1 = 0;
+          float temphigh = 0;
+          float templow = 0;
+          float cloud_coverage = 0;
+          float precipitation = 0;
+          float precipitation_probability = 0;
+          float wind_gust_speed = 0;
+          auto time = id(ntp).now();
+          auto dayTime = id(sun).state == "above_horizon";
+
+          // ** TOP: date
+          it.strftime(xRes, 0, id(font_xlarge_bold), TextAlign::TOP_RIGHT, "%a %d %m", time);
+
+          auto conditionIcon = conditionToIcon(id(weather).state, dayTime);
+          // current condition
+          it.printf(0, 0, id(font_xlarge_bold), TextAlign::TOP_LEFT, "%.1f°C", id(temp_out).state);
+
+          it.printf((30 * pad), 0, id(font_icons), TextAlign::TOP_LEFT, conditionIcon.c_str());
+          // it.printf((30 * pad), 130, id(font_big), TextAlign::TOP_LEFT, "%s", id(weather).state.c_str());
+          it.strftime(0, yRes - (2 * pad), id(font_extra_small), TextAlign::TOP_LEFT, "%H:%M:%S", time);
+          it.printf((6 * pad), yRes - (2 * pad), id(font_extra_small), TextAlign::TOP_LEFT, "%.3fV %.0f%% %.1f°C %.0fdBm",
+                      id(batt_volt).state, id(batt).state, id(core_temp).state, id(signal_level).state);
+
+          x = tabelStartX;
+          y = tabelStartY;
+          it.printf(x, y, id(font_icons_small), TextAlign::CENTER, ICON_sofa);
+          x += tabelStepX;
+          it.printf(x, y, id(font_icons_small), TextAlign::CENTER, ICON_chair);
+          x += tabelStepX;
+          it.printf(x, y, id(font_icons_small), TextAlign::CENTER, ICON_bed);
+          x += tabelStepX;
+          it.printf(x, y, id(font_icons_small), TextAlign::CENTER, ICON_shower);
+          x += tabelStepX;
+          it.printf(x, y, id(font_icons_small), TextAlign::CENTER, ICON_wash);
+
+          x = tabelStartX;
+          x1 = tableRowiconX;
+          y += tabelStepY;
+          it.printf(x1, y, id(font_icons_tiny), TextAlign::CENTER, ICON_temp);
+          it.printf(x, y, id(font_medium_small), TextAlign::CENTER, "%.1f", id(temp_living).state);
+          x += tabelStepX;
+          it.printf(x, y, id(font_medium_small), TextAlign::CENTER, "%.1f", id(office_temp).state);
+          x += tabelStepX;
+          it.printf(x, y, id(font_medium_small), TextAlign::CENTER, "%.1f", id(bed_temp).state);
+          x += tabelStepX;
+          it.printf(x, y, id(font_medium_small), TextAlign::CENTER, "%.1f", id(bath_temp).state);
+          x += tabelStepX;
+          it.printf(x, y, id(font_medium_small), TextAlign::CENTER, "%.1f", id(wash_temp).state);
+
+          x = tabelStartX;
+          y += tabelStepY;
+          it.printf(x1, y, id(font_icons_tiny), TextAlign::CENTER, ICON_drop);
+          it.printf(x, y, id(font_medium_small), TextAlign::CENTER, "%.1f", id(hum_living).state);
+          x += tabelStepX;
+          it.printf(x, y, id(font_medium_small), TextAlign::CENTER, "%.1f", id(office_hum).state);
+          x += tabelStepX;
+          it.printf(x, y, id(font_medium_small), TextAlign::CENTER, "%.1f", id(bed_hum).state);
+          x += tabelStepX;
+          it.printf(x, y, id(font_medium_small), TextAlign::CENTER, "%.1f", id(bath_hum).state);
+          x += tabelStepX;
+          it.printf(x, y, id(font_medium_small), TextAlign::CENTER, "%.1f", id(wash_hum).state);
+
+          // RIGHT: Weather forecasts
+          if (id(forecast).has_state()) {
+              JsonDocument doc;
+              deserializeJson(doc, (id(forecast).state.c_str()));
+              JsonArray root = doc.as<JsonArray>();
+
+              JsonObject root_0 = root[0];
+
+              temphigh = root_0["temperature"];
+              templow = root_0["templow"];
+              cloud_coverage = root_0["cloud_coverage"];
+              precipitation = root_0["precipitation"];
+              precipitation_probability = root_0["precipitation_probability"];
+              wind_gust_speed = root_0["wind_gust_speed"];
+
+              for (int i=0; i <= 2; ++i) {
+
+                root_0 = root[i+1];
+
+                // Condition
+                y = weatherRow;
+                std::string root_0_condition = root_0["condition"];
+                auto icon = conditionToIcon(root_0_condition, dayTime);
+                it.printf(xCenter + weatherCol * (i+1), y, id(font_icons_small), TextAlign::BASELINE_CENTER, icon.c_str());
+
+                // Temperature
+                y += weatherrowHeight;
+                if (i == 0) {
+                  it.printf(xCenter, y, id(font_icons_tiny), TextAlign::BASELINE_LEFT, ICON_temp_high);
+                }
+                float root_0_temperature = root_0["temperature"];
+                it.printf(xCenter + weatherCol * (i+1) + weatherTempCorr, y, id(font_medium_small), TextAlign::BASELINE_RIGHT, "%.1f", root_0_temperature);
+          #if 1
+                // Low
+                y += weatherrowHeight;
+                if (i == 0) {
+                  it.printf(xCenter, y, id(font_icons_tiny), TextAlign::BASELINE_LEFT, ICON_temp_low);
+                }
+                float root_0_templow = root_0["templow"];
+                it.printf(xCenter + weatherCol * (i+1) + weatherTempCorr, y, id(font_medium_small), TextAlign::BASELINE_RIGHT, "%.1f", root_0_templow);
+          #endif
+                // Precipitation
+                y += weatherrowHeight;
+                if (i == 0) {
+                  it.printf(xCenter, y, id(font_icons_tiny), TextAlign::BASELINE_LEFT, ICON_rain);
+                }
+                float root_0_precipitation = root_0["precipitation"];
+                it.printf(xCenter + weatherCol * (i+1) + weatherTempCorr, y, id(font_medium_small), TextAlign::BASELINE_RIGHT, "%.1f", root_0_precipitation);
+
+                // wind
+                y += weatherrowHeight;
+                if (i == 0) {
+                  it.printf(xCenter, y, id(font_icons_tiny), TextAlign::BASELINE_LEFT, ICON_wind_alt);
+                }
+          #if 1
+                float root_0_wind = root_0["wind_speed"];
+          #else
+                float root_0_wind = root_0["wind_gust_speed"];
+          #endif
+                it.printf(xCenter + weatherCol * (i+1) + weatherTempCorr, y, id(font_medium_small), TextAlign::BASELINE_RIGHT, "%.1f", root_0_wind);
+                // 2022-05-18T09:00:00+00:00
+                // Day of week
+                y += weatherrowHeight;
+                it.strftime(xCenter + weatherCol * (i+1), y, id(font_medium), TextAlign::BASELINE_CENTER, "%a", str2dt(root_0["datetime"]));
+              }
+          }
+
+          auto change_icon = ICON_trend_no;
+          if (id(change_pressure).state > 0.3) {
+            change_icon = ICON_trend_up;
+          }
+          if (id(change_pressure).state < -0.3) {
+            change_icon = ICON_trend_down;
+          }
+
+          auto wind_dir_icon = ICON_wind_n;
+          if (in_range(11.25, id(wind_bearing).state, 78.75)) {
+            wind_dir_icon = ICON_wind_ne;
+          } else if (in_range(78.75, id(wind_bearing).state, 101.25)) {
+            wind_dir_icon = ICON_wind_e;
+          } else if (in_range(101.25, id(wind_bearing).state, 168.75)) {
+            wind_dir_icon = ICON_wind_se;
+          } else if (in_range(168.75, id(wind_bearing).state, 213.75)) {
+            wind_dir_icon = ICON_wind_s;
+          } else if (in_range(213.75, id(wind_bearing).state, 236.25)) {
+            wind_dir_icon = ICON_wind_sw;
+          } else if (in_range(236.25, id(wind_bearing).state, 303.75)) {
+            wind_dir_icon = ICON_wind_w;
+          } else if (in_range(303.75, id(wind_bearing).state, 348.75)) {
+            wind_dir_icon = ICON_wind_nw;
+          }
+
+          x = weatherAttrCol1;
+          y = weatherAttrRow;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_temp_high);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", temphigh);
+          x += 2 * rownSpace;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_windy);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", wind_gust_speed);
+          x += 2 * rownSpace;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_rain_alt);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", precipitation);
+          x += 2 * rownSpace;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_sun_up);
+          x += iconPad;
+          it.strftime(x, y, id(font_small), TextAlign::TOP_LEFT, "%H:%M", str2dt(id(next_rising).state));
+
+          x = weatherAttrCol1;
+          y += weatherAttrYstep;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_temp_low);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", templow);
+          x += 2 * rownSpace;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_clouds);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.0f", cloud_coverage);
+          x += 2 * rownSpace;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_rain_prob);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.0f", precipitation_probability);
+          x += 2 * rownSpace;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_sun_down);
+          x += iconPad;
+          it.strftime(x, y, id(font_small), TextAlign::TOP_LEFT, "%H:%M", str2dt(id(next_setting).state));
+
+          x = weatherAttrCol0;
+          y = weatherAttrRow;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_wind);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(wind_speed).state);
+          x += iconPad;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, wind_dir_icon);
+          x += iconPad;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_drop);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(hum_out).state);
+          x += 2 * rownSpace;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_sun);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(out_light).state);
+
+          x = weatherAttrCol0;
+          y += weatherAttrYstep;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_gauge);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(sea_level_pressure).state);
+          x += 3 * rownSpace;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, change_icon);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(change_pressure).state);
+          x += 2 * rownSpace;
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_temp_out);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(weather_temp).state);
+
+          // row 0
+          x = 0;
+          y += weatherAttrYstep;
+          //it.line(x, y, xRes, y);
+          //it.printf(x, y, id(font_extra_small), TextAlign::TOP_LEFT, "%d", y);
+
+          // row 1
+          x = 0;
+          y += weatherAttrYstep;
+          //it.line(x, y, xRes, y);
+          //it.printf(x, y, id(font_extra_small), TextAlign::TOP_LEFT, "%d", y);
+
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_wind_turbine);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(shutters_open_speed_wind).state);
+          x += 2*rownSpace;
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_fan_auto);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(hum_diff).state);
+          x += 2*rownSpace;
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_cpu_usage);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.0f", id(cpu_usage).state);
+          x += 2*rownSpace;
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_cpu_temp);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.0f", id(cpu_temp).state);
+          x += 2*rownSpace;
+
+
+          // row 2
+          x = 0;
+          y += weatherAttrYstep;
+          //it.line(x, y, xRes, y);
+          //it.printf(x, y, id(font_extra_small), TextAlign::TOP_LEFT, "%d", y);
+
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_heat_pump);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(wind_vibration).state);
+          x += 2*rownSpace;
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_water_boiler);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.0f", id(hot_water).state);
+          x += 2*rownSpace;
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_mem);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(pc_mem_free).state);
+          x += 2*rownSpace;
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_disk);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(disk_free).state);
+          x += 2*rownSpace;
+
+          // row 3
+          x = 0;
+          y += weatherAttrYstep;
+          //it.line(x, y, xRes, y);
+          //it.printf(x, y, id(font_extra_small), TextAlign::TOP_LEFT, "%d", y);
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_shutter_alert);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(shutters_vibration).state);
+          x += 2*rownSpace;
+
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_heat_coil);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(water_living_climate).state);
+          x += 2*rownSpace;
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_ping);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(ping_isp).state);
+          x += 2*rownSpace;
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_net_disk);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.0f", id(owrt_disk_free).state);
+          x += 2*rownSpace;
+
+          // row 4
+          x = 0;
+          y += weatherAttrYstep;
+          //it.line(x, y, xRes, y);
+          //it.printf(x, y, id(font_extra_small), TextAlign::TOP_LEFT, "%d", y);
+
+          // row 5
+          x = 0;
+          y += weatherAttrYstep;
+          //it.line(x, y, xRes, y);
+          //it.printf(x, y, id(font_extra_small), TextAlign::TOP_LEFT, "%d", y);
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_lightning_bolt);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.0f", id(mains_voltage).state);
+          x += 2*rownSpace;
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_power);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.0f", id(mains_power).state);
+          x += 2*rownSpace;
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_meter_electric);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.1f", id(daily_energy_peak).state + id(daily_energy_offpeak).state);
+          x += 2*rownSpace;
+
+          it.printf(x, y, id(font_icons_tiny), TextAlign::TOP_LEFT, ICON_water);
+          x += iconPad;
+          it.printf(x, y, id(font_small), TextAlign::TOP_LEFT, "%.0f", id(daily_water).state);
+
+          // Battery
+          auto battCol = xCenter - 100;
+          y = 460;
+          auto batIcon = batteryToIcon(id(batt).state);
+          it.printf(battCol, y + rowHeight/4, id(font_icons_small), TextAlign::BASELINE_LEFT, batIcon.c_str());
+
+          // Notification
+          if (id(notification).state) {
+              it.printf(xRes * 0.425, yRes * 0.325, id(font_icons_small), TextAlign::TOP_LEFT, notificationIcon(id(icon_notify).state).c_str());
+              it.printf(xRes * 0.500, yRes * 0.325, id(font_medium_small), TextAlign::TOP_LEFT, "%s: %s", id(title).state.c_str(), id(message).state.c_str());
+          }
+
+          // otobot
+          it.printf(xRes * 0.500, yRes * 0.450, id(font_icons_small), TextAlign::TOP_LEFT, ICON_bank);
+          it.printf(xRes * 0.450, yRes * 0.550, id(font_big), TextAlign::TOP_LEFT, "%.2f", id(octobot).state);
+          it.printf(xRes * 0.450, yRes * 0.650, id(font_big), TextAlign::TOP_LEFT, "%.1f", id(octobot_value).state);
+
+
+      - id: display_fail
+        lambda: |-
+          auto batIcon = batteryToIcon(id(batt).state);
+          it.printf(xRes * 0.5, yRes * 0.1, id(font_medium_small), TextAlign::CENTER, "connection timeout ...");
+          it.printf(xRes * 0.5, yRes * 0.25, id(font_icons), TextAlign::CENTER, ICON_sleep ICON_wifi_alert);
+          it.printf(xRes * 0.5, yRes * 0.5, id(font_icons_small), TextAlign::CENTER, batIcon.c_str());
+          it.printf(xRes * 0.5, yRes * 0.75, id(font_medium_small), TextAlign::BOTTOM_CENTER, "%.3fV %.0f%% %.1f°C %.1fdBm",
+                      id(batt_volt).state, id(batt).state, id(core_temp).state, id(signal_level).state);
+
+      - id: display_ota
+        lambda: |-
+          auto batIcon = batteryToIcon(id(batt).state);
+          it.printf(xRes * 0.5, yRes * 0.1, id(font_medium_small), TextAlign::CENTER, "wait for ota ...");
+          it.printf(xRes * 0.5, yRes * 0.25, id(font_icons), TextAlign::CENTER, ICON_sleep_off ICON_ota);
+          it.printf(xRes * 0.5, yRes * 0.5, id(font_icons_small), TextAlign::CENTER, batIcon.c_str());
+          it.printf(xRes * 0.5, yRes * 0.75, id(font_medium_small), TextAlign::BOTTOM_CENTER, "%.3fV %.0f%% %.1f°C %.1fdBm",
+                      id(batt_volt).state, id(batt).state, id(core_temp).state, id(signal_level).state);
+
+      - id: display_download
+        lambda: |-
+          auto batIcon = batteryToIcon(id(batt).state);
+          it.printf(xRes * 0.5, yRes * 0.1, id(font_medium_small), TextAlign::CENTER, "ota running ...");
+          it.printf(xRes * 0.5, yRes * 0.25, id(font_icons), TextAlign::CENTER, ICON_timer ICON_download);
+          it.printf(xRes * 0.5, yRes * 0.5, id(font_icons_small), TextAlign::CENTER, batIcon.c_str());
+          it.printf(xRes * 0.5, yRes * 0.75, id(font_medium_small), TextAlign::BOTTOM_CENTER, "%.3fV %.0f%% %.1f°C %.1fdBm",
+                      id(batt_volt).state, id(batt).state, id(core_temp).state, id(signal_level).state);
+
+      - id: end_download
+        lambda: |-
+          auto batIcon = batteryToIcon(id(batt).state);
+          it.printf(xRes * 0.5, yRes * 0.1, id(font_medium_small), TextAlign::CENTER, "ota ready ... reboot ...");
+          it.printf(xRes * 0.5, yRes * 0.25, id(font_icons), TextAlign::CENTER, ICON_timer ICON_download);
+          it.printf(xRes * 0.5, yRes * 0.5, id(font_icons_small), TextAlign::CENTER, batIcon.c_str());
+          it.printf(xRes * 0.5, yRes * 0.75, id(font_medium_small), TextAlign::BOTTOM_CENTER, "%.3fV %.0f%% %.1f°C %.1fdBm",
+                      id(batt_volt).state, id(batt).state, id(core_temp).state, id(signal_level).state);
+
+font:
+  - file:
+      type: gfonts
+      family: Open+Sans
+      weight: light
+    id: font_extra_small
+    size: 12
+    glyphs: |-
+      °0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz.,:%-
+
+  # - file:
+  #     type: gfonts
+  #     family: Open+Sans
+  #     weight: light
+  #   id: font_small
+  #   size: 28
+  #   glyphs: |-
+  #     °0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz.,:%
+
+  - file:
+      type: gfonts
+      family: Open+Sans
+      weight: regular
+    id: font_small
+    size: 18
+    glyphs: |-
+      °0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz.,:%-
+
+  - file:
+      type: gfonts
+      family: Open+Sans
+      weight: semi-bold
+    id: font_medium_small
+    size: 26
+    glyphs: |-
+      °0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz.,:%-
+
+  - file:
+      type: gfonts
+      family: Open+Sans
+      weight: medium
+    id: font_medium
+    size: 38
+    glyphs: |-
+      °0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz.,:%-
+
+  # - file:
+  #     type: gfonts
+  #     family: Open+Sans
+  #     weight: semi-bold
+  #   id: font_medium_bold
+  #   size: 38
+  #   glyphs: |-
+  #     °0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz.,:%-
+
+  - file:
+      type: gfonts
+      family: Open+Sans
+      weight: bold
+    id: font_big
+    size: 48
+    glyphs: |-
+      °0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz.,:%-
+
+  # - file:
+  #     type: gfonts
+  #     family: Open+Sans
+  #     weight: extra-bold
+  #   id: font_large
+  #   size: 56
+  #   glyphs: |-
+  #     °0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz.,:%-
+
+  - file:
+      type: gfonts
+      family: Open+Sans
+      weight: extra-bold
+    id: font_xlarge_bold
+    size: 72
+    glyphs: |-
+      °0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz.,:%-
+
+  # material UI icons - from https://pictogrammers.github.io/@mdi/font/5.3.45/
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/master/fonts/materialdesignicons-webfont.ttf
+    id: font_icons
+    size: 130
+    glyphs:
+      - "\U000F0594" # clear-night
+      - "\U000F0590" # cloudy
+      - "\U000F0591" # fog
+      - "\U000F0592" # hail
+      - "\U000F0593" # lightning
+      - "\U000F067E" # lightning-rainy
+      - "\U000F0F31" # night-partly-cloudy
+      - "\U000F0595" # partly-cloudy
+      - "\U000F0596" # pouring
+      - "\U000F0597" # rainy
+      - "\U000F0F36" # snowy
+      - "\U000F067F" # snowy-rainy
+      - "\U000F0599" # sunny
+      - "\U000F059D" # windy
+      - "\U000F059E" # windy-variant
+      - "\U000F0F38" # exceptional
+      - "\U000F04B3" # sleep-off
+      - "\U000F04B2" # sleep
+      - "\U000F0920" # wifi-strength-1-alert
+      - "\U000F06B0" # update
+      - "\U000F0997" # progress-download
+      - "\U000F051F" # timer-sand
+
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/master/fonts/materialdesignicons-webfont.ttf
+    id: font_icons_small
+    size: 56
+    glyphs:
+      # weather
+      - "\U000F0594" # clear-night
+      - "\U000F0590" # cloudy
+      - "\U000F0591" # fog
+      - "\U000F0592" # hail
+      - "\U000F0593" # lightning
+      - "\U000F067E" # lightning-rainy
+      - "\U000F0F31" # night-partly-cloudy
+      - "\U000F0595" # partly-cloudy
+      - "\U000F0596" # pouring
+      - "\U000F0597" # rainy
+      - "\U000F0F36" # snowy
+      - "\U000F067F" # snowy-rainy
+      - "\U000F0599" # sunny
+      - "\U000F059D" # windy
+      - "\U000F059E" # windy-variant
+      - "\U000F0F38" # exceptional
+      # other icons
+      - "\U000F02E3" # Bed
+      - "\U000F04B9" # sofa
+      - "\U000F09A1" # shower-head
+      - "\U000F0F48" # chair-rolling
+      - "\U000F0FD2" # bed
+      - "\U000F19A3" # mainentance
+      - "\U000F072A" # washing-machine
+      - "\U000F0070" # bank
+      # battery
+      - "\U000F10CD" # battery-alert-variant-outline
+      - "\U000F007A" # bat 10
+      - "\U000F007B" # bat 20
+      - "\U000F007C" # bat 30
+      - "\U000F007D" # bat 40
+      - "\U000F007E" # bat 50
+      - "\U000F007F" # bat 60
+      - "\U000F0080" # bat 70
+      - "\U000F0081" # bat 80
+      - "\U000F0082" # bat 90
+      - "\U000F0079" # bat 100
+      - "\U000F111D"
+      - "\U000F110C"
+      - "\U000F1C97"
+      - "\U000F0535"
+      - "\U000F0533"
+      - "\U000F0534"
+      - "\U000F0F2F"
+      - "\U000F044B"
+      - "\U000F0314"
+      - "\U000F0502"
+      - "\U000F0B8F"
+      - "\U000F0A17"
+      - "\U000F081A"
+      - "\U000F1616"
+      - "\U000F06B0"
+      - "\U000F07E5"
+      - "\U000F07E6"
+      - "\U000F1904"
+      - "\U000F06A1"
+      - "\U000F081B"
+      - "\U000F070D"
+      - "\U000F0CE6"
+
+  - file: https://github.com/Templarian/MaterialDesign-Webfont/raw/master/fonts/materialdesignicons-webfont.ttf
+    id: font_icons_tiny
+    size: 32
+    glyphs:
+      - "\U000F0599" # sunny
+      - "\U000F005E" # arrow-up-thick
+      - "\U000F0046" # arrow-down-thick
+      - "\U000F059B" # weather-sunset-down
+      - "\U000F059C" # weather-sunset-up
+      - "\U000F0F92" # water-boiler
+      - "\U000F1A44" # heat-pump-outline
+      - "\U000F111D" # window-shutter-alert
+      - "\U000F192D" # transmission-tower-import
+      - "\U000F1B29" # faucet
+      - "\U000F029A" # gauge
+      - "\U000F0535" # trending-up
+      - "\U000F0534" # trending-neutral
+      - "\U000F0533" # trending-down
+      - "\U000F0E0A" # water-outline
+      - "\U000F1B5A" # weather-dust
+      - "\U000F19B4" # arrow-top-right-thin
+      - "\U000F19B5" # arrow-top-left-thin
+      - "\U000F19B7" # arrow-bottom-right-thin
+      - "\U000F19B6" # arrow-bottom-left-thin
+      - "\U000F19B3" # arrow-down-thin
+      - "\U000F19B1" # arrow-left-thin
+      - "\U000F19B0" # arrow-right-thin
+      - "\U000F19B2" # arrow-up-thin
+      - "\U000F050F" # thermometer
+      - "\U000F067F" # snowy-rainy
+      - "\U000F10C2" # Temperature High
+      - "\U000F10C3" # Temperature Low
+      - "\U000F15FA" # windsock
+      - "\U000F171D" # fan-auto
+      - "\U000F0EE0" # cpu-64-bit
+      - "\U000F0FF8" # oil-temperature
+      - "\U000F035B" # memory
+      - "\U000F02CA" # harddisk
+      - "\U000F01E7" # earth
+      - "\U000F12D6" # cloud-sync-outline
+      - "\U000F1A58" # meter-electric-outline
+      - "\U000F1AAF" # heating-coil
+      - "\U000F0DA5" # wind-turbine
+      - "\U000F140C" # lightning-bolt-outline
+      - "\U000F0F35" # weather-partly-snowy-rainy
+      - "\U000F1B95" # clouds
+      - "\U000F0596" # weather-pouring
+      - "\U000F1A36" # cloud-percent-outline
+      - "\U000F059D" # weather-windy
