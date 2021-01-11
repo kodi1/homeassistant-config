@@ -1,0 +1,311 @@
+homeassistant:
+  customize:
+    automation.lumi_switch_double_trigger_1:
+      friendly_name: lights all
+      icon: mdi:lightbulb-group
+
+input_boolean:
+  lumi_double_switch_1:
+    initial: off
+
+input_number:
+  lumi_double_switch_1_time:
+    unit_of_measurement: 'min'
+    min: 3
+    max: 10
+    step: 0.5
+    icon: mdi:camera-timer
+
+timer:
+  lumi_double_switch_1_timer:
+    icon: mdi:timer-outline
+    duration: '00:00:30'
+
+script:
+  lumi_all_lights_on:
+    sequence:
+      - variables:
+          brightness_pct_k: >-
+            {%- if is_state('binary_sensor.night_mode', 'off') -%}
+              {{ range(80, 90, 2) | random }}
+            {%- else -%}
+              {{ range(35, 45, 2) | random }}
+            {%- endif -%}
+          brightness_pct_i: >-
+            {%- if is_state('binary_sensor.night_mode', 'off') -%}
+              {{ range(85, 95, 2) | random }}
+            {%- else -%}
+              {{ range(1, 10, 2) | random }}
+            {%- endif -%}
+          color_temp: >-
+            {%- if is_state('binary_sensor.night_mode', 'off') -%}
+              {{ range(250, 350, 10) | random }}
+            {%- else -%}
+              {{ range(350, 450, 10) | random }}
+            {%- endif -%}
+          transition: >-
+            {%- if is_state('binary_sensor.night_mode', 'off') -%}
+              5
+            {%- else -%}
+              1
+            {%- endif -%}
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: input_boolean.lumi_double_switch_1
+            state: 'off'
+          - condition: state
+            entity_id: timer.lumi_double_switch_1_timer
+            state: 'idle'
+      - service: scene.create
+        data:
+          scene_id: lumi_double_switch
+          snapshot_entities:
+            - input_boolean.lumi_double_switch_1
+            - light.living_1
+            - light.living_2
+            - light.living_3
+            - light.living_4
+            - light.living_5
+            - light.living_6
+            - light.living_7
+            - light.bed_1
+            - light.bed_2
+            - light.bed_3
+            - light.bed_4
+            - light.bed_5
+            - light.bed_6
+            - light.bed_7
+            - light.bed_8
+            - light.office_1
+            - light.office_2
+            - light.office_3
+            - light.office_4
+            - light.office_5
+            - light.office_6
+            - light.office_7
+            - light.office_8
+            - light.kitchen_1
+            - light.kitchen_2
+            - light.kitchen_3
+            - light.kitchen_4
+            - light.kitchen_5
+            - light.kitchen_6
+            - light.kitchen_7
+            - light.kitchen_led
+            - light.hall
+            - light.bath
+            - light.wash
+            - light.shutter_living
+            - light.shutter_bed
+            - light.shutter_office
+            - light.bed_wardrobe
+            - light.office_wardrobe
+            - automation.living_light
+            - automation.kitchen_light
+            - automation.bed_light
+            - automation.office_light
+            - automation.hall_light
+            - automation.bath_light
+            - automation.wash_light
+            - automation.motion_light_extend
+            - automation.other_living_light
+            - automation.other_bed_light
+            - automation.other_office_light
+            - timer.lumi_double_switch_1_timer
+      - service: timer.start
+        data:
+          entity_id: timer.lumi_double_switch_1_timer
+          duration: >-
+            {{ time_t | string }}
+      - service: input_boolean.turn_on
+        entity_id: input_boolean.lumi_double_switch_1
+      - service: automation.turn_off
+        data:
+          entity_id:
+            - automation.living_light
+            - automation.kitchen_light
+            - automation.bed_light
+            - automation.office_light
+            - automation.hall_light
+            - automation.bath_light
+            - automation.wash_light
+            - automation.motion_light_extend
+            - automation.other_living_light
+            - automation.other_bed_light
+            - automation.other_office_light
+      - service: script.living_light_on
+        data:
+          brightness_pct: >-
+            {{ brightness_pct_i }}
+          transition: >-
+            {{ transition }}
+          color_temp: >-
+            {{ color_temp }}
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - service: script.hall_light_on
+        data:
+          brightness_pct: >-
+            {{ brightness_pct_i }}
+          transition: >-
+            {{ transition }}
+          color_temp: >-
+            {{ color_temp }}
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - service: script.bed_light_on
+        data:
+          brightness_pct: >-
+            {{ brightness_pct_i }}
+          transition: >-
+            {{ transition }}
+          color_temp: >-
+            {{ color_temp }}
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - service: script.bath_light_on
+        data:
+          brightness_pct: >-
+            {{ brightness_pct_i }}
+          transition: >-
+            {{ transition }}
+          color_temp: >-
+            {{ color_temp }}
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - service: script.office_light_on
+        data:
+          brightness_pct: >-
+            {{ brightness_pct_i }}
+          transition: >-
+            {{ transition }}
+          color_temp: >-
+            {{ color_temp }}
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - service: script.wash_light_on
+        data:
+          brightness_pct: >-
+            {{ brightness_pct_i }}
+          transition: >-
+            {{ transition }}
+          color_temp: >-
+            {{ color_temp }}
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - service: script.kitchen_light_on
+        data:
+          brightness_pct: >-
+            {{ brightness_pct_k }}
+          transition: >-
+            {{ transition }}
+
+      - service: light.turn_on
+        target:
+          entity_id:
+            - light.shutter_living
+            - light.shutter_bed
+            - light.shutter_office
+            - light.bed_wardrobe
+            - light.office_wardrobe
+
+      - event: kitchen_light_1
+        event_data:
+          ctrl: kitchen_on
+          brightness_pct: >-
+            {{ range(80, 90, 2) | random }}
+          color_temp: >-
+            {{ 250 }}
+          transition: >-
+            {{ 1 }}
+
+  lumi_double_switch_off:
+    alias: all off
+    icon: mdi:toggle-switch-off
+    sequence:
+      - service: scene.turn_on
+        data:
+          entity_id: scene.lumi_double_switch
+      - event: lights_check
+        event_data:
+          light: turn_off
+
+  lumi_double_switch_on:
+    alias: all on
+    icon: mdi:toggle-switch
+    sequence:
+      - service: script.lumi_all_lights_on
+        data:
+          time_t: >-
+            {{ (states('input_number.lumi_double_switch_1_time') | float * 60.0) | int(0) }}
+
+automation:
+  - alias: lumi_switch_double_trigger_1
+    id: lumi_switch_double_trigger_1
+    trigger:
+      - platform: mqtt
+        topic: zigbee2mqtt/living-cube
+        value_template: >-
+          {%- if value_json.action is defined-%}
+            {{ value_json.action }}
+          {%- else -%}
+            None
+          {%- endif -%}
+        payload: shake
+      - platform: mqtt
+        topic: zigbee2mqtt/bed-button
+        value_template: >-
+          {%- if value_json.action is defined-%}
+            {{ value_json.action }}
+          {%- else -%}
+            None
+          {%- endif -%}
+        payload: shake
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.lumi_double_switch_1_timer
+    action:
+      - service: >
+          {%-
+              set scr = {
+                'on': 'script.lumi_double_switch_off',
+                'off': 'script.lumi_double_switch_on'
+              }
+            -%}
+          {{ scr[states('input_boolean.lumi_double_switch_1')] }}
+
+  - alias: down_lumi_switch_double_trigger_1
+    id: down_lumi_switch_double_trigger_1
+    trigger:
+      - platform: event
+        event_type: up_down_my
+        event_data:
+          data: 'stop'
+    condition:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: input_boolean.lumi_double_switch_1
+            state: 'on'
+    action:
+      - service: script.lumi_double_switch_off

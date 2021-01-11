@@ -1,0 +1,72 @@
+homeassistant:
+  customize:
+    automation.root_not_home:
+      friendly_name: away
+      icon: mdi:home-outline
+    automation.n0ll_not_home:
+      friendly_name: pc away
+      icon: mdi:monitor-speaker-off
+    automation.home_away:
+      friendly_name: city away
+      icon: mdi:home-city-outline
+
+automation:
+  - alias: n0ll_not_home
+    id: n0ll_not_home
+    trigger:
+      - platform: state
+        entity_id: device_tracker.n0ll
+        to: not_home
+        for:
+          seconds: 90
+    action:
+       - service: script.sound_bar_go_sleep
+
+  - alias: root_not_home
+    id: root_not_home
+    initial_state: off
+    trigger:
+      - platform: zone
+        entity_id: device_tracker.root
+        zone: zone.home
+        event: leave
+    action:
+      - service: script.turn_on
+        data:
+          entity_id:
+            - script.light_extend_clear
+      - service: media_player.turn_off
+        entity_id:
+          - media_player.ht_mt500_501_b34d6a
+          - media_player.bedroom_speaker
+      - service: script.kodi_turn_off
+      # - service: automation.turn_on
+      #   entity_id: automation.home_motion_detect
+      - service: automation.turn_off
+        entity_id:
+          - automation.just_home
+          # - automation.motion_light_extend
+
+  - alias: home_away
+    id: home_away
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.home_root_distance
+        above: 15
+
+    action:
+      - service: notify.gmail
+        data:
+          message: home away trigger
+          title: 'hass'
+      - service: script.turn_on
+        target:
+          entity_id:
+            - script.doors_full_lock
+      - service: switch.turn_off
+        entity_id:
+          - switch.living_tv
+      - service: automation.turn_on
+        entity_id: automation.home_near
+      - service: automation.turn_off
+        entity_id: automation.home_away

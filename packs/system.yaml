@@ -1,0 +1,249 @@
+homeassistant:
+  customize:
+    sensor.cpu_usage:
+      icon: mdi:chip
+    sensor.cpu_temp:
+      icon: mdi:oil-temperature
+    sensor.disk_free:
+      icon: mdi:harddisk
+    sensor.mem_free:
+      icon: mdi:memory
+    binary_sensor.isp_conn:
+      friendly_name: Isp
+    binary_sensor.ext_port:
+      friendly_name: Ext port
+    automation.updates_notify:
+      friendly_name: update
+      icon: mdi:cellphone-arrow-down
+    automation.auto_reboot_all:
+      friendly_name: all reboot
+      icon: mdi:server
+    automation.open_ports:
+      friendly_name: ports open
+      icon: mdi:lan-connect
+    automation.once_week_reboot:
+      friendly_name: reboot weekly
+      icon: mdi:restart-alert
+
+command_line:
+  - sensor:
+      name: Cpu Temp
+      command: '/config/cmds/cpu_temp'
+      unit_of_measurement: '°C'
+      scan_interval: 300
+
+  - sensor:
+      name: Disk Free
+      command: '/config/cmds/disk_free'
+      unit_of_measurement: 'MB'
+      scan_interval: 300
+
+  - sensor:
+      name: Cpu Usage
+      command: '/config/cmds/cpu_usage'
+      unit_of_measurement: '%'
+      scan_interval: 300
+
+  - sensor:
+      name: Mem Free
+      command: '/config/cmds/mem_free'
+      unit_of_measurement: 'MB'
+      scan_interval: 300
+
+  - binary_sensor:
+      name: 'Bravia'
+      command: '/config/cmds/bravia_check'
+      device_class: plug
+      payload_on: 'success'
+      payload_off: 'fail'
+      scan_interval: 300
+
+binary_sensor:
+  - platform: esp_wd
+    name: bedroom
+    host: !secret bedroom
+    scan_interval: 600
+
+template:
+  - binary_sensor:
+    - name: isp_conn
+      device_class: connectivity
+      state: >-
+        {%- if is_state('sensor.ping_isp', 'n/a') or
+          states('sensor.ping_isp') | float(0) > 200 -%}
+          False
+        {%- else -%}
+          True
+        {%- endif %}
+
+automation:
+  - alias: auto_reboot_all
+    id: auto_reboot_all
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.isp_conn
+        to: 'off'
+        for:
+          minutes: 6
+    condition:
+      - condition: template
+        value_template: >-
+          {{
+            now() - (
+                state_attr('automation.mydelay', 'last_triggered') |
+                  default(now()-timedelta(minutes=61), true)
+              ) >
+              timedelta(minutes=60)
+            }}
+    action:
+      - service: script.all_notify
+        data:
+          tit: 'reboot all'
+          msg: >-
+            {%- if is_state('sensor.ping_isp', 'n/a') -%}
+              cant ping isp
+            {%- else -%}
+              high isp ping {{states('sensor.ping_isp') }} ms
+            {%- endif -%}
+      - service: script.reboot_all
+
+  - alias: open_ports
+    id: open_ports
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.ext_port
+        to: 'off'
+        for:
+          minutes: 11
+    action:
+      - service: script.all_notify
+        data:
+          tit: 'router'
+          msg: 'open ports'
+#       - service: shell_command.local_reboot
+
+  - alias: isp_notify
+    id: isp_notify
+    trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.village_conn
+          - binary_sensor.city_conn
+          - binary_sensor.main_conn
+          - binary_sensor.city_waterheater_conn
+          - binary_sensor.village_pump_conn
+          - binary_sensor.village_waterheater_conn
+        to:
+        not_from:
+          - unknown
+          - unavailable
+        for:
+          minutes: 1
+
+    mode: parallel
+    action:
+      - service: script.all_notify
+        data_template:
+          tit: >-
+            {{ trigger.to_state.name }} conn
+          msg: >-
+            {%-
+              set sts = {
+                    'on': 'up',
+                    'off': 'down',
+                  }
+              -%}
+            {{ sts[trigger.to_state.state] }}
+
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: >-
+              {{
+                  trigger.to_state.state == 'on'
+                }}
+          sequence:
+            - service: script.turn_on
+              data:
+                entity_id:
+                  - script.startup_mqtt
+
+  - alias: change_current_theme
+    id: change_current_theme
+    trigger:
+      - platform: state
+        entity_id: input_select.current_theme
+    action:
+      - service: frontend.set_theme
+        data_template:
+          name: "{{ states('input_select.current_theme') }}"
+
+  - alias: theme_switch
+    id: theme_switch
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.day
+      - platform: homeassistant
+        event: start
+    action:
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.current_theme
+        data_template:
+          option: >-
+            {%- set _map = {'on': 'default', 'off': 'midnight'} -%}
+            {{ _map[states('binary_sensor.day')] }}
+
+  - alias: updates_notify
+    id: updates_notify
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.docker_hub_update_available
+        to: 'on'
+      - platform: numeric_state
+        entity_id: sensor.hacs
+        above: 0
+        for:
+          seconds: 10
+    action:
+      - service: script.all_notify
+        data:
+          tit: 'Update'
+        data_template:
+          msg: >-
+            {%- set s = {
+                          "hass": states('sensor.docker_hub'),
+                          "hacs": states('sensor.hacs')
+                        }
+              -%}
+            {%- set ignore_state = ['0', 'unavailable'] -%}
+            {%- for _k, _s in s.items() -%}
+              {%- if _s not in ignore_state -%}
+                {{_k}} {{_s}}.
+              {% endif -%}
+            {%- endfor -%}
+
+  - alias: once_week_reboot
+    id: once_week_reboot
+    trigger:
+      - platform: time
+        at: '03:00:00'
+    condition:
+        - condition: time
+          weekday:
+            # - mon
+            - tue
+            # - wed
+            # - thu
+            # - fri
+            # - sat
+            # - sun
+    action:
+      - service: script.roborock_reboot
+      - service: script.all_notify
+        data:
+          tit: 'weekly'
+          msg: 'reboot'
+
+shell_command:
+  local_reboot: '/config/cmds/local_reboot {{ value }}'

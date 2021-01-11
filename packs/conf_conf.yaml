@@ -1,0 +1,46 @@
+homeassistant:
+  external_url: !secret url_ext
+  internal_url: !secret url_int
+
+http:
+
+mobile_app:
+
+media_extractor:
+  customize:
+    media_player.ht_mt500_501_b34d6a:
+      music: bestaudio[ext=m4a]
+    media_player.bedroom_speaker:
+      music: bestaudio[ext=m4a]
+
+# cast:
+#   media_player:
+#     - uuid: !secret cast_bedroom_id
+#     - uuid: !secret cast_sound_bar_id
+
+# ota update trigger - ikea
+# issue_zigbee_cluster_command
+# ieee: 'd0:cf:5e:ff:fe:14:6d:c6'
+# endpoint_id: 1
+# cluster_type: out
+# command_type: client
+# cluster_id: 25
+# command: 0
+# args:
+#   - 0
+#   - 100
+
+zha:
+  zigpy_config:
+    ota:
+      ikea_provider: true
+  database_path: /config/zigbee.db
+
+system_log:
+  max_entries: 20
+
+logger:
+  default: warn
+  # logs:
+  #   homeassistant.core: debug
+  #   zigpy: debug

@@ -1,0 +1,64 @@
+homeassistant:
+  customize:
+    binary_sensor.download_active:
+      icon: mdi:download
+      hidden: true
+    sensor.transmission_state:
+      friendly_name: Transmission
+template:
+  - sensor:
+    - name: transmission_state
+      icon: >-
+        {% if not is_state('sensor.trans_status', 'unavailable') -%}
+          {%- if is_state('sensor.trans_status', 'Downloading') -%}
+            mdi:download
+          {%- endif -%}
+          {%- if is_state('sensor.trans_status', 'Seeding') -%}
+            mdi:upload
+          {%- endif -%}
+          {%- if is_state('sensor.trans_status', 'Up/Down') -%}
+            mdi:pipe
+          {%- endif -%}
+          {%- if is_state('sensor.trans_status', 'idle') -%}
+            mdi:pipe-disconnected
+          {%- endif -%}
+        {%- else -%}
+          mdi:sync-alert
+        {%- endif -%}
+      state: >-
+        {{
+            states('sensor.trans_status')
+          }}
+
+  - binary_sensor:
+    - name: download_active
+      state: >-
+        {{
+            is_state('sensor.trans_status', 'Downloading') or
+              is_state('sensor.trans_status', 'Up/Down')
+          }}
+
+automation:
+  - alias: transmission_notify
+    id: transmission_notify
+    trigger:
+      - platform: event
+        event_type: transmission
+    action:
+      - service: script.all_notify
+        data_template:
+          tit: '{{ trigger.event.data.file }}'
+          msg: 'finished'
+
+  - alias: transmission_idle
+    id: transmission_idle
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.download_active
+        to: 'off'
+        from: 'on'
+    action:
+      - service: script.all_notify
+        data:
+          tit: 'transmission'
+          msg: 'download is idle'

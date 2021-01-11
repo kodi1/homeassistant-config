@@ -1,0 +1,592 @@
+homeassistant:
+  customize:
+    automation.climate_night:
+      icon: mdi:bed-king-outline
+      friendly_name: night
+    automation.clima_sync:
+      icon: mdi:thermostat-cog
+      friendly_name: all sync
+    automation.clima_max:
+      icon: mdi:thermostat-box-auto
+      friendly_name: clima max
+    automation.clima_max_restore_switch:
+      friendly_name: pump switch
+      icon: mdi:heat-pump
+    automation.clima_max_restore_temps:
+      friendly_name: temps
+      icon: mdi:thermostat-box-auto
+    automation.clima_max_restore_fans:
+      friendly_name: fans
+      icon: mdi:fan-auto
+    binary_sensor.climate_night:
+      friendly_name: night
+    alert.clima_max_restore_switch:
+      icon: mdi:heat-pump-outline
+    script.clima_max:
+      friendly_name: settings
+
+alert:
+  clima_max_restore_switch:
+    name: pump
+    title: pump
+    message: pending auto off
+    done_message: is {{ states('switch.pump') }}
+    entity_id: binary_sensor.dummy_clima_max_restore_sensor
+    state: 'on'
+    repeat:
+      - 3
+    skip_first: false
+    can_acknowledge: true
+    notifiers:
+      - gmail
+
+mqtt:
+  climate:
+    - name: pump
+      icon: mdi:thermostat
+      max_temp: 50.0
+      min_temp: 5.0
+      modes:
+        - 'heat'
+        - 'cool'
+        - 'auto'
+      mode_command_topic: DHPW/json
+      mode_command_template: >-
+        {%- set map =
+            {
+              'auto': 'auto',
+              'heat': 'heating',
+              'cool': 'cooling'
+            }
+          -%}
+        {%- set cmnd =
+            {
+              'key': '1',
+              'subject': 'OperationMode',
+              'msg' : map[value]
+            }
+          -%}
+        {{ cmnd | to_json }}
+      mode_state_topic: DHPW/OperatingMode
+      mode_state_template: >-
+        {%- set map =
+            {
+              'auto': 'auto',
+              'heating': 'heat',
+              'cooling': 'cool'
+            }
+          -%}
+          {{ map[value] }}
+      temperature_command_template: >-
+        {%- set cmnd =
+            {
+              'key': '1',
+              'subject': 'LeavingWaterTemperatureAuto',
+              'msg' : value|int
+            }
+          -%}
+        {{ cmnd | to_json }}
+      temperature_command_topic: DHPW/json
+      temperature_state_topic: DHPW/LeavingWaterTemperatureAuto
+      precision: 1.0
+      current_temperature_topic: DHPW/LeavingWaterTemperatureCurrent
+      current_temperature_template: >-
+        {{ value|int }}
+      availability_topic: DHPW/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+  switch:
+    - name: pump
+      state_topic: DHPW/power/1
+      command_topic: DHPW/setpower/1
+      payload_on: 'on'
+      payload_off: standby
+      availability_topic: DHPW/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+  sensor:
+    - name: ext temp
+      state_topic: DHPW/OutdoorTemperature
+      device_class: temperature
+      unit_of_measurement: °C
+      expire_after: 600
+
+template:
+  - binary_sensor:
+    - name: climate_night
+      state: >-
+        {{
+            is_state('input_boolean.in_bed_dummy_switch', 'on')
+          }}
+      icon: >-
+        {%- if is_state('input_boolean.in_bed_dummy_switch', 'on') -%}
+          mdi:power-sleep
+        {%- else -%}
+          mdi:power
+        {%- endif -%}
+      delay_on:
+        minutes: 3
+      delay_off:
+        minutes: 5
+      device_class: occupancy
+
+    - name: dummy_clima_max_restore_sensor
+      state: >-
+        {{
+            is_state('automation.clima_max_restore_switch', 'on') and
+              is_state('automation.clima_max_restore_fans', 'off')
+          }}
+
+automation:
+  - id: climate_night
+    alias: climate_night
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.climate_night
+        to: 'on'
+        id: to_on
+      - platform: state
+        entity_id: binary_sensor.climate_night
+        to: 'off'
+        id: to_off
+
+    condition:
+      - condition: template
+        value_template: >-
+          {{
+              trigger.from_state.state not in ['unknown', 'unavailable']
+            }}
+
+    mode: restart
+    action:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id: to_on
+          - condition: state
+            entity_id: switch.pump
+            state: 'on'
+          sequence:
+            - service: scene.create
+              data:
+                scene_id: restore_night_mode
+                snapshot_entities:
+                  - fan.bed_climate
+                  - fan.office_climate
+                  - fan.living_climate
+                  - climate.temp_bed
+                  - climate.temp_office
+                  - climate.temp_living
+            - service: climate.set_temperature
+              data:
+                entity_id: climate.temp_living
+              data_template:
+                temperature: >-
+                  {%-
+                      set val = {
+                        'auto': state_attr('climate.temp_living', 'temperature'),
+                        'heat': state_attr('climate.temp_living', 'temperature') - 0.5,
+                        'cool': state_attr('climate.temp_living', 'temperature') + 0.5,
+                      }
+                  -%}
+                  {{ val[states('climate.pump')] }}
+            - service: climate.set_temperature
+              data:
+                entity_id: climate.temp_office
+              data_template:
+                temperature: >-
+                  {%-
+                      set val = {
+                        'auto': state_attr('climate.temp_office', 'temperature'),
+                        'heat': state_attr('climate.temp_office', 'temperature') - 0.5,
+                        'cool': state_attr('climate.temp_office', 'temperature') + 0.5,
+                      }
+                  -%}
+                  {{ val[states('climate.pump')] }}
+            - service: climate.set_temperature
+              data:
+                entity_id: climate.temp_bed
+              data_template:
+                temperature: >-
+                  {%-
+                      set val = {
+                        'auto': state_attr('climate.temp_bed', 'temperature'),
+                        'heat': state_attr('climate.temp_bed', 'temperature') - 0.5,
+                        'cool': state_attr('climate.temp_bed', 'temperature') + 0.5,
+                      }
+                  -%}
+                  {{ val[states('climate.pump')] }}
+            - service: fan.set_preset_mode
+              data:
+                entity_id:
+                  - fan.living_climate
+                  - fan.office_climate
+                  - fan.bed_climate
+                preset_mode: night
+
+        - conditions:
+          - condition: trigger
+            id: to_off
+          - condition: state
+            entity_id: switch.pump
+            state: 'on'
+          sequence:
+            - service: scene.turn_on
+              data:
+                entity_id: scene.restore_night_mode
+
+        default:
+          - service: script.all_notify
+            data:
+              tit: climate_night
+            data_template:
+              msg: >-
+                check automation using default - Id: {{trigger.id}} Idx: {{ trigger.idx }}
+
+  - id: clima_max_restore_fans
+    alias: clima_max_restore_fans
+    trigger:
+      - platform: state
+        entity_id: device_tracker.root
+        from: not_home
+        to: home
+        for:
+          minutes: 10
+        id: to_home
+      - platform: state
+        entity_id: device_tracker.root
+        from: home
+        to: not_home
+        for:
+          minutes: 10
+        id: to_away
+      - platform: state
+        entity_id: input_boolean.clima_max
+        to: 'off'
+        for:
+          seconds: 5
+        id: to_timeout
+
+    mode: restart
+    action:
+      - choose:
+        - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id: to_home
+              - condition: trigger
+                id: to_away
+              - condition: trigger
+                id: to_timeout
+          sequence:
+            - service: scene.turn_on
+              data:
+                entity_id: scene.clima_max_mode_fan
+            - service: automation.turn_off
+              data:
+                entity_id: automation.clima_max_restore_fans
+
+  - id: clima_max_restore_temps
+    alias: clima_max_restore_temps
+    trigger:
+      - platform: state
+        entity_id: device_tracker.root
+        from: not_home
+        to: home
+        for:
+          minutes: 25
+        id: to_home
+      - platform: state
+        entity_id: device_tracker.root
+        from: home
+        to: not_home
+        for:
+          minutes: 10
+        id: to_away
+      - platform: state
+        entity_id: input_boolean.clima_max
+        to: 'off'
+        for:
+          seconds: 5
+        id: to_timeout
+
+    mode: restart
+    action:
+      - choose:
+        - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id: to_home
+              - condition: trigger
+                id: to_away
+              - condition: trigger
+                id: to_timeout
+          sequence:
+            - service: scene.turn_on
+              data:
+                entity_id: scene.clima_max_mode_temp
+            - service: automation.turn_off
+              data:
+                entity_id: automation.clima_max_restore_temps
+
+  - id: clima_max_restore_switch
+    alias: clima_max_restore_switch
+    trigger:
+      - platform: state
+        entity_id: input_boolean.clima_max
+        to: 'off'
+        for:
+          minutes: 10
+        id: turn_off
+      - platform: state
+        entity_id: alert.clima_max_restore_switch
+        to: 'off'
+        id: cancel
+
+    mode: restart
+    action:
+      - choose:
+        - conditions:
+            - condition: trigger
+              id: turn_off
+          sequence:
+            - service: notify.gmail
+              data:
+                title: clima max
+                message: heat pump auto swiched off
+            - service: switch.turn_off
+              data:
+                entity_id:
+                  - switch.pump
+
+        - conditions:
+            - condition: trigger
+              id: cancel
+          sequence:
+            - service: notify.gmail
+              data:
+                title: clima max
+                message: heat pump skip restore
+            - service: switch.turn_off
+              data:
+                entity_id:
+                  - switch.pump
+            - service: alert.turn_on
+              data:
+                entity_id:
+                 - alert.clima_max_restore_switch
+            - service: automation.turn_off
+              data:
+                entity_id:
+                  - automation.clima_max_restore_switch
+
+  - id: clima_sync
+    alias: clima_sync
+    trigger:
+      - platform: state
+        entity_id: climate.pump
+        to:
+        for:
+          seconds: 30
+    condition:
+      - condition: template
+        value_template: >-
+          {{
+              trigger.from_state.state not in ['unknown', 'unavailable'] and
+                trigger.to_state.state not in ['unknown', 'unavailable']
+            }}
+    action:
+      - service: script.turn_on
+        target:
+          entity_id: >-
+            {%-
+                set val = {
+                  'auto': 'script.climate_auto',
+                  'heat': 'script.climate_heat',
+                  'cool': 'script.climate_cool',
+                }
+            -%}
+            {{ val[trigger.to_state.state] }}
+
+  - id: clima_max
+    alias: clima_max
+    trigger:
+      - platform: state
+        entity_id: input_boolean.clima_max
+        to: 'on'
+        id: to_on
+      - platform: state
+        entity_id: input_boolean.clima_max
+        to: 'on'
+        for:
+          minutes: "{{ states('input_number.clima_max') |int(10) }}"
+        id: to_timeout
+
+    mode: restart
+    action:
+      - choose:
+        - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id: to_on
+          sequence:
+            - service: scene.create
+              data:
+                scene_id: clima_max_mode_fan
+                snapshot_entities:
+                  - fan.bed_climate
+                  - fan.office_climate
+                  - fan.living_climate
+
+            - service: scene.create
+              data:
+                scene_id: clima_max_mode_temp
+                snapshot_entities:
+                  - climate.temp_bed
+                  - climate.temp_office
+                  - climate.temp_living
+                  - climate.bath_tvr
+                  - climate.pump
+
+            - service: fan.set_preset_mode
+              data:
+                entity_id:
+                  - fan.living_climate
+                  - fan.office_climate
+                  - fan.bed_climate
+                preset_mode: max
+
+            - choose:
+              - conditions:
+                - condition: state
+                  entity_id: climate.pump
+                  state: heat
+                sequence:
+                  - service: climate.set_temperature
+                    data:
+                      entity_id:
+                        - climate.temp_office
+                      temperature: 22.5
+                  - service: climate.set_temperature
+                    data:
+                      entity_id:
+                        - climate.temp_bed
+                        - climate.temp_living
+                        - climate.bath_tvr
+                      temperature: 23.5
+                  - service: climate.set_temperature
+                    data:
+                      entity_id:
+                        - climate.temp_bed
+                        - climate.temp_living
+                        - climate.bath_tvr
+                      temperature: 23.5
+                  - service: climate.set_temperature
+                    data:
+                      entity_id:
+                        - climate.pump
+                      temperature: 45
+
+              - conditions:
+                - condition: state
+                  entity_id: climate.pump
+                  state: cool
+                sequence:
+                  - service: climate.set_temperature
+                    data:
+                      entity_id:
+                        - climate.temp_bed
+                        - climate.temp_living
+                        - climate.temp_office
+                      temperature: 18.5
+                  - service: climate.set_temperature
+                    data:
+                      entity_id:
+                        - climate.pump
+                      temperature: 6
+
+              default:
+                - service: notify.gmail
+                  data_template:
+                    tit: climate max
+                    msg: >-
+                      heat pump is: {{ states('climate.pump') }}
+                - service: script.all_notify
+
+            - service: automation.turn_on
+              data:
+                entity_id:
+                  - automation.clima_max_restore_fans
+                  - automation.clima_max_restore_temps
+
+            - if:
+              - condition: state
+                entity_id: switch.pump
+                state: 'off'
+              then:
+                - service: automation.turn_on
+                  data:
+                    entity_id:
+                      - automation.clima_max_restore_switch
+              else:
+                - service: notify.gmail
+                  data:
+                    title: clima max
+                    message: heat pump skip auto swich off
+
+            - service: switch.turn_on
+              data:
+                entity_id:
+                  - switch.pump
+
+        - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id: to_timeout
+          sequence:
+            - service: input_boolean.turn_off
+              data:
+                entity_id:
+                  - input_boolean.clima_max
+
+script:
+  climate_lock_all:
+    alias: lock
+    icon: mdi:lock-outline
+    sequence:
+      - service: script.turn_on
+        entity_id:
+          - script.climate_lock
+      - service: switch.turn_on
+        entity_id:
+          - switch.bath_tvr_lock
+
+  climate_unlock_all:
+    alias: unlock
+    icon: mdi:lock-off-outline
+    sequence:
+      - service: script.turn_on
+        entity_id:
+          - script.climate_unlock
+      - service: switch.turn_off
+        entity_id:
+          - switch.bath_tvr_lock
+
+input_boolean:
+  clima_max:
+    icon: mdi:home-thermometer
+
+input_number:
+  clima_max:
+    name: max time
+    unit_of_measurement: 'min'
+    min: 60
+    max: 120
+    step: 5
+    icon: mdi:fan-clock

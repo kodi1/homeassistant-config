@@ -1,0 +1,203 @@
+automation:
+  - alias: timer_startup
+    id: timer_startup
+    trigger:
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.start_up_delay
+    condition:
+      condition: or
+      conditions:
+        - condition: state
+          entity_id: input_select.power_down_restart
+          state: pending
+    action:
+      - service: homeassistant.restart
+
+  - alias: restart
+    id: restart
+    trigger:
+      - platform: event
+        event_type: call_service
+        event_data:
+          domain: homeassistant
+          service: restart
+    condition:
+      condition: or
+      conditions:
+        - condition: state
+          entity_id: input_select.power_down_restart
+          state: 'on'
+    action:
+      - event: up_down_my
+        event_data:
+          data: stop
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.power_down_restart
+          option: 'off'
+      - service: logbook.log
+        data_template:
+          name: restart
+          message: power down restart off
+
+  - alias: startup
+    id: startup
+    trigger:
+      - platform: homeassistant
+        event: start
+    action:
+      - service: >
+          {%-
+              set scr = {
+                'off': 'script.startup',
+                'on': 'script.restart',
+                'pending': 'script.powerup'
+              }
+            -%}
+          {{ scr[states('input_select.power_down_restart')] }}
+
+script:
+  restart:
+    sequence:
+      - service: script.all_notify
+        data:
+          tit: hass
+          msg: restart in 3 min
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.power_down_restart
+          option: pending
+      - service: timer.start
+        data:
+          entity_id: timer.start_up_delay
+          duration: '00:03:00'
+
+  powerup:
+    sequence:
+      - service: script.all_notify
+        data:
+          tit: hass
+          msg: power start up
+      - service: script.startup
+
+  startup_mqtt:
+    sequence:
+      - repeat:
+          for_each:
+            - topic: cmnd/tasmotas/json
+              payload: { 'state': '' }
+            - topic: cmnd/tasmotas/json
+              payload: { 'shutterposition': '' }
+            - topic: cmnd/tasmotas/json
+              payload: { 'timers': '' }
+            - topic: cmnd/watermeter/json
+              payload: { 'water': '' }
+            - topic: DHPW/json
+              payload: cliame_dummy
+            - topic: cmnd/zha-bridge-city/json
+              payload: { 'ZbInfo': '0x054B' }
+            - topic: cmnd/zha-bridge-city/json
+              payload: { 'ZbInfo': '0xFA67' }
+            - topic: cmnd/zha-bridge-city/json
+              payload: { 'ZbInfo': '0x798B' }
+            - topic: cmnd/zha-bridge-city/json
+              payload: { 'ZbInfo': '0xA536' }
+            - topic: cmnd/zha-bridge-city/json
+              payload: { 'ZbInfo': '0x54EE' }
+            - topic: cmnd/zha-bridge-village/json
+              payload: { 'ZbInfo': '0x5616' }
+            - topic: cmnd/zha-bridge-village/json
+              payload: { 'ZbInfo': '0x9C32' }
+            - topic: cmnd/zha-bridge-village/json
+              payload: { 'ZbInfo': '0x105E' }
+            - topic: cmnd/zha-bridge-village/json
+              payload: { 'ZbInfo': '0x1357' }
+            - topic: cmnd/zha-bridge-village/json
+              payload: { 'ZbInfo': '0xCC62' }
+            - topic: cmnd/zha-bridge-village/json
+              payload: { 'ZbInfo': '0xFD9B' }
+            - topic: cmnd/zha-bridge-village/json
+              payload: { 'ZbInfo': '0x1170' }
+            - topic: cmnd/zha-bridge-village/json
+              payload: { 'ZbInfo': '0x0895' }
+            - topic: cmnd/zha-bridge-village/json
+              payload: { 'ZbInfo': '0x6DA8' }
+            - topic: cmnd/zha-bridge-village/json
+              payload: { 'ZbInfo': '0x03CC' }
+
+          sequence:
+            - service: mqtt.publish
+              data_template:
+                topic: >-
+                  {{repeat.item.topic}}
+                payload: >-
+                  {{repeat.item.payload | to_json }}
+
+  startup:
+    sequence:
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.power_down_restart
+          option: 'on'
+      - service: timer.start
+        data:
+          entity_id: timer.start_up_delay
+          duration: '00:10:00'
+      - service: script.turn_on
+        data:
+          entity_id:
+            - script.startup_mqtt
+      - delay:
+          milliseconds: 1500
+      - event: up_down_my
+        event_data:
+          data: start
+      - service: script.all_notify
+        data:
+          tit: hass
+          msg: start
+      - service: automation.turn_on
+        data:
+          entity_id:
+            - automation.living_light
+            - automation.kitchen_light
+            - automation.bed_light
+            - automation.office_light
+            - automation.hall_light
+            - automation.bath_light
+            - automation.wash_light
+      - delay:
+          seconds: 3
+      - event: lights_check
+        event_data:
+          light: turn_off
+      - service: automation.turn_on
+        entity_id:
+          - automation.root_home
+          - automation.root_not_home
+      - service: script.start_up_sound_bar
+      - service: script.start_up_bedroom_speaker
+      - service: script.kodi_wakeup
+      - delay:
+          seconds: 3
+      - service: shell_command.kodi_screensaver
+      - delay:
+          seconds: 3
+      - service: automation.turn_on
+        entity_id:
+          - automation.tv_ctrl
+      - service: script.start_up_delay_av_off
+
+input_select:
+  power_down_restart:
+    name: restart
+    icon: mdi:restart-alert
+    options:
+      - 'off'
+      - 'pending'
+      - 'on'
+
+timer:
+  start_up_delay:

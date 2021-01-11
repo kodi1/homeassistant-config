@@ -1,0 +1,312 @@
+homeassistant:
+  customize:
+    light.bed:
+      icon: mdi:track-light
+    automation.bed_light:
+      icon: mdi:lightbulb-auto
+      friendly_name: bed
+    automation.other_bed_light:
+      icon: mdi:lightbulb-auto
+      friendly_name: bed
+
+automation:
+  - id: bed_light
+    alias: bed_light
+    initial_state: false
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.bed_motion
+        to: 'on'
+        id: light_on
+      - platform: state
+        entity_id: binary_sensor.bed_occupancy
+        to: 'off'
+        for:
+          seconds: 60
+        id: light_off
+      - platform: state
+        entity_id: binary_sensor.living_motion
+        to: 'on'
+        id: light_off
+      - platform: state
+        entity_id: binary_sensor.office_motion
+        to: 'on'
+        id: light_off
+      - platform: event
+        event_type: lights_check
+        event_data:
+          light: turn_off
+        id: light_off
+
+    mode: restart
+    action:
+      - variables:
+          brightness_pct: >-
+            {%- if is_state('binary_sensor.night_mode', 'off') -%}
+              {{ range(85, 95, 2) | random }}
+            {%- else -%}
+              {{ range(1, 10, 2) | random }}
+            {%- endif -%}
+          color_temp: >-
+            {%- if is_state('binary_sensor.night_mode', 'off') -%}
+              {{ range(250, 350, 10) | random }}
+            {%- else -%}
+              {{ range(350, 450, 10) | random }}
+            {%- endif -%}
+          transition: >-
+            {%- if is_state('binary_sensor.night_mode', 'off') -%}
+              5
+            {%- else -%}
+              1
+            {%- endif -%}
+      - choose:
+        - conditions:
+          - condition: trigger
+            id: light_on
+          - condition: state
+            entity_id: light.bed
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.day
+            state: 'off'
+          sequence:
+            - service: script.bed_light_on
+              data:
+                brightness_pct: >-
+                  {{ brightness_pct }}
+                transition: >-
+                  {{ transition }}
+                color_temp: >-
+                  {{ color_temp }}
+
+        - conditions:
+          - condition: trigger
+            id: light_off
+          - condition: state
+            entity_id: light.bed
+            state: 'on'
+          - condition: state
+            entity_id: binary_sensor.bed_occupancy
+            state: 'off'
+          sequence:
+            - service: script.bed_light_off
+              data:
+                transition: >-
+                  {{ transition }}
+
+  - id: other_bed_light
+    alias: other_bed_light
+    trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.bed_motion
+          - binary_sensor.night_mode_ctrl
+        to: 'on'
+        id: light_on
+      - platform: state
+        entity_id: binary_sensor.bed_occupancy
+        to: 'off'
+        for:
+          seconds: 120
+        id: light_off
+      - platform: state
+        entity_id: binary_sensor.night_mode_ctrl
+        to: 'off'
+        id: light_ctrl_off
+      - platform: event
+        event_type: lights_check
+        event_data:
+          light: turn_off
+        id: light_ctrl_off
+
+    mode: restart
+    action:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id: light_on
+          - condition: state
+            entity_id: binary_sensor.bed_occupancy
+            state: 'on'
+          - condition: state
+            entity_id: binary_sensor.night_mode_ctrl
+            state: 'on'
+          - condition: state
+            entity_id: light.shutter_bed
+            state: 'off'
+          sequence:
+            - service: light.turn_on
+              target:
+                entity_id:
+                  - light.shutter_bed
+
+        - conditions:
+          - condition: trigger
+            id: light_off
+          - condition: state
+            entity_id: binary_sensor.bed_occupancy
+            state: 'off'
+          - condition: state
+            entity_id: light.shutter_bed
+            state: 'on'
+          sequence:
+            - service: light.turn_off
+              target:
+                entity_id:
+                  - light.shutter_bed
+
+        - conditions:
+          - condition: trigger
+            id: light_ctrl_off
+          - condition: state
+            entity_id: light.shutter_bed
+            state: 'on'
+          sequence:
+            - service: light.turn_off
+              target:
+                entity_id:
+                  - light.shutter_bed
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id: light_on
+          - condition: state
+            entity_id: binary_sensor.bed_occupancy
+            state: 'on'
+          - condition: state
+            entity_id: input_boolean.in_bed_dummy_switch
+            state: 'off'
+          - condition: state
+            entity_id: light.bed_wardrobe
+            state: 'off'
+          sequence:
+            - service: light.turn_on
+              target:
+                entity_id:
+                  - light.bed_wardrobe
+
+        - conditions:
+          - condition: trigger
+            id: light_off
+          - condition: state
+            entity_id: binary_sensor.bed_occupancy
+            state: 'off'
+          - condition: state
+            entity_id: light.bed_wardrobe
+            state: 'on'
+          sequence:
+            - service: light.turn_off
+              target:
+                entity_id:
+                  - light.bed_wardrobe
+
+        - conditions:
+          - condition: trigger
+            id: light_ctrl_off
+          - condition: state
+            entity_id: light.bed_wardrobe
+            state: 'on'
+          sequence:
+            - service: light.turn_off
+              target:
+                entity_id:
+                  - light.bed_wardrobe
+
+script:
+  bed_light_off:
+    sequence:
+      - service: light.turn_off
+        target:
+          entity_id: >-
+            {{
+                expand(state_attr('light.bed', 'entity_id')) |
+                  selectattr('state', 'eq', 'on') |
+                  map(attribute='entity_id') |
+                  list
+              }}
+        data:
+          transition: >-
+            {{ transition }}
+
+  bed_light_ctrl:
+    sequence:
+      - service: light.turn_on
+        target:
+          entity_id: >-
+            {{ target_light }}
+        data:
+          color_temp: >-
+            {{ color_temp }}
+          brightness_pct: 1
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - service: light.turn_on
+        target:
+          entity_id: >-
+            {{ target_light }}
+        data:
+          brightness_pct: >-
+            {{ brightness_pct }}
+          transition: >-
+            {{ transition }}
+
+  bed_light_on:
+    mode: restart
+    sequence:
+      - variables:
+          target_light: >-
+            {%- set l_off = expand(state_attr('light.bed', 'entity_id')) |
+                    selectattr('state', 'eq', 'off') |
+                    map(attribute='entity_id') |
+                    list
+              -%}
+            {%- if is_state('binary_sensor.night_mode', 'off') -%}
+              light.bed
+            {%- elif l_off -%}
+              {{
+                  l_off | random
+                }}
+            {%- else -%}
+              {{
+                  expand(state_attr('light.bed', 'entity_id')) |
+                    map(attribute='entity_id') |
+                    list | random
+                }}
+            {%- endif -%}
+      - choose:
+          - conditions:
+            - condition: state
+              entity_id: binary_sensor.night_mode
+              state: 'on'
+            sequence:
+              - service: script.bed_light_off
+                data:
+                  transition: 1
+
+      - service: script.bed_light_ctrl
+        data:
+          target_light: >-
+            {{ target_light }}
+          brightness_pct: >-
+            {{ brightness_pct }}
+          transition: >-
+            {{ transition }}
+          color_temp: >-
+            {{ color_temp }}
+
+light:
+  - platform: group
+    name: bed
+    entities:
+      - light.bed_1
+      - light.bed_2
+      - light.bed_3
+      - light.bed_4
+      - light.bed_5
+      - light.bed_6
+      - light.bed_7
+      - light.bed_8

@@ -1,0 +1,164 @@
+title: climate
+icon: mdi:thermometer-lines
+path: climate
+panel: true
+
+cards:
+  - type: vertical-stack
+    cards:
+      - type: custom:simple-thermostat
+        entity: climate.pump
+        unit: false
+        hide:
+          state: true
+          temperature: true
+        sensors:
+          - entity: sensor.ext_temp
+            decimals: 0
+            name: ext
+          - entity: sensor.water_living_climate
+            decimals: 1
+            name: water
+        header:
+          toggle:
+            entity: switch.pump
+            name: ''
+        decimals: 1
+        step_size: 1
+        name: false
+        layout:
+          step: row
+          mode:
+            headings: false
+        control: false
+
+      - type: custom:simple-thermostat
+        entity: climate.temp_living
+        unit: false
+        hide:
+          state: true
+        header:
+          name: living
+          icon: mdi:sofa-outline
+        decimals: 1
+        step_size: .5
+        layout:
+          step: row
+          mode:
+            headings: false
+            names: false
+        control: false
+
+      - type: custom:simple-thermostat
+        entity: climate.temp_bed
+        unit: false
+        hide:
+          state: true
+        header:
+          name: bed
+          icon: mdi:bed-king-outline
+        decimals: 1
+        step_size: .5
+        layout:
+          step: row
+          mode:
+            headings: false
+            names: false
+        control: false
+
+      - type: custom:simple-thermostat
+        entity: climate.temp_office
+        unit: false
+        hide:
+          state: true
+        header:
+          name: office
+          icon: mdi:desk
+        decimals: 1
+        step_size: .5
+        layout:
+          step: row
+          mode:
+            headings: false
+            names: false
+        control: false
+
+      - type: custom:simple-thermostat
+        entity: climate.bath_tvr
+        unit: false
+        header:
+          name: bath
+          icon: mdi:shower-head
+        decimals: 1
+        step_size: 0.5
+        name: false
+        layout:
+          step: row
+          mode:
+            headings: false
+            names: false
+        control: false
+
+      - type: custom:simple-thermostat
+        entity: climate.tank
+        unit: false
+        hide:
+          state: true
+          temperature: true
+        sensors:
+          - entity: sensor.tank_temp
+            decimals: 0
+            name: tank
+        header:
+          faults:
+            - entity: binary_sensor.pump_warning
+              icon: mdi:alert-outline
+          toggle:
+            entity: switch.tank
+            name: ''
+        decimals: 1
+        step_size: 1
+        layout:
+          step: row
+          mode:
+            headings: false
+            names: false
+        control: false
+
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        title: max
+        icon: mdi:weather-partly-snowy-rainy
+        entities:
+          - input_boolean.clima_max
+          - input_number.clima_max
+          - type: divider
+          - automation.clima_max_restore_fans
+          - automation.clima_max_restore_temps
+          - automation.clima_max_restore_switch
+
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        title: climate
+        icon: mdi:floor-plan
+        entities:
+          - binary_sensor.climate_night
+          - type: divider
+          - fan.living_climate
+          - fan.bed_climate
+          - fan.office_climate
+          - type: divider
+          - script.climate_lock_all
+          - script.climate_unlock_all
+
+      - type: entities
+        show_header_toggle: true
+        state_color: true
+        title: auto
+        icon: mdi:floor-plan
+        entities:
+          - automation.climate_night
+          - automation.bath_heating
+          - automation.water_boiler
