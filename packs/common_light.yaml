@@ -1,0 +1,250 @@
+homeassistant:
+  customize:
+    binary_sensor.day:
+      icon: mdi:weather-sunset-up
+      device_class: light
+    automation.night_mode_ctrl:
+      friendly_name: night ctrl
+      icon: mdi:weather-night-partly-cloudy
+    automation.motion_light_extend:
+      friendly_name: lights all
+      icon: mdi:lightbulb-group
+    binary_sensor.home_light_extend:
+      friendly_name: all lights
+    binary_sensor.light_video_pause:
+      friendly_name: video
+    binary_sensor.night_mode:
+      friendly_name: night
+    binary_sensor.night_mode_ctrl:
+      friendly_name: night ctrl
+
+automation:
+  - alias: motion_light_extend
+    id: motion_light_extend
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.home_light_extend
+        to: 'on'
+        for:
+          seconds: 5
+    actions:
+      - action: script.turn_on
+        data:
+          entity_id: script.lumi_double_switch_on
+
+binary_sensor:
+  - platform: tod
+    name: day
+    after: sunrise
+    after_offset: '-00:15:00'
+    before: sunset
+    before_offset: '+00:15:00'
+
+template:
+  - binary_sensor:
+    - name: home_light_extend
+      icon: mdi:lightbulb-group
+      device_class: light
+      delay_off:
+        seconds: 15
+      state: >-
+        {{
+            (
+              is_state('binary_sensor.day', 'off') and
+              is_state('device_tracker.n0ll', 'not_home') and
+              is_state('device_tracker.root', 'home') and
+              is_state('binary_sensor.hall_occupancy', 'on') and
+              is_state('binary_sensor.living_occupancy', 'on')  and
+              not (
+                is_state('media_player.livingtv', 'playing') or
+                is_state('media_player.livingtv', 'paused')
+              )
+            )
+          }}
+
+    - name: light_video_pause
+      icon: mdi:television-pause
+      device_class: light
+      delay_on:
+        seconds: 1
+      delay_off:
+        seconds: 3
+      state: >-
+        {{
+            (
+              is_state('binary_sensor.day', 'off') and
+              is_state('media_player.livingtv', 'paused') and
+              is_state('binary_sensor.kodi_screen_saver', 'on')
+            )
+          }}
+
+    - name: night_mode
+      icon: mdi:weather-night
+      device_class: light
+      delay_off:
+        seconds: 50
+      state: >-
+        {{
+          (is_state('input_boolean.in_bed_dummy_switch', 'on') or
+              is_state('binary_sensor.night_mode', 'on')
+            ) and
+            not (
+              is_state('device_tracker.n0ll', 'home') or
+                is_state('binary_sensor.day', 'on') or
+                is_state('media_player.ht_mt500_501_b34d6a', 'playing') or
+                is_state('media_player.livingtv', 'playing') or
+                is_state('timer.post_android_alarm', 'active')
+            )
+          }}
+
+    - name: night_mode_ctrl
+      device_class: light
+      state: >-
+        {{
+            int(states('sensor.living_window_lux'), 0) < 35 and
+              not (
+                    is_state('input_boolean.in_bed_dummy_switch', 'on') and
+                      is_state('device_tracker.n0ll', 'not_home') or
+                      is_state('media_player.livingtv', 'playing')
+                    )
+          }}
+      icon: >-
+        {%- if int(states('sensor.living_window_lux'), 30) < 80 -%}
+          mdi:weather-night-partly-cloudy
+        {%- else -%}
+          mdi:weather-sunset-up
+        {%- endif -%}
+      availability: >-
+        {{
+            not is_state('sensor.living_window_lux', 'unavailable')
+          }}
+
+input_number:
+  just_home_light_timer:
+    name: '@home'
+    icon: mdi:home-modern
+    unit_of_measurement: 'min'
+    min: 5
+    max: 15
+    step: 0.5
+
+  ctrl_delay:
+    name: ctrl delay
+    icon: mdi:lightbulb-group-outline
+    unit_of_measurement: ms
+    min: 500
+    max: 600
+    step: 5
+
+script:
+  light_extend_clear:
+    mode: restart
+    sequence:
+      - action: script.kitchen_autamation_restore
+      - action: script.living_autamation_restore
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: input_boolean.lumi_double_switch_1
+            state: 'on'
+          sequence:
+            - action: script.turn_on
+              data:
+                entity_id:
+                  - script.lumi_double_switch_off
+
+        - conditions:
+          - condition: state
+            entity_id: input_boolean.lumi_double_switch_1
+            state: 'off'
+          sequence:
+            - event: lights_check
+              event_data:
+                light: turn_off
+
+  lights_off:
+    mode: parallel
+    max: 16
+    trace:
+      stored_traces: 16
+    sequence:
+      - variables:
+          target_light: >-
+            {{
+                expand(state_attr(ctrl_light, 'entity_id')) |
+                                    selectattr('state', 'eq', 'on') |
+                                    map(attribute='entity_id') |
+                                    list
+              }}
+      - action: light.turn_off
+        target:
+          entity_id: >-
+            {%- if target_light -%}
+              {{ target_light }}
+            {%- else -%}
+              {{ ctrl_light }}
+            {%- endif -%}
+        data:
+          transition: >-
+            {{ transition  | default(1) }}
+
+  lights_on:
+    mode: parallel
+    max: 16
+    trace:
+      stored_traces: 16
+    sequence:
+      - variables:
+          target_light: >-
+            {%- set l_off = expand(state_attr(ctrl_light, 'entity_id')) |
+                                    selectattr('state', 'eq', 'off') |
+                                    map(attribute='entity_id') |
+                                    list
+              -%}
+            {%- if ctrl_all -%}
+              {{ ctrl_light }}
+            {%- elif l_off -%}
+              {{
+                  l_off | random
+                }}
+            {%- else -%}
+              {{
+                  expand(state_attr(ctrl_light, 'entity_id')) |
+                    map(attribute='entity_id') |
+                    list | random
+                }}
+            {%- endif -%}
+      - choose:
+          - conditions:
+            - condition: state
+              entity_id: binary_sensor.night_mode
+              state: 'on'
+            sequence:
+              - action: script.lights_off
+                data:
+                  ctrl_light: >-
+                    {{ ctrl_light }}
+                  transition: 1
+
+      - action: light.turn_on
+        target:
+          entity_id: >-
+            {{ target_light }}
+        data:
+          color_temp_kelvin: >-
+            {{ color_temp | default(3000) }}
+          brightness_pct: 1
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - action: light.turn_on
+        target:
+          entity_id: >-
+            {{ target_light }}
+        data:
+          brightness_pct: >-
+            {{ brightness_pct | default(50) }}
+          transition: >-
+            {{ transition | default(3) }}

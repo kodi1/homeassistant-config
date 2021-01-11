@@ -1,0 +1,233 @@
+homeassistant:
+  customize:
+    automation.in_bed:
+      icon: mdi:bed-king
+      friendly_name: in bed
+    automation.in_bed_light:
+      icon: mdi:lightbulb-on-outline
+      friendly_name: bed light
+    automation.bed_charger:
+      icon: mdi:battery-charging-outline
+      friendly_name: auto charge
+
+automation:
+  - alias: in_bed
+    id: in_bed
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.bed_in
+        to: 'on'
+        id: trigger_on
+      - trigger: state
+        entity_id: binary_sensor.hall_motion
+        to: 'on'
+        id: trigger_off
+      - trigger: state
+        entity_id: device_tracker.n0ll
+        to: home
+        id: trigger_off
+      - trigger: event
+        event_type: android_alarm
+        id: trigger_off
+    mode: restart
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id:
+                  - trigger_on
+              - condition: state
+                entity_id: input_boolean.in_bed_dummy_switch
+                state: 'off'
+              - condition: state
+                entity_id: device_tracker.root
+                state: home
+              - condition: template
+                value_template: >-
+                  {{ not is_state('media_player.livingtv', 'playing') }}
+              - condition: state
+                entity_id: device_tracker.n0ll
+                state: not_home
+              - condition: time
+                after: '23:00:00'
+                before: '07:00:00'
+            sequence:
+              - action: script.light_extend_clear
+              - wait_template: >-
+                  {{
+                      is_state('timer.lumi_double_switch_1_timer', 'idle')
+                    }}
+                timeout:
+                  seconds: 30
+                continue_on_timeout: true
+              - action: input_boolean.turn_on
+                data:
+                  entity_id: input_boolean.in_bed_dummy_switch
+              - action: automation.turn_off
+                data:
+                  entity_id: automation.bed_light
+              - delay:
+                  seconds: 3
+              - action: timer.start
+                entity_id: timer.dummy_in_bed
+                data:
+                  duration: '00:00:45'
+
+          - conditions:
+              - condition: trigger
+                id:
+                  - trigger_off
+              - condition: state
+                entity_id: input_boolean.in_bed_dummy_switch
+                state: 'on'
+              - condition: state
+                entity_id: device_tracker.root
+                state: home
+            sequence:
+              - action: input_boolean.turn_off
+                data:
+                  entity_id: input_boolean.in_bed_dummy_switch
+              - action: automation.turn_on
+                data:
+                  entity_id: automation.bed_light
+
+  - alias: in_bed_light
+    id: in_bed_light
+    triggers:
+      - trigger: event
+        event_type:
+          - timer.finished
+          - timer.restarted
+          - timer.started
+        event_data:
+          entity_id: timer.dummy_in_bed
+    conditions:
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: >-
+              {{
+                  is_state('binary_sensor.day', 'off') or
+                    is_state('light.bed', 'on')
+                }}
+    actions:
+      - variables:
+          cfg: >-
+            {% from 'tools.jinja' import light_cfg %}
+            {{ light_cfg(is_state('binary_sensor.night_mode', 'off')) | from_json }}
+      - action: script.turn_on
+        data:
+          entity_id: >-
+            {%-
+                set scr = {
+                  'timer.finished': 'script.lights_off',
+                  'timer.started': 'script.lights_on',
+                  'timer.restarted': 'script.lights_on'
+                }
+              -%}
+            {{ scr[trigger.event.event_type] }}
+          variables:
+            ctrl_light: light.bed
+            ctrl_all: >-
+              {{ is_state('binary_sensor.night_mode', 'off') }}
+            brightness_pct: >-
+              {{ cfg.brightness }}
+            transition: >-
+              {{ cfg.transition }}
+            color_temp: >-
+              {{ cfg.temp }}
+
+  - alias: bed_charger
+    id: bed_charger
+    triggers:
+      - trigger: zone
+        entity_id: device_tracker.root
+        zone: zone.home
+        event: enter
+        id: home_enter
+      - trigger: zone
+        entity_id: device_tracker.root
+        zone: zone.home
+        event: leave
+        id: home_exit
+      - trigger: numeric_state
+        entity_id: sensor.pixel_6a_battery_level
+        below: 10
+        id: charge_start
+      - trigger: time
+        at: '05:50:00'
+        id: time_start
+      - trigger: state
+        entity_id: sensor.pixel_6a_charger_type
+        to: 'none'
+        id: charge_stop
+        for:
+          seconds: 30
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id:
+                  - time_start
+              - condition: and
+                conditions:
+                  - condition: numeric_state
+                    entity_id: sensor.pixel_6a_battery_level
+                    below: 5
+                  - condition: trigger
+                    id:
+                      - home_enter
+                      - charge_start
+          - condition: state
+            entity_id: device_tracker.root
+            state: home
+          - condition: state
+            entity_id: switch.bed_switch_2
+            state: 'off'
+          sequence:
+            - action: switch.turn_on
+              entity_id:
+                - switch.bed_switch_2
+
+        - conditions:
+          - condition: or
+            conditions:
+            - condition: and
+              conditions:
+                - condition: trigger
+                  id:
+                    - charge_stop
+                - condition: numeric_state
+                  entity_id: sensor.pixel_6a_battery_level
+                  above: 95
+            - condition: and
+              conditions:
+                - condition: trigger
+                  id:
+                    - home_exit
+                - condition: state
+                  entity_id: sensor.pixel_6a_charger_type
+                  state: 'none'
+          - condition: state
+            entity_id: switch.bed_switch_2
+            state: 'on'
+          sequence:
+            - action: switch.turn_off
+              entity_id:
+                - switch.bed_switch_2
+
+input_boolean:
+  in_bed_dummy_switch:
+    name: bed
+    icon: mdi:toggle-switch
+    initial: off
+
+timer:
+  dummy_in_bed:
+    name: sleep
+    icon: mdi:clock
+    duration: '00:03:00'

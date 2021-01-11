@@ -1,0 +1,248 @@
+homeassistant:
+  customize:
+    light.living:
+      icon: mdi:track-light
+    automation.living_light:
+      friendly_name: living
+      icon: mdi:lightbulb-auto
+    automation.other_living_light:
+      friendly_name: living
+      icon: mdi:lightbulb-auto
+
+automation:
+  - alias: living_light
+    id: living_light
+    initial_state: false
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.living_motion
+        to: 'on'
+        id: light_on
+      - trigger: state
+        entity_id: binary_sensor.living_occupancy
+        to: 'off'
+        for:
+          seconds: 60
+        id: light_off
+      - trigger: state
+        entity_id: binary_sensor.bed_motion
+        to: 'on'
+        id: light_off
+      - trigger: state
+        entity_id: binary_sensor.office_motion
+        to: 'on'
+        id: light_off
+      - trigger: state
+        entity_id: binary_sensor.light_video_pause
+        to: 'on'
+        id: light_on
+      - trigger: state
+        entity_id: binary_sensor.light_video_pause
+        to: 'off'
+        id: light_off_video
+      - trigger: event
+        event_type: lights_check
+        event_data:
+          light: turn_off
+        id: light_off
+
+    mode: restart
+    actions:
+      - variables:
+          cfg: >-
+            {% from 'tools.jinja' import light_cfg %}
+            {{ light_cfg(
+                    is_state('binary_sensor.night_mode', 'off') and
+                      is_state('binary_sensor.light_video_pause', 'off')
+                  ) | from_json
+              }}
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: light.living
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.kodi_active
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.day
+            state: 'off'
+          - condition: numeric_state
+            entity_id: sensor.living_lux
+            value_template: >-
+              {{ float(state.state, 30) }}
+            below: 40
+          sequence:
+            - action: script.lights_on
+              data:
+                ctrl_light: light.living
+                ctrl_all: >-
+                  {{ is_state('binary_sensor.night_mode', 'off') }}
+                brightness_pct: >-
+                  {{ cfg.brightness }}
+                transition: >-
+                  {{ cfg.transition }}
+                color_temp: >-
+                  {{ cfg.temp }}
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+          - condition: state
+            entity_id: light.living
+            state: 'on'
+          - condition: state
+            entity_id: binary_sensor.light_video_pause
+            state: 'off'
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: binary_sensor.living_occupancy
+                state: 'off'
+              - condition: state
+                entity_id: binary_sensor.kodi_active
+                state: 'on'
+          sequence:
+            - action: script.lights_off
+              data:
+                ctrl_light: light.living
+                transition: >-
+                  {{ cfg.transition }}
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off_video
+          - condition: state
+            entity_id: light.living
+            state: 'on'
+          sequence:
+            - action: script.lights_off
+              data:
+                ctrl_light: light.living
+                transition: >-
+                  {{ cfg.transition }}
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          sequence:
+            - event: kitchen_light_1
+              event_data:
+                ctrl: living_on
+                brightness_pct: >-
+                  {{ cfg.brightness }}
+                temp: >-
+                  {%- if is_state('light.living', 'on') -%}
+                    {{ state_attr('light.living', 'color_temp_kelvin') }}
+                  {%- else -%}
+                    {{ cfg.temp }}
+                  {%- endif -%}
+                transition: >-
+                  {{ cfg.transition }}
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+          sequence:
+            - event: kitchen_light_1
+              event_data:
+                ctrl: living_off
+                transition: >-
+                  {{ cfg.transition }}
+
+  - alias: other_living_light
+    id: other_living_light
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.living_motion
+          - binary_sensor.night_mode_ctrl
+        to: 'on'
+        id: light_on
+      - trigger: state
+        entity_id: binary_sensor.living_occupancy
+        to: 'off'
+        for:
+          seconds: 120
+        id: light_off
+      - trigger: state
+        entity_id: binary_sensor.night_mode_ctrl
+        to: 'off'
+        id: light_ctrl_off
+      - trigger: event
+        event_type: lights_check
+        event_data:
+          light: turn_off
+        id: light_ctrl_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: binary_sensor.living_occupancy
+            state: 'on'
+          - condition: state
+            entity_id: binary_sensor.night_mode_ctrl
+            state: 'on'
+          - condition: state
+            entity_id: light.shutter_living
+            state: 'off'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.shutter_living
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+          - condition: state
+            entity_id: binary_sensor.living_occupancy
+            state: 'off'
+          - condition: state
+            entity_id: light.shutter_living
+            state: 'on'
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id:
+                  - light.shutter_living
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_ctrl_off
+          - condition: state
+            entity_id: light.shutter_living
+            state: 'on'
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id:
+                  - light.shutter_living
+
+light:
+  - platform: group
+    name: living
+    entities:
+      - light.living_1
+      - light.living_2
+      - light.living_3
+      - light.living_4
+      - light.living_5
+      - light.living_6
+      - light.living_7
