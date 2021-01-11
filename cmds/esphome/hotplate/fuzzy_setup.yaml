@@ -1,0 +1,64 @@
+- lambda: |-
+    auto fuzzy = id(fuzzy_controller).get();
+
+    // --- 1. INPUTS (Corrected Boost Sign) ---
+    FuzzySet *err_boost = new FuzzySet(15.0, 20.0, 200.0, 200.0); // Turbo above 15-25°C
+    FuzzySet *err_above = new FuzzySet(-200.0, -200.0, -5.5, 0.0);
+    FuzzySet *err_zero  = new FuzzySet(-0.5, 0.0, 0.0, 0.5);
+    FuzzySet *err_below = new FuzzySet(0.0, 1.0, 10.0, 20.0); // Blends into Boost
+
+    FuzzyInput *error_input = new FuzzyInput(1);
+    error_input->addFuzzySet(err_boost);
+    error_input->addFuzzySet(err_above);
+    error_input->addFuzzySet(err_zero);
+    error_input->addFuzzySet(err_below);
+    fuzzy->addFuzzyInput(error_input);
+
+    FuzzySet *rate_negative = new FuzzySet(-5.0, -5.0, -0.40, 0.0);
+    FuzzySet *rate_steady   = new FuzzySet(-0.25, 0.0, 0.0, 0.25);
+    FuzzySet *rate_positive = new FuzzySet(0.0, 0.40, 5.0, 5.0);
+
+    FuzzyInput *rate_input = new FuzzyInput(2);
+    rate_input->addFuzzySet(rate_negative);
+    rate_input->addFuzzySet(rate_steady);
+    rate_input->addFuzzySet(rate_positive);
+    fuzzy->addFuzzyInput(rate_input);
+
+    // --- 2. OUTPUTS (Overlapped Mid Sets) ---
+    FuzzySet *p_low      = new FuzzySet(0.00, 0.05, 0.07, 0.11); 
+    FuzzySet *p_mid_low  = new FuzzySet(0.08, 0.13, 0.13, 0.18); 
+    FuzzySet *p_mid_high = new FuzzySet(0.13, 0.20, 0.20, 0.22); 
+    FuzzySet *p_high     = new FuzzySet(0.50, 0.80, 1.00, 1.00); 
+
+    FuzzyOutput *power = new FuzzyOutput(1);
+    power->addFuzzySet(p_low);
+    power->addFuzzySet(p_mid_low);
+    power->addFuzzySet(p_mid_high);
+    power->addFuzzySet(p_high);
+    fuzzy->addFuzzyOutput(power);
+
+    // --- 3. CONSEQUENTS ---
+    FuzzyRuleConsequent *then_low      = new FuzzyRuleConsequent(); then_low->addOutput(p_low);
+    FuzzyRuleConsequent *then_mid_low  = new FuzzyRuleConsequent(); then_mid_low->addOutput(p_mid_low);
+    FuzzyRuleConsequent *then_mid_high = new FuzzyRuleConsequent(); then_mid_high->addOutput(p_mid_high);
+    FuzzyRuleConsequent *then_high     = new FuzzyRuleConsequent(); then_high->addOutput(p_high);
+
+    // --- 4. RULES ---
+    int rule_counter = 1;
+    FuzzyRuleAntecedent *ante;
+
+    // Boost Logic
+    ante = new FuzzyRuleAntecedent(); ante->joinSingle(err_boost); fuzzy->addFuzzyRule(new FuzzyRule(rule_counter++, ante, then_high));
+
+    // Normal Rules (Blended via overlap)
+    ante = new FuzzyRuleAntecedent(); ante->joinWithAND(err_below, rate_positive); fuzzy->addFuzzyRule(new FuzzyRule(rule_counter++, ante, then_mid_low));
+    ante = new FuzzyRuleAntecedent(); ante->joinWithAND(err_below, rate_steady);   fuzzy->addFuzzyRule(new FuzzyRule(rule_counter++, ante, then_mid_high));
+    ante = new FuzzyRuleAntecedent(); ante->joinWithAND(err_below, rate_negative); fuzzy->addFuzzyRule(new FuzzyRule(rule_counter++, ante, then_mid_high));
+
+    ante = new FuzzyRuleAntecedent(); ante->joinWithAND(err_zero, rate_positive);  fuzzy->addFuzzyRule(new FuzzyRule(rule_counter++, ante, then_mid_high));
+    ante = new FuzzyRuleAntecedent(); ante->joinWithAND(err_zero, rate_steady);    fuzzy->addFuzzyRule(new FuzzyRule(rule_counter++, ante, then_mid_low));
+    ante = new FuzzyRuleAntecedent(); ante->joinWithAND(err_zero, rate_negative);  fuzzy->addFuzzyRule(new FuzzyRule(rule_counter++, ante, then_mid_low));
+
+    ante = new FuzzyRuleAntecedent(); ante->joinWithAND(err_above, rate_positive); fuzzy->addFuzzyRule(new FuzzyRule(rule_counter++, ante, then_mid_low));
+    ante = new FuzzyRuleAntecedent(); ante->joinWithAND(err_above, rate_steady);   fuzzy->addFuzzyRule(new FuzzyRule(rule_counter++, ante, then_mid_low));
+    ante = new FuzzyRuleAntecedent(); ante->joinWithAND(err_above, rate_negative); fuzzy->addFuzzyRule(new FuzzyRule(rule_counter++, ante, then_low));

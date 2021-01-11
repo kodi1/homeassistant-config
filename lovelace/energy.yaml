@@ -1,0 +1,209 @@
+title: energy
+icon: mdi:transmission-tower
+path: energy
+panel: true
+
+cards:
+  - type: vertical-stack
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.mains_voltage
+                state_adaptive_color: true
+            hours_to_show: 24
+            aggregate_func: median
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+              legend: false
+              graph: line
+            color_thresholds:
+              - value: 210
+                color: '#FFCC00'
+              - value: 220
+                color: '#00CC00'
+              - value: 235
+                color: '#008000'
+              - value: 245
+                color: '#CC0000'
+            # color_thresholds_transition: hard
+            hour24: true
+            group_by: hour
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.mains_power
+                state_adaptive_color: true
+            hours_to_show: 24
+            aggregate_func: median
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+              graph: line
+            color_thresholds:
+              - value: 100
+                color: '#00CC00'
+              - value: 1000
+                color: '#008000'
+              - value: 2000
+                color: '#138D75'
+              - value: 4000
+                color: '#FFCC00'
+              - value: 6500
+                color: '#CC0000'
+            hour24: true
+            group_by: hour
+            align_state: center
+            points_per_hour: 2
+
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            name: ''
+            entity: sensor.mains_freq
+            min: 49.9
+            max: 50.1
+            severity:
+            segments:
+              - from: 0
+                color: red
+              - from: 49.96
+                color: gold
+              - from: 49.98
+                color: green
+              - from: 50.02
+                color: gold
+              - from: 50.04
+                color: red
+          - type: gauge
+            name: ''
+            entity: sensor.mains_factor
+            min: 30
+            max: 100
+            segments:
+              - from: 0
+                color: red
+              - from: 70
+                color: orangered
+              - from: 80
+                color: gold
+              - from: 90
+                color: green
+
+      - type: horizontal-stack
+        cards:
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - type: section
+                label: peak
+              - sensor.daily_energy_peak
+              - sensor.monthly_energy_peak
+              - type: section
+                label: offpeak
+              - sensor.daily_energy_offpeak
+              - sensor.monthly_energy_offpeak
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - type: section
+                label: tariff
+              - select.daily_energy
+              - select.monthly_energy
+              - type: divider
+              - automation.tariff_switch
+
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            name: ''
+            entity: sensor.city_water_flow
+            min: 0
+            max: 12
+            segments:
+              - from: 0
+                color: gren
+              - from: 5
+                color: gold
+              - from: 8
+                color: orangered
+              - from: 11
+                color: red
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - type: section
+                label: water
+              - sensor.city_water_m3
+              - sensor.daily_water
+              - type: divider
+              - input_number.whater_meter_calibration
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.daily_energy_peak
+                name: peak
+                color: red
+              - entity: sensor.daily_energy_offpeak
+                name: offpeak
+                color: green
+            hours_to_show: 720
+            aggregate_func: max
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: false
+              legend: true
+              state: true
+              graph: line
+              fill: fade
+              # points: hoover
+            # color_thresholds_transition: hard
+            hour24: true
+            group_by: date
+            align_state: center
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.daily_water
+                name: water
+                state_adaptive_color: true
+            hours_to_show: 720
+            aggregate_func: max
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: false
+              legend: true
+              state: true
+              graph: line
+              fill: fade
+            color_thresholds:
+              - value: 60
+                color: '#9FE2BF'
+              - value: 80
+                color: '#7DF9FF'
+              - value: 100
+                color: '#40E0D0'
+              - value: 120
+                color: '#00FFFF'
+              - value: 150
+                color: '#0437F2'
+            # color_thresholds_transition: hard
+            hour24: true
+            group_by: date
+            align_state: center

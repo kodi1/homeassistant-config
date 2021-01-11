@@ -1,0 +1,79 @@
+light:
+  - platform: status_led
+    id: board_led
+    pin: $board_led
+
+  - platform: monochromatic
+    output: backlight_pwm
+    id: back_light
+    restore_mode: ALWAYS_ON
+
+switch:
+  - platform: shutdown
+    id: esphome_shutdown
+
+  - platform: restart
+    id: esphome_restart
+
+output:
+  - platform: ledc
+    pin: $led_0
+    id: output_0
+
+  - platform: ledc
+    pin: $bl_lcd
+    id: backlight_pwm
+
+i2c:
+  - id: ext_bus
+    frequency: 800kHz
+    sda: $ext_sda
+    scl: $ext_scl
+    scan: true
+
+  - id: touch_i2c
+    frequency: 400kHz
+    sda: $sda_touch
+    scl: $clk_touch
+
+spi:
+  - id: lcd_bus
+    clk_pin:  $mclk_lcd
+    mosi_pin: $mosi_lcd
+    miso_pin: $miso_lcd
+
+display:
+  - platform: mipi_spi
+    id: lcd
+    spi_id: lcd_bus
+    model: ST7796
+    dc_pin: $dc_lcd
+    reset_pin: $rst_lcd
+    cs_pin: $cs_lcd
+    rotation: 180
+
+touchscreen:
+  - platform: ft63x6
+    i2c_id: touch_i2c
+    display: lcd
+    id: touch
+    update_interval: 100ms
+    reset_pin: $rst_touch
+    transform:
+      mirror_x: true
+      mirror_y: true
+
+mlx90640:
+  id: termal
+  i2c_id: ext_bus
+  update_interval: 500ms
+  address: 0x33 # MLX90640 Address
+  refresh_rate: 0x05 # 0x05 For 16Hz or 0x04 for 8Hz 0x3 for 4Hz
+  min_temperature:
+    id: min_temp
+  max_temperature:
+    id: max_temp
+  median_temperature:
+    id: mdian_temp
+  mean_temperature:
+    id: mean_temp

@@ -1,0 +1,113 @@
+template:
+  - trigger:
+    - trigger: mqtt
+      topic: lora/msh/Bulgaria/2/json/Bulgaria/!9e9fab40
+      variables:
+        p: >-
+          {% set p = trigger.payload_json.payload
+              if trigger.payload_json is defined
+              and trigger.payload_json.payload is defined %}
+          {{ p }}
+
+    sensor:
+      - name: sof_gw_batt
+        unique_id: sof_gw_batt
+        device_class: voltage
+        unit_of_measurement: V
+        state: >-
+          {% if p and p.voltage_ch1 is defined %}
+            {{ p.voltage_ch1 | float(0) | round(2) }}
+          {% else %}
+            {{ this.state | float(0) | round(2) }}
+          {% endif %}
+        attributes:
+          current: >-
+            {% if p and p.current_ch1 is defined %}
+              {{ p.current_ch1 | float(0) | round(2) }}
+            {% else %}
+              {{ state_attr(this.entity_id, 'current') | float(0) | round(2) }}
+            {% endif %}
+          last_update: >-
+            {% if trigger.payload_json.timestamp is defined
+                  and p.voltage_ch1 %}
+              {{ as_datetime(trigger.payload_json.timestamp) }}
+            {% else %}
+              {{ state_attr(this.entity_id, 'last_update') }}
+            {% endif %}
+        icon: mdi:flash
+
+      - name: sof_gw_temp
+        unique_id: sof_gw_temp
+        device_class: temperature
+        unit_of_measurement: °C
+        state: >-
+          {% if p and p.temperature is defined %}
+            {{ p.temperature | float | round(1) }}
+          {% else %}
+            {{ this.state | float(0) | round(2) }}
+          {% endif %}
+        attributes:
+          humidity: >-
+            {% set p = trigger.payload_json.payload
+                if trigger.payload_json is defined
+                and trigger.payload_json.payload is defined %}
+            {% if p and p.relative_humidity is defined %}
+              {{ p.relative_humidity | float(0) | round(2) }}
+            {% else %}
+              {{ state_attr(this.entity_id, 'humidity') | float(0) | round(2) }}
+            {% endif %}
+          pressure: >-
+            {% set p = trigger.payload_json.payload
+                if trigger.payload_json is defined
+                and trigger.payload_json.payload is defined %}
+            {% if p and p.barometric_pressure is defined %}
+              {{ p.barometric_pressure | float(0) | round(2) }}
+            {% else %}
+              {{ state_attr(this.entity_id, 'pressure') | float(0) | round(2) }}
+            {% endif %}
+          last_update: >-
+            {% if trigger.payload_json.timestamp is defined
+                  and p.temperature is defined %}
+              {{ as_datetime(trigger.payload_json.timestamp) }}
+            {% else %}
+              {{ state_attr(this.entity_id, 'last_update') }}
+            {% endif %}
+        icon: mdi:thermometer
+
+script:
+  lora_send:
+    alias: send
+    mode: restart
+    sequence:
+      - variables:
+          gw_id: >
+            {%-
+                set _val = {
+                    'sof': '!9e9fab40',
+                    'stz': '!db2f5ee4',
+                    'mir': '!db2f6ed8',
+                  }
+              -%}
+              {{ _val[states('input_select.lora_gw')] }}
+      - service: meshtastic_tracker.send_packet
+        data:
+          from_id: >-
+            {{
+                gw_id
+              }}
+          text: >-
+            {{
+                now().strftime('%H:%M:%S hass.io test')
+              }}
+          to_id: '!ba66fd50'
+      - delay:
+          milliseconds: 500
+
+input_select:
+  lora_gw:
+    name: lora gw
+    options:
+      - sof
+      - stz
+      - mir
+    icon: mdi:antenna

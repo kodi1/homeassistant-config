@@ -1,0 +1,53 @@
+title: bath
+icon: mdi:shower-head
+path: bath
+panel: true
+
+cards:
+  - type: vertical-stack
+    cards:
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - sensor.bath_hum
+          - sensor.hum_diff
+          - sensor.bath_hum_change
+          - type: divider
+          - binary_sensor.showering
+          - binary_sensor.bath_fan
+          - counter.bath_motion
+          - counter.water_motion
+
+      - type: entities
+        state_color: true
+        show_header_toggle: true
+        title: switch
+        entities:
+          - switch.water_valve
+          - type: divider
+          - switch.bath_fan
+          - switch.wash_fan
+          - type: divider
+          - switch.water_valve_2
+
+      - type: entities
+        state_color: true
+        show_header_toggle: true
+        title: fans
+        entities:
+          - input_boolean.fan_bath_time
+          - input_boolean.fan_wash_time
+          - type: divider
+          - input_number.fan_bath_time
+          - input_number.fan_wash_time
+
+      - type: entities
+        state_color: true
+        show_header_toggle: true
+        title: auto
+        entities:
+          - automation.water_city_1
+          - automation.bath_fan
+          - automation.wash_fan
+          - automation.in_shower

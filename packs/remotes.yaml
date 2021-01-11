@@ -1,0 +1,1063 @@
+homeassistant:
+  customize:
+    automation.lumi_switch_double_trigger_1:
+      friendly_name: lights all
+      icon: mdi:lightbulb-group
+    automation.office_switch:
+      friendly_name: office
+      icon: mdi:chair-rolling
+    automation.night_light_switch:
+      friendly_name: night
+      icon: mdi:track-light
+    automation.kitchen_switch:
+      friendly_name: kitchen
+      icon: mdi:countertop-outline
+    automation.living_switch:
+      friendly_name: living
+      icon: mdi:sofa-outline
+
+input_boolean:
+  lumi_double_switch_1:
+    initial: off
+
+input_number:
+  lumi_double_switch_1_time:
+    unit_of_measurement: 'min'
+    min: 3
+    max: 10
+    step: 0.5
+    icon: mdi:camera-timer
+
+timer:
+  lumi_double_switch_1_timer:
+    icon: mdi:timer-outline
+    duration: '00:00:30'
+
+script:
+  lumi_all_lights_on:
+    sequence:
+      - variables:
+          brightness_pct_k: >-
+            {%- if is_state('binary_sensor.night_mode', 'off') -%}
+              {{ range(80, 90, 2) | random }}
+            {%- else -%}
+              {{ range(35, 45, 2) | random }}
+            {%- endif -%}
+          cfg: >-
+            {% from 'tools.jinja' import light_cfg %}
+            {{ light_cfg(is_state('binary_sensor.night_mode', 'off')) | from_json }}
+          ctrl_all: >-
+            {{ is_state('binary_sensor.night_mode', 'off') }}
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: input_boolean.lumi_double_switch_1
+            state: 'off'
+          - condition: state
+            entity_id: timer.lumi_double_switch_1_timer
+            state: 'idle'
+      - action: scene.create
+        data:
+          scene_id: lumi_double_switch
+          snapshot_entities:
+            - input_boolean.lumi_double_switch_1
+            - light.living_1
+            - light.living_2
+            - light.living_3
+            - light.living_4
+            - light.living_5
+            - light.living_6
+            - light.living_7
+            - light.bed_1
+            - light.bed_2
+            - light.bed_3
+            - light.bed_4
+            - light.bed_5
+            - light.bed_6
+            - light.bed_7
+            - light.bed_8
+            - light.office_1
+            - light.office_2
+            - light.office_3
+            - light.office_4
+            - light.office_5
+            - light.office_6
+            - light.office_7
+            - light.office_8
+            - light.kitchen_1
+            - light.kitchen_2
+            - light.kitchen_3
+            - light.kitchen_4
+            - light.kitchen_5
+            - light.kitchen_6
+            - light.kitchen_7
+            - light.kitchen_led
+            - light.hall
+            - light.bath
+            - light.wash
+            - light.shutter_living
+            - light.shutter_bed
+            - light.shutter_office
+            - light.bed_wardrobe
+            - light.office_wardrobe
+            - automation.living_light
+            - automation.kitchen_light
+            - automation.bed_light
+            - automation.office_light
+            - automation.hall_light
+            - automation.bath_light
+            - automation.wash_light
+            - automation.motion_light_extend
+            - automation.other_living_light
+            - automation.other_bed_light
+            - automation.other_office_light
+            - timer.lumi_double_switch_1_timer
+      - action: timer.start
+        data:
+          entity_id: timer.lumi_double_switch_1_timer
+          duration: >-
+            {{ time_t | string }}
+      - action: input_boolean.turn_on
+        entity_id: input_boolean.lumi_double_switch_1
+      - action: automation.turn_off
+        data:
+          entity_id:
+            - automation.living_light
+            - automation.kitchen_light
+            - automation.bed_light
+            - automation.office_light
+            - automation.hall_light
+            - automation.bath_light
+            - automation.wash_light
+            - automation.motion_light_extend
+            - automation.other_living_light
+            - automation.other_bed_light
+            - automation.other_office_light
+      - action: light.turn_on
+        target:
+          entity_id:
+            - light.hall
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - action: script.lights_on
+        data:
+          ctrl_light: light.living
+          ctrl_all: >-
+            {{ ctrl_all }}
+          brightness_pct: >-
+            {{ cfg.brightness }}
+          transition: >-
+            {{ cfg.transition }}
+          color_temp: >-
+            {{ cfg.temp }}
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - action: script.lights_on
+        data:
+          ctrl_light: light.bed
+          ctrl_all: >-
+            {{ ctrl_all }}
+          brightness_pct: >-
+            {{ cfg.brightness }}
+          transition: >-
+            {{ cfg.transition }}
+          color_temp: >-
+            {{ cfg.temp }}
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - action: light.turn_on
+        target:
+          entity_id:
+            - light.bath
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - action: script.lights_on
+        data:
+          ctrl_light: light.office
+          ctrl_all: >-
+            {{ ctrl_all }}
+          brightness_pct: >-
+            {{ cfg.brightness }}
+          transition: >-
+            {{ cfg.transition }}
+          color_temp: >-
+            {{ cfg.temp }}
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - action: light.turn_on
+        target:
+          entity_id:
+            - light.wash
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - action: light.turn_on
+        target:
+          entity_id:
+            - light.kitchen_led
+      - action: light.turn_on
+        target:
+          entity_id:
+            - light.kitchen_led
+        data:
+          brightness_pct: >-
+            {{ brightness_pct_k }}
+          transition: >-
+            {{ cfg.transition }}
+      - action: script.lights_on
+        data:
+          ctrl_light: light.kitchen
+          ctrl_all: >-
+            {{ ctrl_all }}
+          brightness_pct: >-
+            {{ cfg.brightness }}
+          transition: >-
+            {{ cfg.transition }}
+          color_temp: 4000
+      - delay:
+          milliseconds: >-
+            {{
+                states('input_number.ctrl_delay') | int (100)
+              }}
+      - action: light.turn_on
+        target:
+          entity_id:
+            - light.shutter_living
+            - light.shutter_bed
+            - light.shutter_office
+            - light.bed_wardrobe
+            - light.office_wardrobe
+      - event: kitchen_light_1
+        event_data:
+          ctrl: kitchen_on
+          brightness_pct: >-
+            {{ range(80, 90, 2) | random }}
+          color_temp: >-
+            {{ 4000 }}
+          transition: >-
+            {{ 1 }}
+
+  lumi_double_switch_off:
+    alias: all off
+    icon: mdi:toggle-switch-off
+    sequence:
+      - action: scene.turn_on
+        data:
+          entity_id: scene.lumi_double_switch
+      - delay:
+          milliseconds: 500
+      - event: lights_check
+        event_data:
+          light: turn_off
+
+  lumi_double_switch_on:
+    alias: all on
+    icon: mdi:toggle-switch
+    sequence:
+      - action: script.lumi_all_lights_on
+        data:
+          time_t: >-
+            {{ (states('input_number.lumi_double_switch_1_time') | float * 60.0) | int(0) }}
+
+  kitchen_autamation_restore:
+    sequence:
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: automation.kitchen_light
+            state: 'off'
+          sequence:
+            - action: automation.turn_on
+              data:
+                entity_id:
+                  - automation.kitchen_light
+
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: automation.kitchen_light_1
+            state: 'off'
+          sequence:
+            - action: automation.turn_on
+              data:
+                entity_id:
+                  - automation.kitchen_light_1
+
+  living_autamation_restore:
+    sequence:
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: automation.living_light
+            state: 'off'
+          sequence:
+            - action: automation.turn_on
+              data:
+                entity_id:
+                  - automation.living_light
+
+automation:
+  - alias: lumi_switch_double_trigger_1
+    id: lumi_switch_double_trigger_1
+    triggers:
+      - trigger: mqtt
+        topic: zigbee2mqtt/living-cube
+        value_template: >-
+          {{ value_json.action | default(None) }}
+        payload: shake
+      - trigger: mqtt
+        topic: zigbee2mqtt/bed-button
+        value_template: >-
+          {{ value_json.action | default(None) }}
+        payload: shake
+      - trigger: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.lumi_double_switch_1_timer
+    actions:
+      - action: >
+          {%-
+              set scr = {
+                'on': 'script.lumi_double_switch_off',
+                'off': 'script.lumi_double_switch_on'
+              }
+            -%}
+          {{ scr[states('input_boolean.lumi_double_switch_1')] }}
+
+  - alias: down_lumi_switch_double_trigger_1
+    id: down_lumi_switch_double_trigger_1
+    triggers:
+      - trigger: event
+        event_type: up_down_my
+        event_data:
+          data: 'stop'
+    conditions:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: input_boolean.lumi_double_switch_1
+            state: 'on'
+    actions:
+      - action: script.lumi_double_switch_off
+
+  - alias: office_switch
+    id: office_switch
+    triggers:
+      - trigger: mqtt
+        topic: zigbee2mqtt/office-button
+        value_template: >-
+          {{ value_json.action | default(None) }}
+        payload: single
+        id: switch_low
+      - trigger: mqtt
+        topic: zigbee2mqtt/office-button
+        value_template: >-
+          {{ value_json.action | default(None) }}
+        payload: double
+        id: switch_high
+      - trigger: mqtt
+        topic: zigbee2mqtt/office-button
+        value_template: >-
+          {{ value_json.action | default(None) }}
+        payload: long
+        id: switch_off_hold
+      - trigger: state
+        entity_id: device_tracker.n0ll
+        to: not_home
+        for:
+          seconds: 30
+        id: switch_off_pc
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - switch_high
+              - switch_low
+          - condition: state
+            entity_id: automation.office_light
+            state: 'on'
+          sequence:
+            - action: automation.turn_off
+              target:
+                entity_id:
+                  - automation.office_light
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - switch_high
+              - switch_low
+          - condition: state
+            entity_id: light.office_window
+            state: 'on'
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id:
+                  - light.office_window
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - switch_high
+              - switch_low
+          sequence:
+            - action: script.lights_on
+              data:
+                ctrl_light: light.office_desk
+                ctrl_all: true
+                brightness_pct: >-
+                  {%- set br = {
+                          'switch_low': 5,
+                          'switch_high': 90,
+                        }
+                    -%}
+                  {{ br[trigger.id] }}
+                transition: 3
+                color_temp: 4000
+
+        - conditions:
+          - condition: state
+            entity_id: automation.office_light
+            state: 'off'
+          - condition: trigger
+            id:
+              - switch_off_pc
+              - switch_off_hold
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.office
+              data:
+                effect: okay
+            - action: automation.turn_on
+              target:
+                entity_id:
+                  - automation.office_light
+            - delay:
+                milliseconds: 750
+            - event: lights_check
+              event_data:
+                light: turn_off
+
+        - conditions:
+          - condition: state
+            entity_id: automation.office_light
+            state: 'on'
+          - condition: trigger
+            id:
+              - switch_off_hold
+          sequence:
+            - action: automation.turn_off
+              target:
+                entity_id:
+                  - automation.office_light
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.office
+              data:
+                effect: okay
+            - delay:
+                milliseconds: 550
+            - action: light.turn_off
+              target:
+                entity_id:
+                  - light.bed
+                  - light.wash
+                  - light.kitchen
+                  - light.bath
+            - delay:
+                milliseconds: 550
+            - action: light.turn_off
+              target:
+                entity_id:
+                  - light.kitchen_led
+                  - light.living
+                  - light.hall
+            - action: light.turn_off
+              target:
+                entity_id:
+                  - light.office
+              data:
+                transition: 20
+            - wait_for_trigger:
+              - trigger: state
+                entity_id:
+                  - light.office
+                to: 'off'
+              timeout:
+                seconds: 30
+            - delay:
+                seconds: >-
+                  {{ wait.remaining }}
+            - action: input_boolean.turn_on
+              entity_id:
+                - input_boolean.office_enter_dummy
+            - action: automation.turn_on
+              target:
+                entity_id:
+                  - automation.office_light
+
+  - alias: night_light_switch
+    id: night_light_switch
+    triggers:
+      - trigger: mqtt
+        topic: zigbee2mqtt/bed-button
+        value_template: >-
+          {{ value_json.action | default(None) }}
+        payload: single
+        id: single
+      - trigger: mqtt
+        topic: zigbee2mqtt/bed-button
+        value_template: >-
+          {{ value_json.action | default(None) }}
+        payload: double
+        id: double
+
+    mode: restart
+    actions:
+      - variables:
+          cfg: >-
+            {% from 'tools.jinja' import light_cfg %}
+            {{ light_cfg(is_state('binary_sensor.night_mode', 'off')) | from_json }}
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - single
+          sequence:
+            - action: script.turn_on
+              data:
+                entity_id: >-
+                  {%-
+                      set scr = {
+                        'on': 'script.lights_off',
+                        'off': 'script.lights_on'
+                      }
+                    -%}
+                  {{ scr[states('light.bed')] }}
+                variables:
+                  ctrl_light: light.bed
+                  brightness_pct: >-
+                    {{ cfg.brightness }}
+                  transition: >-
+                    {{ cfg.transition }}
+                  color_temp: >-
+                    {{ cfg.temp }}
+
+        - conditions:
+          - condition: trigger
+            id:
+              - double
+          - condition: state
+            entity_id:
+              - automation.bed_light
+            state: 'on'
+          sequence:
+            - action: automation.turn_off
+              entity_id:
+                - automation.bed_light
+            - action: light.turn_off
+              entity_id:
+                - light.bed
+
+        - conditions:
+          - condition: trigger
+            id:
+              - double
+          - condition: state
+            entity_id:
+              - automation.bed_light
+            state: 'off'
+          sequence:
+            - action: automation.turn_on
+              entity_id:
+                - automation.bed_light
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.bed
+              data:
+                effect: okay
+
+  - alias: kitchen_switch
+    id: kitchen_switch
+    triggers:
+      - trigger: mqtt
+        topic: zigbee2mqtt/kitchen-button
+        variables:
+          action: >-
+            {{ trigger.payload_json.action | default(None) }}
+
+    conditions:
+      - condition: template
+        value_template: >-
+          {{
+              action != None and
+                action != 'release'
+            }}
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: and
+            conditions:
+              - condition: template
+                value_template: >-
+                  {{ action in ['double', 'single'] }}
+              - condition: state
+                entity_id:
+                  - automation.kitchen_light
+                  - automation.kitchen_light_1
+                state: 'on'
+          sequence:
+            - action: automation.turn_off
+              data:
+                entity_id:
+                  - automation.kitchen_light
+                  - automation.kitchen_light_1
+
+      - choose:
+        - conditions:
+          - condition: and
+            conditions:
+              - condition: template
+                value_template: >-
+                  {{ action in ['double', 'single'] }}
+              - condition: state
+                entity_id:
+                  - automation.kitchen_light
+                  - automation.kitchen_light_1
+                state: 'off'
+          sequence:
+            - variables:
+                brightness_pct: >-
+                  {%- set br = {
+                      'single': 5,
+                      'double': 90,
+                    }
+                    -%}
+                  {{ br[action] }}
+                color_temp: 4000
+                transition: 1
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen_led
+              data:
+                brightness_pct: 20
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen_led
+              data:
+                brightness_pct: >-
+                  {{ max(brightness_pct, 30) }}
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen
+              data:
+                color_temp_kelvin: >-
+                  {{ color_temp }}
+                brightness_pct: 1
+                transition: 0
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen
+              data:
+                brightness_pct: >-
+                  {{ brightness_pct }}
+                transition: >-
+                  {{ transition }}
+
+        - conditions:
+          - condition: template
+            value_template: >-
+              {{ action == 'hold' }}
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen
+              data:
+                effect: okay
+            - action: automation.turn_on
+              data:
+                entity_id:
+                  - automation.kitchen_light
+                  - automation.kitchen_light_1
+            - delay:
+                milliseconds: 750
+            - event: lights_check
+              event_data:
+                light: turn_off
+
+  - alias: living_switch
+    id: living_switch
+    triggers:
+      - trigger: mqtt
+        topic: zigbee2mqtt/living-cube
+        variables:
+          action: >-
+            {{ trigger.payload_json.action | default(None) }}
+          side: >-
+            {{ trigger.payload_json.side | default(-1) }}
+          action_angle: >-
+            {{ trigger.payload_json.action_angle | default(0) | abs }}
+          action_from_side: >-
+            {{ trigger.payload_json.action_from_side | default(-1) }}
+          action_side: >-
+            {{ trigger.payload_json.action_side | default(-1) }}
+          action_to_side: >-
+            {{ trigger.payload_json.action_to_side | default(-1) }}
+
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ action != None }}
+
+    mode: restart
+    actions:
+      - variables:
+          transition: 1
+      - choose:
+        - conditions:
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: automation.living_light
+                state: 'on'
+              - condition: template
+                value_template: >-
+                  {{ action == 'flip90' }}
+              - condition: template
+                value_template: >-
+                  {{ action_from_side == 0 }}
+              - condition: template
+                value_template: >-
+                  {{ action_side == 1 }}
+              - condition: template
+                value_template: >-
+                  {{ action_to_side == 1 }}
+          sequence:
+            - variables:
+                brightness_pct: >-
+                  {%- if is_state('binary_sensor.night_mode', 'on') -%}
+                    30
+                  {%- elif is_state('media_player.livingtv', 'playing')  -%}
+                    50
+                  {%- else -%}
+                    90
+                  {%- endif -%}
+                color_temp: 4000
+            - action: automation.turn_off
+              data:
+                entity_id:
+                  - automation.living_light
+                  - automation.kitchen_light
+                  - automation.kitchen_light_1
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.living
+              data:
+                color_temp_kelvin: >-
+                  {{ color_temp }}
+                brightness_pct: 1
+                transition: 0
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.living
+              data:
+                brightness_pct: >-
+                  {{ brightness_pct }}
+                transition: >-
+                  {{ transition }}
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen_led
+              data:
+                brightness_pct: >-
+                  {{ max(brightness_pct, 30) }}
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen
+              data:
+                color_temp_kelvin: >-
+                  {{ color_temp }}
+                brightness_pct: 1
+                transition: 0
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen
+              data:
+                brightness_pct: >-
+                  {{ brightness_pct }}
+                transition: >-
+                  {{ transition }}
+
+        - conditions:
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: automation.living_light
+                state: 'off'
+              - condition: template
+                value_template: >-
+                  {{ action == 'flip90' }}
+              - condition: template
+                value_template: >-
+                  {{ action_from_side == 1 }}
+              - condition: template
+                value_template: >-
+                  {{ action_side == 0 }}
+              - condition: template
+                value_template: >-
+                  {{ action_to_side == 0 }}
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.living
+                  - light.kitchen
+              data:
+                effect: okay
+            - action: automation.turn_on
+              data:
+                entity_id:
+                  - automation.living_light
+                  - automation.kitchen_light
+                  - automation.kitchen_light_1
+            - delay:
+                milliseconds: 750
+            - event: lights_check
+              event_data:
+                light: turn_off
+
+        - conditions:
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: light.living
+                state: 'on'
+              - condition: state
+                entity_id: automation.living_light
+                state: 'off'
+              - condition: template
+                value_template: >-
+                  {{ action == 'rotate_left' }}
+              - condition: template
+                value_template: >-
+                  {{ side == 1 }}
+          sequence:
+            - variables:
+                step: >-
+                  {%- if action_angle > 60 -%}
+                    {{ -10}}
+                  {%- else -%}
+                    {{ -5 }}
+                  {%- endif -%}
+                kitchen_pct: >-
+                  {{
+                      (state_attr('light.kitchen_led', 'brightness') * 100) / 254
+                    }}
+                led_pct: >-
+                  {{
+                      int(min(max(kitchen_pct + step, 25), 90))
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.living
+              data:
+                brightness_pct: >-
+                  {{ int(min(max(((state_attr('light.living', 'brightness') * 100) / 254) + step, 10), 90)) }}
+                transition: >-
+                  {{ transition }}
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen
+              data:
+                brightness_pct: >-
+                  {{ int(min(max(((state_attr('light.kitchen', 'brightness') * 100) / 254) + step, 10), 90)) }}
+                transition: >-
+                  {{ transition }}
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen_led
+              data:
+                brightness_pct: >-
+                  {{
+                      min(led_pct - 5 , 20)
+                    }}
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen_led
+              data:
+                brightness_pct: >-
+                  {{ led_pct }}
+
+        - conditions:
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: light.living
+                state: 'on'
+              - condition: state
+                entity_id: automation.living_light
+                state: 'off'
+              - condition: template
+                value_template: >-
+                  {{ action == 'rotate_right' }}
+              - condition: template
+                value_template: >-
+                  {{ side == 1 }}
+          sequence:
+            - variables:
+                step: >-
+                  {%- if action_angle > 60 -%}
+                    {{ 10 }}
+                  {%- else -%}
+                    {{ 5 }}
+                  {%- endif -%}
+                kitchen_pct: >-
+                  {{
+                      (state_attr('light.kitchen_led', 'brightness') * 100) / 254
+                    }}
+                led_pct: >-
+                  {{
+                      int(min(max(kitchen_pct + step, 25), 90))
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.living
+              data:
+                brightness_pct: >-
+                  {{ int(min(max(((state_attr('light.living', 'brightness') * 100) / 254) + step, 10), 90)) }}
+                transition: >-
+                  {{ transition }}
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen
+              data:
+                brightness_pct: >-
+                  {{ int(min(max(((state_attr('light.kitchen', 'brightness') * 100) / 254) + step, 10), 90)) }}
+                transition: >-
+                  {{ transition }}
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen_led
+              data:
+                brightness_pct: >-
+                  {{
+                      min(led_pct - 5 , 20)
+                    }}
+            - delay:
+                milliseconds: >-
+                  {{
+                      states('input_number.ctrl_delay') | int (100)
+                    }}
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.kitchen_led
+              data:
+                brightness_pct: >-
+                  {{ led_pct }}

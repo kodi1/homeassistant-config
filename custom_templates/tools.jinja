@@ -1,0 +1,124 @@
+{%- macro to_temp(ct) -%}
+    {{ (1000000 / ct) | round(0) }}
+{%- endmacro -%}
+
+{%- macro light_cfg(high) -%}
+    {%-
+            set cfg = {
+                'brightness': iif(high, range(85, 95, 2) | random , range(1, 11, 2) | random, 3),
+                'temp': iif(high, range(3400, 4000, 100) | random, range(2200, 2900, 100) | random, 3000),
+                'transition': iif(high, 5, 1, 3),
+            }
+        -%}
+    {{ cfg | to_json }}
+{%- endmacro -%}
+
+{%- macro radio_urls() -%}
+    {%-
+        set urls = {
+                "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
+                "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
+                "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
+                "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
+                "Eilo Ambient": "http://eilo.org:8000/ambient",
+                "Lounge": "http://live.radioart.com:80/fLounge.mp3",
+                "Smooth Lounge": "http://live.radioart.com:80/fSmooth_lounge.mp3",
+                "Vocal Lounge": "http://live.radioart.com:80/fVocal_lounge.mp3",
+                "Sleep": "http://live.radioart.com:80/fSleep.mp3",
+                "New Age": "http://live.radioart.com:80/fNew_age.mp3",
+                "Ambient": "http://live.radioart.com:80/fAmbient.mp3",
+                "Ambient Sleep": "https://radio.stereoscenic.com/asp-s",
+                "Calm Radio": "http://streams.calmradio.com/api/39/128/stream",
+            }
+        -%}
+    {{ urls | to_json }}
+{%- endmacro -%}
+
+{%- macro name_to_url(name) -%}
+    {%-
+            set play = radio_urls() | from_json
+        -%}
+    {{ play[states(name)] }}
+{%- endmacro -%}
+
+{%- macro radio_names() -%}
+    {%-
+            set play = radio_urls() | from_json
+        -%}
+    {{ play.keys() | list }}
+{%- endmacro -%}
+
+{%- macro ikea_on(id, brightness, color_temp) -%}
+    {%- if brightness is defined -%}
+        ZbSend {"Device": {{ id }}, "send":{"Dimmer": {{ brightness }}}}; delay 5; ZbSend {"Device": {{ id }}, "Read":{"Power":1}}; delay 5; ZbSend {"Device": {{ id }}, "Read":{"CT":1}}
+    {%- elif color_temp is defined -%}
+        ZbSend {"Device": {{ id }}, "send":{"CT": {{ color_temp }}}}
+    {%- else -%}
+        ZbSend {"Device": {{ id }}, "send":{"Power":true}}; delay 5; ZbSend {"Device": {{ id }}, "Read":{"Dimmer":1}}; delay 5; ZbSend {"Device": {{ id }}, "Read":{"CT":1}}
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro ikea_off(id) -%}
+    ZbSend {"Device": {{ id }}, "send":{"Power":false}}; delay 5; ZbSend {"Device": {{ id }}, "Read":{"Power":1}};
+{%- endmacro -%}
+
+{%- macro ikea_group_on(group, brightness, color_temp) -%}
+    {%- if brightness is defined -%}
+        ZbSend {"group": {{ group }}, "send":{"Dimmer": {{ brightness }}}}; delay 5;  ZbSend {"group": {{ group }}, "Read":{"Power":1}}; delay 5; ZbSend {"group": {{ group }}, "Read":{"CT":1}}
+    {%- elif color_temp is defined -%}
+        ZbSend {"group": {{ group }}, "send":{"CT": {{ color_temp }}}}
+    {%- else -%}
+        ZbSend {"group": {{ group }}, "send":{"Power":true}}; delay 5;  ZbSend {"group": {{ group }}, "Read":{"Dimmer":1}}; delay 5; ZbSend {"group": {{ group }}, "Read":{"CT":1}}
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro ikea_group_off(group) -%}
+    ZbSend {"group": {{ group }}, "send":{"Power": 0 }}; delay 5; ZbSend {"group":{{ group }}, "Read":{"Power": 1}}
+{%- endmacro -%}
+
+{%- macro ikea_state(msg, id, target) -%}
+    {%- if msg.ZbReceived is defined -%}
+        {%- set payload = msg.ZbReceived -%}
+    {%- elif msg.ZbInfo is defined -%}
+        {%- set payload = msg.ZbInfo -%}
+    {%- endif -%}
+    {%- if payload[id].Power is defined -%}
+        {%- if payload[id].Power == true -%}
+        on
+        {%- else -%}
+        off
+        {%- endif -%}
+    {%- else -%}
+        {{ states(target) }}
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro ikea_brightness(msg, id, target) -%}
+    {%- if msg.ZbReceived is defined -%}
+        {%- set payload = msg.ZbReceived -%}
+    {%- elif msg.ZbInfo is defined -%}
+        {%- set payload = msg.ZbInfo -%}
+    {%- endif -%}
+    {%- if payload[id].Dimmer is defined -%}
+        {{ payload[id].Dimmer | int(0) }}
+    {%- else -%}
+        {{ state_attr(target, 'brightness') | int(0) }}
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro ikea_color_temp(msg, id, target) -%}
+    {%- if msg.ZbReceived is defined -%}
+        {%- set payload = msg.ZbReceived -%}
+    {%- elif msg.ZbInfo is defined -%}
+        {%- set payload = msg.ZbInfo -%}
+    {%- endif -%}
+    {%- if payload[id].CT is defined -%}
+        {{ payload[id].CT | int(352) }}
+    {%- else -%}
+        {{ state_attr(target, 'color_temp') | int(352) }}
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro map_val(val, val_max, new_max) -%}
+    {{ int((val / val_max) * new_max) }}
+{%- endmacro -%}

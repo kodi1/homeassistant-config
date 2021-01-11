@@ -1,0 +1,172 @@
+# debug:
+
+# logger:
+#   level: VERBOSE
+
+
+# ota:
+#   - platform: esphome
+#     password: '1234'
+
+substitutions:
+  devicename: city_temperature_out
+  v_max: '4100'
+  v_min: '2750'
+
+esp8266:
+  board: esp07
+
+esphome:
+  name: ${devicename}
+  on_boot:
+    priority: 0
+    then:
+      - wait_until:
+          condition:
+            and:
+              - mqtt.connected:
+              - wifi.connected:
+          timeout: 3s
+      - if:
+          condition:
+            and:
+              - mqtt.connected:
+              - wifi.connected:
+          then:
+            - script.execute: measure
+            - script.wait: measure
+            - mqtt.disable:
+            - deep_sleep.enter:
+                id: sleep_1
+                sleep_duration: 10min
+          else:
+            - deep_sleep.enter:
+                id: sleep_1
+                sleep_duration: 15min
+
+deep_sleep:
+  id: sleep_1
+
+mqtt:
+  broker: !secret mqtt_host
+  username: !secret mqtt_user
+  password: !secret mqtt_pass
+  discovery: false
+  discover_ip: false
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  output_power: 15
+  fast_connect: true
+
+globals:
+  - id: updates
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+script:
+  - id: measure
+    then:
+      - switch.turn_on: vsens
+      - switch.turn_on: dhtsens
+      - component.update: batt_v
+      - component.update: batt_p
+      - switch.turn_off: vsens
+      - component.update: rssi
+      - delay: 500ms
+      - component.update: dhts
+      - wait_until:
+          condition:
+            lambda: |-
+              return (id(updates) >= 5);
+          timeout: 1.5s
+      - switch.turn_off: dhtsens
+      - mqtt.publish_json:
+          topic: ${devicename}/state
+          qos: 1
+          payload: |-
+            root["batt_v"] = id(batt_v).state;
+            root["batt_p"] = id(batt_p).state;
+            root["temperature"] = id(temperature).state;
+            root["humidity"] = id(humidity).state;
+            root["rssi"] = id(rssi).state;
+
+switch:
+  - platform: gpio
+    pin: GPIO4
+    id: vsens
+    inverted: true
+    internal: true
+
+  - platform: gpio
+    pin: GPIO5
+    id: dhtsens
+    inverted: true
+    internal: true
+
+sensor:
+  - platform: dht
+    id: dhts
+    model: DHT22
+    pin:
+      number: 12
+    temperature:
+      id: temperature
+      accuracy_decimals: 1
+      on_value:
+        lambda: |-
+          id(updates)++;
+      internal: true
+    humidity:
+      id: humidity
+      accuracy_decimals: 1
+      on_value:
+        lambda: |-
+          id(updates)++;
+      internal: true
+    update_interval: never
+
+  - platform: adc
+    pin: A0
+    id: batt_v
+    update_interval: never
+    accuracy_decimals: 1
+    filters:
+      - multiply: 4228
+      - round: 0
+    unit_of_measurement: mV
+    on_value:
+      lambda: |-
+        id(updates)++;
+    internal: true
+
+  - platform: template
+    id: batt_p
+    lambda: |-
+      const float min = ${v_min};
+      const float max = ${v_max};
+      if (min > id(batt_v).state) {
+        return 0;
+      } else if (max < id(batt_v).state) {
+        return 100;
+      } else {
+        return (((id(batt_v).state) - min) * 100) / (max - min);
+      }
+    accuracy_decimals: 1
+    filters:
+      - round: 0
+    update_interval: never
+    on_value:
+      lambda: |-
+        id(updates)++;
+    internal: true
+
+  - platform: wifi_signal
+    id: rssi
+    on_value:
+      lambda: |-
+        id(updates)++;
+    update_interval: never
+    internal: true

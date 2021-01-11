@@ -1,0 +1,2200 @@
+homeassistant:
+  customize:
+    switch.sonoff_1:
+      icon: mdi:power-socket-eu
+    switch.switch_city_av:
+      icon: mdi:dock-top
+      friendly_name: Nintendo
+    switch.pm_village_switch:
+      icon: mdi:power-socket-eu
+      friendly_name: Power Box
+    switch.city_1:
+      icon: mdi:power-socket-eu
+      friendly_name: city wall
+    switch.waterheater_city_schedule:
+      friendly_name: schedule
+    switch.village_power_switch_1:
+      friendly_name: cooler
+      icon: mdi:weather-snowy-rainy
+    switch.pump_village:
+      friendly_name: pump village
+    switch.city_3:
+      friendly_name: bath
+    switch.pump_ctrl_cooling:
+      friendly_name: cooling
+      icon: mdi:snowflake
+    switch.pump_ctrl_heating:
+      friendly_name: heating
+      icon: mdi:weather-sunny
+    alert.tasmota_update:
+      icon: mdi:update
+    binary_sensor.village_conn:
+      friendly_name: Village
+    binary_sensor.city_conn:
+      friendly_name: City
+    binary_sensor.main_conn:
+      friendly_name: Main
+    binary_sensor.city_waterheater_conn:
+      friendly_name: City WH
+    binary_sensor.city_door_1:
+      friendly_name: door
+    binary_sensor.village_waterheater_conn:
+      friendly_name: Village WH
+    binary_sensor.village_pump_conn:
+      friendly_name: pump
+    binary_sensor.motion_village_1:
+      friendly_name: living
+    binary_sensor.motion_village_2:
+      friendly_name: bed 1
+    binary_sensor.motion_village_garage:
+      friendly_name: garage
+    binary_sensor.thermostat_pump:
+      friendly_name: thermostat
+    binary_sensor.village_garage_door:
+      friendly_name: garage
+    binary_sensor.motion_village_top_1:
+      friendly_name: top 1
+    sensor.village_today_energy:
+      friendly_name: Today
+    cover.bed:
+      friendly_name: bed
+    cover.office:
+      friendly_name: office
+    cover.living_1:
+      friendly_name: window
+    cover.living_2:
+      friendly_name: door
+    light.shutter_living:
+      icon: mdi:window-maximize
+      friendly_name: living
+    light.shutter_bed:
+      icon: mdi:window-maximize
+      friendly_name: bed
+    light.shutter_office:
+      icon: mdi:window-maximize
+      friendly_name: office
+    light.village_1:
+      friendly_name: living
+      icon: mdi:chandelier
+    light.village_out:
+      friendly_name: out
+      icon: mdi:coach-lamp-variant
+    light.village_garage:
+      friendly_name: garage
+      icon: mdi:garage-open-variant
+    light.rgb_village:
+      icon: mdi:lightbulb-night
+      friendly_name: top 1 rgb
+    light.village_top_1:
+      friendly_name: top 1
+    sensor.village_batt_temp_3:
+      friendly_name: temp 3
+    sensor.village_batt_temp_2:
+      friendly_name: temp 2
+    sensor.village_batt_motion_1:
+      friendly_name: motion 1
+    sensor.village_batt_motion_2:
+      friendly_name: motion 2
+    sensor.village_batt_motion_garage:
+      friendly_name: garage
+    sensor.village_batt_remote_1:
+      friendly_name: button
+    sensor.village_top_temp_1:
+      friendly_name: temp top 1
+    sensor.village_top_hum_1:
+      friendly_name: hum top 1
+    sensor.village_pump_power:
+      friendly_name: curent
+    sensor.village_batt_motion_top_1:
+      friendly_name: top 1
+    sensor.village_batt_garage_door:
+      friendly_name: garage door
+    sensor.city_batt_motion_2:
+      friendly_name: motion 2
+    sensor.city_batt_temp_in_2:
+      friendly_name: temp 2
+    sensor.city_batt_temp_in_1:
+      friendly_name: temp 1
+    sensor.city_batt_door_1:
+      friendly_name: door
+    sensor.city_batt_button_2:
+      friendly_name: button 2
+    sensor.city_water_m3:
+      friendly_name: total
+    automation.ligths_auto_off:
+      friendly_name: auto off lights
+      icon: mdi:lightbulb-group-off-outline
+
+alert:
+  tasmota_update:
+    name: tasmota check
+    entity_id: binary_sensor.tasmota_update
+    state: 'on'
+    repeat:
+      - 60
+    can_acknowledge: true
+    title: "tasmota version {{ states('sensor.tasmota_r_v') }}"
+    message: available
+    done_message: done
+    notifiers:
+      - kodi
+      - gmail
+
+template:
+  - binary_sensor:
+    - name: tasmota_update
+      delay_on:
+        seconds: 60
+      delay_off:
+        seconds: 60
+      state: >-
+        {%-
+            set remote = (
+                          states('sensor.tasmota_r_v') |
+                            regex_findall_index('(\d+)\.(\d+)\.(\d+)\D*(\d+)?')
+                          )[:-1] | join('.') | version()
+          -%}
+        {%-
+            set local = (
+                          states('sensor.tasmota_l_v') |
+                            regex_findall_index('(\d+)\.(\d+)\.(\d+)\D*(\d+)?')
+                          )[:-1] | join('.') | version()
+          -%}
+        {{ remote > local }}
+      availability: >-
+        {{
+            (states('sensor.tasmota_r_v') not in ['unavailable', 'unknown']) and
+              (states('sensor.tasmota_l_v') not in ['unavailable', 'unknown'])
+          }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: tele/zha-bridge-village/7CCE/SENSOR
+      variables:
+        payload: >-
+          {%- if trigger.payload_json.ZbReceived is defined -%}
+            {{ trigger.payload_json.ZbReceived }}
+          {%- elif trigger.payload_json.ZbInfo is defined -%}
+            {{ trigger.payload_json.ZbInfo }}
+          {%- endif -%}
+    sensor:
+      - name: village_temp_in_2
+        device_class: temperature
+        unit_of_measurement: °C
+        state: >-
+          {%- if payload is defined and payload['0x7CCE']['Temperature'] is defined -%}
+            {{ payload['0x7CCE']['Temperature'] }}
+          {%- else -%}
+            {{ states('sensor.village_temp_in_2') }}
+          {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+      - name: village_humidity_in_2
+        device_class: humidity
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload is defined and payload['0x7CCE']['Humidity'] is defined -%}
+            {{ payload['0x7CCE']['Humidity'] }}
+          {%- else -%}
+            {{ states('sensor.village_humidity_in_2') }}
+          {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+      - name: village_batt_temp_2
+        device_class: battery
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload['0x7CCE']['BatteryPercentage'] is defined -%}
+            {{ payload['0x7CCE']['BatteryPercentage'] }}
+          {%- else -%}
+            {{ states('sensor.village_batt_temp_2') }}
+          {%- endif -%}
+        attributes:
+          v: >-
+            {%- if payload is defined and payload['0x7CCE']['BatteryVoltage'] is defined -%}
+              {{ payload['0x7CCE']['BatteryVoltage'] }}
+            {%- elif states('sensor.village_batt_temp_2') and state_attr('sensor.village_batt_temp_2', 'v') -%}
+              {{ float(state_attr('sensor.village_batt_temp_2', 'v'), 12) }}
+            {%- endif -%}
+          link: >-
+            {%- if payload is defined and payload['0x7CCE']['LinkQuality'] is defined -%}
+              {{ payload['0x7CCE']['LinkQuality'] }}
+            {%- elif states('sensor.village_batt_temp_2') and state_attr('sensor.village_batt_temp_2', 'link') -%}
+              {{ float(state_attr('sensor.village_batt_temp_2', 'link'), 73) }}
+            {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: tele/zha-bridge-village/9C32/SENSOR
+      variables:
+        payload: >-
+          {%- if trigger.payload_json.ZbReceived is defined -%}
+            {{ trigger.payload_json.ZbReceived }}
+          {%- elif trigger.payload_json.ZbInfo is defined -%}
+            {{ trigger.payload_json.ZbInfo }}
+          {%- endif -%}
+    sensor:
+      - name: village_temp_in_3
+        device_class: temperature
+        unit_of_measurement: °C
+        state: >-
+          {%- if payload['0x9C32']['Temperature'] is defined -%}
+            {{ payload['0x9C32']['Temperature'] }}
+          {%- else -%}
+            {{ states('sensor.village_temp_in_3') }}
+          {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+      - name: village_humidity_in_3
+        device_class: humidity
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload is defined and payload['0x9C32']['Humidity'] is defined -%}
+            {{ payload['0x9C32']['Humidity'] }}
+          {%- else -%}
+            {{ states('sensor.village_humidity_in_3') }}
+          {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+
+      - name: village_batt_temp_3
+        device_class: battery
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload['0x9C32']['BatteryPercentage'] is defined -%}
+            {{ payload['0x9C32']['BatteryPercentage'] }}
+          {%- else -%}
+            {{ states('sensor.village_batt_temp_3') }}
+          {%- endif -%}
+        attributes:
+          v: >-
+            {%- if payload is defined and payload['0x9C32']['BatteryVoltage'] is defined -%}
+              {{ payload['0x9C32']['BatteryVoltage'] }}
+            {%- elif states('sensor.village_batt_temp_3') and state_attr('sensor.village_batt_temp_3', 'v') -%}
+              {{ float(state_attr('sensor.village_batt_temp_3', 'v'), 12) }}
+            {%- endif -%}
+          link: >-
+            {%- if payload is defined and payload['0x9C32']['LinkQuality'] is defined -%}
+              {{ payload['0x9C32']['LinkQuality'] }}
+            {%- elif states('sensor.village_batt_temp_3') and state_attr('sensor.village_batt_temp_3', 'link') -%}
+              {{ float(state_attr('sensor.village_batt_temp_3', 'link'), 73) }}
+            {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: tele/zha-bridge-village/105E/SENSOR
+      variables:
+        payload: >-
+          {%- if trigger.payload_json.ZbReceived is defined -%}
+            {{ trigger.payload_json.ZbReceived }}
+          {%- elif trigger.payload_json.ZbInfo is defined -%}
+            {{ trigger.payload_json.ZbInfo }}
+          {%- endif -%}
+    sensor:
+      - name: village_batt_motion_1
+        device_class: battery
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload['0x105E']['BatteryPercentage'] is defined -%}
+            {{ payload['0x105E']['BatteryPercentage'] }}
+          {%- else -%}
+            {{ states('sensor.village_batt_motion_1') }}
+          {%- endif -%}
+        attributes:
+          v: >-
+            {%- if payload is defined and payload['0x105E']['BatteryVoltage'] is defined -%}
+              {{ payload['0x105E']['BatteryVoltage'] }}
+            {%- elif states('sensor.village_batt_temp_2') and state_attr('sensor.village_batt_temp_2', 'v') -%}
+              {{ float(state_attr('sensor.village_batt_temp_2', 'v'), 12) }}
+            {%- endif -%}
+          link: >-
+            {%- if payload is defined and payload['0x105E']['LinkQuality'] is defined -%}
+              {{ payload['0x105E']['LinkQuality'] }}
+            {%- elif states('sensor.village_batt_temp_2') and state_attr('sensor.village_batt_temp_2', 'link') -%}
+              {{ float(state_attr('sensor.village_batt_temp_2', 'link'), 73) }}
+            {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+
+    binary_sensor:
+      - name: motion_village_1
+        device_class: motion
+        state: >-
+          {%- if payload is defined and payload['0x105E']['ZoneStatusChange'] is defined -%}
+            {{ payload['0x105E']['ZoneStatusChange'] }}
+          {%- else -%}
+            {{ states('binary_sensor.motion_village_1') }}
+          {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: tele/zha-bridge-village/0895/SENSOR
+      variables:
+        payload: >-
+          {%- if trigger.payload_json.ZbReceived is defined -%}
+            {{ trigger.payload_json.ZbReceived }}
+          {%- elif trigger.payload_json.ZbInfo is defined -%}
+            {{ trigger.payload_json.ZbInfo }}
+          {%- endif -%}
+    sensor:
+      - name: village_batt_motion_2
+        device_class: battery
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload['0x0895']['BatteryPercentage'] is defined -%}
+            {{ payload['0x0895']['BatteryPercentage'] }}
+          {%- else -%}
+            {{ states('sensor.village_batt_motion_2') }}
+          {%- endif -%}
+        attributes:
+          v: >-
+            {%- if payload is defined and payload['0x0895']['BatteryVoltage'] is defined -%}
+              {{ payload['0x0895']['BatteryVoltage'] }}
+            {%- elif states('sensor.village_batt_motion_2') and state_attr('sensor.village_batt_motion_2', 'v') -%}
+              {{ float(state_attr('sensor.village_batt_motion_2', 'v'), 12) }}
+            {%- endif -%}
+          link: >-
+            {%- if payload is defined and payload['0x0895']['LinkQuality'] is defined -%}
+              {{ payload['0x0895']['LinkQuality'] }}
+            {%- elif states('sensor.village_batt_motion_2') and state_attr('sensor.village_batt_motion_2', 'link') -%}
+              {{ float(state_attr('sensor.village_batt_motion_2', 'link'), 73) }}
+            {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+    binary_sensor:
+      - name: motion_village_2
+        device_class: motion
+        state: >-
+          {%- if payload is defined and payload['0x0895']['ZoneStatusChange'] is defined -%}
+            {{ payload['0x0895']['ZoneStatusChange'] }}
+          {%- else -%}
+            {{ states('binary_sensor.motion_village_2') }}
+          {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: tele/zha-bridge-village/D03F/SENSOR
+      variables:
+        payload: >-
+          {%- if trigger.payload_json.ZbReceived is defined -%}
+            {{ trigger.payload_json.ZbReceived }}
+          {%- elif trigger.payload_json.ZbInfo is defined -%}
+            {{ trigger.payload_json.ZbInfo }}
+          {%- endif -%}
+    sensor:
+      - name: village_batt_motion_garage
+        device_class: battery
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload['0xD03F']['BatteryPercentage'] is defined -%}
+            {{ payload['0xD03F']['BatteryPercentage'] }}
+          {%- else -%}
+            {{ states('sensor.village_batt_motion_garage') }}
+          {%- endif -%}
+        attributes:
+          v: >-
+            {%- if payload is defined and payload['0xD03F']['BatteryVoltage'] is defined -%}
+              {{ payload['0xD03F']['BatteryVoltage'] }}
+            {%- elif states('sensor.village_batt_motion_garage') and state_attr('sensor.village_batt_motion_garage', 'v') -%}
+              {{ float(state_attr('sensor.village_batt_motion_garage', 'v'), 12) }}
+            {%- endif -%}
+          link: >-
+            {%- if payload is defined and payload['0xD03F']['LinkQuality'] is defined -%}
+              {{ payload['0xD03F']['LinkQuality'] }}
+            {%- elif states('sensor.village_batt_motion_garage') and state_attr('sensor.village_batt_motion_garage', 'link') -%}
+              {{ float(state_attr('sensor.village_batt_motion_garage', 'link'), 73) }}
+            {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+    binary_sensor:
+      - name: motion_village_garage
+        device_class: motion
+        state: >-
+          {%- if payload is defined and payload['0xD03F']['ZoneStatusChange'] is defined -%}
+            {{ payload['0xD03F']['ZoneStatusChange'] }}
+          {%- else -%}
+            {{ states('binary_sensor.motion_village_garage') }}
+          {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: tele/zha-bridge-village/A79A/SENSOR
+      variables:
+        payload: >-
+          {%- if trigger.payload_json.ZbReceived is defined -%}
+            {{ trigger.payload_json.ZbReceived }}
+          {%- elif trigger.payload_json.ZbInfo is defined -%}
+            {{ trigger.payload_json.ZbInfo }}
+          {%- endif -%}
+    sensor:
+      - name: village_batt_remote_1
+        device_class: battery
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload['0xA79A']['BatteryPercentage'] is defined -%}
+            {{ payload['0xA79A']['BatteryPercentage'] }}
+          {%- else -%}
+            {{ states('sensor.village_batt_remote_1') }}
+          {%- endif -%}
+        attributes:
+          v: >-
+            {%- if payload is defined and payload['0xA79A']['BatteryVoltage'] is defined -%}
+              {{ payload['0xA79A']['BatteryVoltage'] }}
+            {%- elif states('sensor.village_batt_remote_1') and state_attr('sensor.village_batt_remote_1', 'v') -%}
+              {{ float(state_attr('sensor.village_batt_remote_1', 'v'), 12) }}
+            {%- endif -%}
+          link: >-
+            {%- if payload is defined and payload['0xA79A']['LinkQuality'] is defined -%}
+              {{ payload['0xA79A']['LinkQuality'] }}
+            {%- elif states('sensor.village_batt_remote_1') and state_attr('sensor.village_batt_remote_1', 'link') -%}
+              {{ float(state_attr('sensor.village_batt_remote_1', 'link'), 73) }}
+            {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: tele/zha-bridge-village/13F7/SENSOR
+      variables:
+        payload: >-
+          {%- if trigger.payload_json.ZbReceived is defined -%}
+            {{ trigger.payload_json.ZbReceived }}
+          {%- elif trigger.payload_json.ZbInfo is defined -%}
+            {{ trigger.payload_json.ZbInfo }}
+          {%- endif -%}
+    sensor:
+      - name: village_batt_motion_top_1
+        device_class: battery
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload['0x13F7']['BatteryPercentage'] is defined -%}
+            {{ payload['0x13F7']['BatteryPercentage'] }}
+          {%- else -%}
+            {{ states('sensor.village_batt_motion_top_1') }}
+          {%- endif -%}
+        attributes:
+          v: >-
+            {%- if payload is defined and payload['0x13F7']['BatteryVoltage'] is defined -%}
+              {{ payload['0x13F7']['BatteryVoltage'] }}
+            {%- elif states('sensor.village_batt_motion_top_1') and state_attr('sensor.village_batt_motion_top_1', 'v') -%}
+              {{ float(state_attr('sensor.village_batt_motion_top_1', 'v'), 12) }}
+            {%- endif -%}
+          link: >-
+            {%- if payload is defined and payload['0x13F7']['LinkQuality'] is defined -%}
+              {{ payload['0x13F7']['LinkQuality'] }}
+            {%- elif states('sensor.village_batt_motion_top_1') and state_attr('sensor.village_batt_motion_top_1', 'link') -%}
+              {{ float(state_attr('sensor.village_batt_motion_top_1', 'link'), 73) }}
+            {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+    binary_sensor:
+      - name: motion_village_top_1
+        device_class: motion
+        state: >-
+          {%- if payload is defined and payload['0x13F7']['ZoneStatusChange'] is defined -%}
+            {{ payload['0x13F7']['ZoneStatusChange'] }}
+          {%- else -%}
+            {{ states('binary_sensor.motion_village_top_1') }}
+          {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: tele/zha-bridge-city/798B/SENSOR
+      variables:
+        payload: >-
+          {%- if trigger.payload_json.ZbReceived is defined -%}
+            {{ trigger.payload_json.ZbReceived }}
+          {%- elif trigger.payload_json.ZbInfo is defined -%}
+            {{ trigger.payload_json.ZbInfo }}
+          {%- endif -%}
+    sensor:
+      - name: city_temp_in_1_1
+        device_class: temperature
+        unit_of_measurement: °C
+        state: >-
+          {%- if payload['0x798B']['Temperature'] is defined -%}
+            {{ payload['0x798B']['Temperature'] }}
+          {%- else -%}
+            {{ states('sensor.city_temp_in_1_1') }}
+          {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.city_conn', 'on') }}
+      - name: city_humidity_in_1_1
+        device_class: humidity
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload is defined and payload['0x798B']['Humidity'] is defined -%}
+            {{ payload['0x798B']['Humidity'] }}
+          {%- else -%}
+            {{ states('sensor.city_humidity_in_1_1') }}
+          {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.city_conn', 'on') }}
+      - name: city_batt_temp_in_1
+        device_class: battery
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload['0x798B']['BatteryPercentage'] is defined -%}
+            {{ payload['0x798B']['BatteryPercentage'] }}
+          {%- else -%}
+            {{ states('sensor.city_batt_temp_in_1') }}
+          {%- endif -%}
+        attributes:
+          v: >-
+            {%- if payload is defined and payload['0x798B']['BatteryVoltage'] is defined -%}
+              {{ payload['0x798B']['BatteryVoltage'] }}
+            {%- elif states('sensor.city_batt_temp_in_1') and state_attr('sensor.city_batt_temp_in_1', 'v') -%}
+              {{ float(state_attr('sensor.city_batt_temp_in_1', 'v'), 12) }}
+            {%- endif -%}
+          link: >-
+            {%- if payload is defined and payload['0x798B']['LinkQuality'] is defined -%}
+              {{ payload['0x798B']['LinkQuality'] }}
+            {%- elif states('sensor.city_batt_temp_in_1') and state_attr('sensor.city_batt_temp_in_1', 'link') -%}
+              {{ float(state_attr('sensor.city_batt_temp_in_1', 'link'), 73) }}
+            {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.city_conn', 'on') }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: tele/zha-bridge-city/A536/SENSOR
+      variables:
+        payload: >-
+          {%- if trigger.payload_json.ZbReceived is defined -%}
+            {{ trigger.payload_json.ZbReceived }}
+          {%- elif trigger.payload_json.ZbInfo is defined -%}
+            {{ trigger.payload_json.ZbInfo }}
+          {%- endif -%}
+    sensor:
+      - name: city_temp_in_2
+        device_class: temperature
+        unit_of_measurement: °C
+        state: >-
+          {%- if payload['0xA536']['Temperature'] is defined -%}
+            {{ payload['0xA536']['Temperature'] }}
+          {%- else -%}
+            {{ states('sensor.city_temp_in_2') }}
+          {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.city_conn', 'on') }}
+      - name: city_humidity_in_2
+        device_class: humidity
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload is defined and payload['0xA536']['Humidity'] is defined -%}
+            {{ payload['0xA536']['Humidity'] }}
+          {%- else -%}
+            {{ states('sensor.city_humidity_in_2') }}
+          {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.city_conn', 'on') }}
+      - name: city_batt_temp_in_2
+        device_class: battery
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload['0xA536']['BatteryPercentage'] is defined -%}
+            {{ payload['0xA536']['BatteryPercentage'] }}
+          {%- else -%}
+            {{ states('sensor.city_batt_temp_in_2') }}
+          {%- endif -%}
+        attributes:
+          v: >-
+            {%- if payload is defined and payload['0xA536']['BatteryVoltage'] is defined -%}
+              {{ payload['0xA536']['BatteryVoltage'] }}
+            {%- elif states('sensor.city_batt_temp_in_2') and state_attr('sensor.city_batt_temp_in_2', 'v') -%}
+              {{ float(state_attr('sensor.city_batt_temp_in_2', 'v'), 12) }}
+            {%- endif -%}
+          link: >-
+            {%- if payload is defined and payload['0xA536']['LinkQuality'] is defined -%}
+              {{ payload['0xA536']['LinkQuality'] }}
+            {%- elif states('sensor.city_batt_temp_in_2') and state_attr('sensor.city_batt_temp_in_2', 'link') -%}
+              {{ float(state_attr('sensor.city_batt_temp_in_2', 'link'), 73) }}
+            {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.city_conn', 'on') }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: tele/zha-bridge-city/054B/SENSOR
+      variables:
+        payload: >-
+          {%- if trigger.payload_json.ZbReceived is defined -%}
+            {{ trigger.payload_json.ZbReceived }}
+          {%- elif trigger.payload_json.ZbInfo is defined -%}
+            {{ trigger.payload_json.ZbInfo }}
+          {%- endif -%}
+    sensor:
+      - name: city_batt_button_2
+        device_class: battery
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload['0x054B']['BatteryPercentage'] is defined -%}
+            {{ payload['0x054B']['BatteryPercentage'] }}
+          {%- else -%}
+            {{ states('sensor.city_batt_button_2') }}
+          {%- endif -%}
+        attributes:
+          v: >-
+            {%- if payload is defined and payload['0x054B']['BatteryVoltage'] is defined -%}
+              {{ payload['0x054B']['BatteryVoltage'] }}
+            {%- elif states('sensor.city_batt_button_2') and state_attr('sensor.city_batt_button_2', 'v') -%}
+              {{ float(state_attr('sensor.city_batt_button_2', 'v'), 12) }}
+            {%- endif -%}
+          link: >-
+            {%- if payload is defined and payload['0x054B']['LinkQuality'] is defined -%}
+              {{ payload['0x054B']['LinkQuality'] }}
+            {%- elif states('sensor.city_batt_button_2') and state_attr('sensor.city_batt_button_2', 'link') -%}
+              {{ float(state_attr('sensor.city_batt_button_2', 'link'), 73) }}
+            {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.city_conn', 'on') }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: tele/zha-bridge-city/318F/SENSOR
+      variables:
+        payload: >-
+          {%- if trigger.payload_json.ZbReceived is defined -%}
+            {{ trigger.payload_json.ZbReceived }}
+          {%- elif trigger.payload_json.ZbInfo is defined -%}
+            {{ trigger.payload_json.ZbInfo }}
+          {%- endif -%}
+    sensor:
+      - name: city_batt_motion_2
+        device_class: battery
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload['0x318F']['BatteryPercentage'] is defined -%}
+            {{ payload['0x318F']['BatteryPercentage'] }}
+          {%- else -%}
+            {{ states('sensor.city_batt_motion_2') }}
+          {%- endif -%}
+        attributes:
+          v: >-
+            {%- if payload is defined and payload['0x318F']['BatteryVoltage'] is defined -%}
+              {{ payload['0x318F']['BatteryVoltage'] }}
+            {%- elif states('sensor.city_batt_motion_2') and state_attr('sensor.city_batt_motion_2', 'v') -%}
+              {{ float(state_attr('sensor.city_batt_motion_2', 'v'), 12) }}
+            {%- endif -%}
+          link: >-
+            {%- if payload is defined and payload['0x318F']['LinkQuality'] is defined -%}
+              {{ payload['0x318F']['LinkQuality'] }}
+            {%- elif states('sensor.city_batt_motion_2') and state_attr('sensor.city_batt_motion_2', 'link') -%}
+              {{ float(state_attr('sensor.city_batt_motion_2', 'link'), 73) }}
+            {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.city_conn', 'on') }}
+    binary_sensor:
+      - name: motion_city_2
+        device_class: motion
+        state: >-
+          {%- if payload is defined and payload['0x318F']['ZoneStatusChange'] is defined -%}
+            {{ payload['0x318F']['ZoneStatusChange'] }}
+          {%- else -%}
+            {{ states('binary_sensor.motion_city_2') }}
+          {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.city_conn', 'on') }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: tele/zha-bridge-city/4A99/SENSOR
+      variables:
+        payload: >-
+          {%- if trigger.payload_json.ZbReceived is defined -%}
+            {{ trigger.payload_json.ZbReceived }}
+          {%- elif trigger.payload_json.ZbInfo is defined -%}
+            {{ trigger.payload_json.ZbInfo }}
+          {%- endif -%}
+    sensor:
+      - name: city_batt_door_1
+        device_class: battery
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload['0x4A99']['BatteryPercentage'] is defined -%}
+            {{ payload['0x4A99']['BatteryPercentage'] }}
+          {%- else -%}
+            {{ states('sensor.city_batt_door_1') }}
+          {%- endif -%}
+        attributes:
+          v: >-
+            {%- if payload is defined and payload['0x4A99']['BatteryVoltage'] is defined -%}
+              {{ payload['0x4A99']['BatteryVoltage'] }}
+            {%- elif states('sensor.city_batt_door_1') and state_attr('sensor.city_batt_door_1', 'v') -%}
+              {{ float(state_attr('sensor.city_batt_door_1', 'v'), 12) }}
+            {%- endif -%}
+          link: >-
+            {%- if payload is defined and payload['0x4A99']['LinkQuality'] is defined -%}
+              {{ payload['0x4A99']['LinkQuality'] }}
+            {%- elif states('sensor.city_batt_door_1') and state_attr('sensor.city_batt_door_1', 'link') -%}
+              {{ float(state_attr('sensor.city_batt_door_1', 'link'), 73) }}
+            {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.city_conn', 'on') }}
+    binary_sensor:
+      - name: city_door_1
+        device_class: vibration
+        icon: mdi:door
+        state: >-
+          {%- if payload is defined and payload['0x4A99']['ZoneStatusChange'] is defined -%}
+             {{ 1025 == payload['0x4A99']['ZoneStatusChange'] }}
+          {%- else -%}
+            {{ states('binary_sensor.city_door_1') }}
+          {%- endif -%}
+        auto_off:
+          seconds: 60
+        availability: >-
+          {{ is_state('binary_sensor.city_conn', 'on') }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: tele/zha-bridge-village/D3C1/SENSOR
+      variables:
+        payload: >-
+          {%- if trigger.payload_json.ZbReceived is defined -%}
+            {{ trigger.payload_json.ZbReceived }}
+          {%- elif trigger.payload_json.ZbInfo is defined -%}
+            {{ trigger.payload_json.ZbInfo }}
+          {%- endif -%}
+    sensor:
+      - name: village_batt_garage_door
+        device_class: battery
+        unit_of_measurement: '%'
+        state: >-
+          {%- if payload['0xD3C1']['BatteryPercentage'] is defined -%}
+            {{ payload['0xD3C1']['BatteryPercentage'] }}
+          {%- else -%}
+            {{ states('sensor.village_batt_garage_door') }}
+          {%- endif -%}
+        attributes:
+          v: >-
+            {%- if payload is defined and payload['0xD3C1']['BatteryVoltage'] is defined -%}
+              {{ payload['0xD3C1']['BatteryVoltage'] }}
+            {%- elif states('sensor.village_batt_garage_door') and state_attr('sensor.village_batt_garage_door', 'v') -%}
+              {{ float(state_attr('sensor.village_batt_garage_door', 'v'), 12) }}
+            {%- endif -%}
+          link: >-
+            {%- if payload is defined and payload['0xD3C1']['LinkQuality'] is defined -%}
+              {{ payload['0xD3C1']['LinkQuality'] }}
+            {%- elif states('sensor.village_batt_garage_door') and state_attr('sensor.village_batt_garage_door', 'link') -%}
+              {{ float(state_attr('sensor.village_batt_garage_door', 'link'), 73) }}
+            {%- endif -%}
+        availability: >-
+          {{ is_state('binary_sensor.city_conn', 'on') }}
+    binary_sensor:
+      - name: village_garage_door
+        device_class: vibration
+        icon: mdi:garage-variant
+        state: >-
+          {%- if payload is defined and payload['0xD3C1']['ZoneStatusChange'] is defined -%}
+             {{ 1025 == payload['0xD3C1']['ZoneStatusChange'] }}
+          {%- else -%}
+            {{ states('binary_sensor.village_garage_door') }}
+          {%- endif -%}
+        auto_off:
+          seconds: 60
+        availability: >-
+          {{ is_state('binary_sensor.city_conn', 'on') }}
+
+sensor:
+  - platform: rest
+    name: tasmota_r_v
+    method: 'GET'
+    headers:
+      User-Agent: Home Assistant REST sensor
+      Accept: application/vnd.github.v3+json
+      Content-Type: application/json
+    scan_interval: 10800
+    # resource: https://api.github.com/repos/arendst/Sonoff-Tasmota/tags
+    # value_template: "{{ value_json[0]['name'] }}"
+    resource: 'https://api.github.com/repos/arendst/Sonoff-Tasmota/releases/latest'
+    value_template: "{{ value_json['tag_name'] }}"
+
+mqtt:
+  sensor:
+    - name: tasmota_l_v
+      state_topic: stat/shutter-living-1/STATUS2
+      value_template: '{{ value_json["StatusFWR"].Version }}'
+
+    - name: village_today_energy
+      icon: mdi:alpha-w
+      device_class: power
+      state_topic: tele/pm-village/SENSOR
+      value_template: '{{ value_json["ENERGY"]["Today"] }}'
+      unit_of_measurement: kW
+      json_attributes_topic: tele/pm-village/SENSOR
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'yesterday': value_json["ENERGY"]["Yesterday"],
+          'total': value_json["ENERGY"]["Total"]
+          }
+          -%}
+        {{ attrs | to_json }}
+      expire_after: 300
+
+    # {"NAME":"HW-655 PZEM","GPIO":[32,1472,1,1504,1,0,0,0,224,320,1,0,0,0],"FLAG":0,"BASE":1}
+    - name: village_power
+      state_topic: tele/pm-village/SENSOR
+      value_template: '{{ (value_json["ENERGY"]["Power"] |float(0)) }}'
+      unit_of_measurement: W
+      json_attributes_topic: tele/pm-village/SENSOR
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'apparent': (value_json["ENERGY"]["ApparentPower"] |float(0)),
+          'reactive': (value_json["ENERGY"]["ReactivePower"] |float(0)),
+          'factor': value_json["ENERGY"]["Factor"]
+          }
+          -%}
+        {{ attrs | to_json }}
+      expire_after: 300
+
+    - name: village_voltage
+      state_topic: tele/pm-village/SENSOR
+      value_template: '{{ value_json["ENERGY"]["Voltage"] }}'
+      unit_of_measurement: V
+      expire_after: 300
+
+    - name: village_current
+      state_topic: tele/pm-village/SENSOR
+      value_template: '{{ value_json["ENERGY"]["Current"] }}'
+      unit_of_measurement: A
+      expire_after: 300
+
+    - name: city_sea_level_pressure
+      state_topic: tele/ir-bridge-city-1/SENSOR
+      value_template: '{{ value_json["BMP280"]["SeaPressure"] }}'
+      unit_of_measurement: hPa
+      availability_topic: tele/ir-bridge-city-1/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: city_temp_in_1
+      state_topic: tele/ir-bridge-city-1/SENSOR
+      value_template: '{{ value_json["BMP280"]["Temperature"] }}'
+      unit_of_measurement: '°C'
+      availability_topic: tele/ir-bridge-city-1/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: city_power_1
+      state_topic: tele/switch-city-1/SENSOR
+      value_template: '{{ value_json["ENERGY"]["Power"] }}'
+      unit_of_measurement: W
+      expire_after: 300
+
+    - name: city_voltage_1
+      state_topic: tele/switch-city-1/SENSOR
+      value_template: '{{ value_json["ENERGY"]["Voltage"] }}'
+      unit_of_measurement: V
+      expire_after: 300
+
+    - name: waterheater_city
+      device_class: temperature
+      state_topic: tele/waterheater-city/SENSOR
+      value_template: >-
+        {%- if value_json.DS18B20 is defined -%}
+          {{ value_json.DS18B20['Temperature'] }}
+        {%- else -%}
+            {{ states('sensor.waterheater_city') }}
+        {%- endif -%}
+      json_attributes_topic: tele/waterheater-city/SENSOR
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+            'esp32': (value_json.ESP32['Temperature'] |float(0))
+          }
+          -%}
+        {{ attrs | to_json }}
+      unit_of_measurement: '°C'
+      availability_topic: tele/waterheater-city/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: waterheater_village
+      device_class: temperature
+      state_topic: tele/waterheater-village/SENSOR
+      value_template: >-
+        {%- if value_json.DS18B20 is defined -%}
+          {{ value_json.DS18B20['Temperature'] }}
+        {%- else -%}
+            {{ states('sensor.waterheater_village') }}
+        {%- endif -%}
+      json_attributes_topic: tele/waterheater-village/SENSOR
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+            'esp32': (value_json.ESP32['Temperature'] |float(0))
+          }
+          -%}
+        {{ attrs | to_json }}
+      unit_of_measurement: '°C'
+      availability_topic: tele/waterheater-village/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: village_pump_power
+      icon: mdi:alpha-w
+      device_class: power
+      state_topic: tele/pump-pm-village/SENSOR
+      value_template: '{{ (value_json["ENERGY"]["Power"] |float(0)) }}'
+      unit_of_measurement: W
+      json_attributes_topic: tele/pump-pm-village/SENSOR
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'apparent': (value_json["ENERGY"]["ApparentPower"] |float(0)),
+          'reactive': (value_json["ENERGY"]["ReactivePower"] |float(0)),
+          'factor': (value_json["ENERGY"]["Factor"] |float(0)),
+          'total': (value_json["ENERGY"]["Total"] |float(0)),
+          'V': (value_json["ENERGY"]["Voltage"] |float(0)),
+          'A': (value_json["ENERGY"]["Current"] |float(0)),
+          }
+          -%}
+        {%- if value_json.ESP32 is defined and value_json.ESP32.Temperature is defined -%}
+          {%- set temp = {
+              'esp32': (value_json.ESP32['Temperature'] |float(0))
+            }
+            -%}
+        {%- else -%}
+          {%- set temp = {
+              'esp32': (state_attr('sensor.city_batt_motion_2', 'esp32') |float(0))
+            }
+            -%}
+        {%- endif -%}
+        {{ dict(attrs.items(), **temp) | to_json }}
+      availability_topic: tele/pump-pm-village/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: village_pump_total_power
+      icon: mdi:alpha-w
+      device_class: power
+      state_topic: tele/pump-pm-village/SENSOR
+      value_template: '{{ (value_json["ENERGY"]["Total"] |float(0)) |round(1) }}'
+      unit_of_measurement: kW
+      availability_topic: tele/pump-pm-village/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: city3_temp_bath
+      device_class: temperature
+      state_topic: tele/switch-city-3/SENSOR
+      value_template: >-
+        {%- if value_json.DS18B20 is defined -%}
+          {{ value_json.DS18B20['Temperature'] }}
+        {%- else -%}
+            {{ states('sensor.city3_temp_bath') }}
+        {%- endif -%}
+      unit_of_measurement: '°C'
+      availability_topic: tele/switch-city-3/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: village_top_temp_1
+      device_class: temperature
+      state_topic: tele/rgb-light-1/SENSOR
+      value_template: >-
+        {%- if value_json.AM2301 is defined -%}
+          {{ value_json.AM2301['Temperature'] }}
+        {%- else -%}
+            {{ states('sensor.village_top_temp_1') }}
+        {%- endif -%}
+      unit_of_measurement: '°C'
+      availability_topic: tele/rgb-light-1/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: village_top_hum_1
+      device_class: humidity
+      state_topic: tele/rgb-light-1/SENSOR
+      value_template: >-
+        {%- if value_json.AM2301 is defined -%}
+          {{ value_json.AM2301['Humidity'] }}
+        {%- else -%}
+            {{ states('sensor.village_top_hum_1') }}
+        {%- endif -%}
+      unit_of_measurement: '%'
+      availability_topic: tele/rgb-light-1/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: city_water_m3
+      device_class: water
+      state_topic: tele/watermeter/WATER
+      value_template: >-
+        {{ value_json['m3'] }}
+      unit_of_measurement: m³
+      availability_topic: tele/watermeter/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: city_water_flow
+      device_class: water
+      state_topic: tele/watermeter/WATER
+      value_template: >-
+        {{ value_json['flow'] }}
+      unit_of_measurement: L
+      availability_topic: tele/watermeter/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: city_water_total
+      device_class: water
+      state_topic: tele/watermeter/WATER
+      value_template: >-
+        {%- if value_json.total | int(0) > 0 -%}
+          {{ value_json.total | int(0) }}
+        {%- else -%}
+          {{ states('sensor.city_water_total') }}
+        {%- endif -%}
+      unit_of_measurement: L
+      availability_topic: tele/watermeter/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+  binary_sensor:
+    - name: village_conn
+      state_topic: tele/zha-bridge-village/LWT
+      payload_on: Online
+      payload_off: Offline
+      device_class: connectivity
+      json_attributes_topic: tele/zha-bridge-village/STATE
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'uptime': value_json.Uptime,
+          'load': value_json.LoadAvg,
+          'ch': value_json["Wifi"].Channel,
+          'rssi': value_json["Wifi"].RSSI
+          }
+          -%}
+        {{ attrs | to_json }}
+
+    - name: city_conn
+      state_topic: tele/zha-bridge-city/LWT
+      payload_on: Online
+      payload_off: Offline
+      device_class: connectivity
+      json_attributes_topic: tele/zha-bridge-city/STATE
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'uptime': value_json.Uptime,
+          'load': value_json.LoadAvg,
+          'ch': value_json["Wifi"].Channel,
+          'rssi': value_json["Wifi"].RSSI
+          }
+          -%}
+        {{ attrs | to_json }}
+
+    - name: city_waterheater_conn
+      state_topic: tele/waterheater-city/LWT
+      payload_on: Online
+      payload_off: Offline
+      device_class: connectivity
+      json_attributes_topic: tele/waterheater-city/STATE
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'uptime': value_json.Uptime,
+          'load': value_json.LoadAvg,
+          'ch': value_json["Wifi"].Channel,
+          'rssi': value_json["Wifi"].RSSI
+          }
+          -%}
+        {{ attrs | to_json }}
+
+    - name: main_conn
+      state_topic: tele/shutter-living-1/LWT
+      payload_on: Online
+      payload_off: Offline
+      device_class: connectivity
+      json_attributes_topic: tele/shutter-living-1/STATE
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'uptime': value_json.Uptime,
+          'load': value_json.LoadAvg,
+          'ch': value_json["Wifi"].Channel,
+          'rssi': value_json["Wifi"].RSSI
+          }
+          -%}
+        {{ attrs | to_json }}
+
+    - name: village_pump_conn
+      state_topic: tele/pump-pm-village/LWT
+      payload_on: Online
+      payload_off: Offline
+      device_class: connectivity
+      json_attributes_topic: tele/pump-pm-village/STATE
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'uptime': value_json.Uptime,
+          'load': value_json.LoadAvg,
+          'ch': value_json["Wifi"].Channel,
+          'rssi': value_json["Wifi"].RSSI
+          }
+          -%}
+        {{ attrs | to_json }}
+
+    - name: village_waterheater_conn
+      state_topic: tele/waterheater-village/LWT
+      payload_on: Online
+      payload_off: Offline
+      device_class: connectivity
+      json_attributes_topic: tele/waterheater-village/STATE
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'uptime': value_json.Uptime,
+          'load': value_json.LoadAvg,
+          'ch': value_json["Wifi"].Channel,
+          'rssi': value_json["Wifi"].RSSI
+          }
+          -%}
+        {{ attrs | to_json }}
+
+    - name: thermostat_pump
+      state_topic: tele/thermostat-pump/LWT
+      payload_on: Online
+      payload_off: Offline
+      device_class: connectivity
+      json_attributes_topic: tele/thermostat-pump/STATE
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'uptime': value_json.Uptime,
+          'load': value_json.LoadAvg,
+          'ch': value_json["Wifi"].Channel,
+          'rssi': value_json["Wifi"].RSSI
+          }
+          -%}
+        {{ attrs | to_json }}
+
+  switch:
+    - name: 'fan_living'
+      state_topic: 'tele/fan_living/STATE'
+      value_template: '{{ value_json.POWER }}'
+      command_topic: 'cmnd/fan_living/POWER'
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      availability_topic: 'tele/fan_living/LWT'
+      payload_available: 'Online'
+      payload_not_available: 'Offline'
+      retain: false
+
+    - name: 'sonoff_1'
+      state_topic: 'tele/sonoff-1/STATE'
+      value_template: '{{ value_json.POWER }}'
+      command_topic: 'cmnd/sonoff-1/POWER'
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      availability_topic: 'tele/sonoff-1/LWT'
+      payload_available: 'Online'
+      payload_not_available: 'Offline'
+      retain: false
+
+    - name: 'switch_city_av'
+      state_topic: 'tele/switch-city-av/STATE'
+      value_template: '{{ value_json.POWER }}'
+      command_topic: 'cmnd/switch-city-av/POWER'
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      availability_topic: 'tele/switch-city-av/LWT'
+      payload_available: 'Online'
+      payload_not_available: 'Offline'
+      retain: false
+
+    - name: 'pm_village_switch'
+      state_topic: 'tele/pm-village/STATE'
+      value_template: '{{ value_json.POWER }}'
+      command_topic: 'cmnd/pm-village/POWER'
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      availability_topic: 'tele/pm-village/LWT'
+      payload_available: 'Online'
+      payload_not_available: 'Offline'
+      retain: false
+
+    - name: 'city_1'
+      state_topic: 'tele/switch-city-1/STATE'
+      value_template: '{{ value_json.POWER }}'
+      command_topic: 'cmnd/switch-city-1/POWER'
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      json_attributes_topic: tele/switch-city-1/SENSOR
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'today': value_json["ENERGY"]["Today"],
+          'yesterday': value_json["ENERGY"]["Yesterday"],
+          'total': value_json["ENERGY"]["Total"]
+          }
+          -%}
+        {{ attrs | to_json }}
+      availability_topic: 'tele/switch-city-1/LWT'
+      payload_available: 'Online'
+      payload_not_available: 'Offline'
+      retain: false
+
+    - name: waterheater_city
+      icon: mdi:water-boiler
+      command_topic: 'cmnd/waterheater-city/json'
+      payload_on: '{ "power1": "on" }'
+      payload_off: '{ "power1": "off" }'
+      state_topic: 'tele/waterheater-city/STATE'
+      value_template: '{{ value_json.POWER }}'
+      state_on: 'ON'
+      state_off: 'OFF'
+      availability_topic: 'tele/waterheater-city/LWT'
+      payload_available: 'Online'
+      payload_not_available: 'Offline'
+      retain: false
+
+    - name: waterheater_city_schedule
+      icon: mdi:timetable
+      state_topic: 'stat/waterheater-city/RESULT'
+      value_template: >-
+        {%- if value_json.Timers is defined -%}
+          {{ value_json.Timers }}
+        {%- else -%}
+          {{ states('switch.waterheater_city_schedule') }}
+        {%- endif -%}
+      command_topic: 'cmnd/waterheater-city/Timers'
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      availability_topic: 'tele/waterheater-city/LWT'
+      payload_available: 'Online'
+      payload_not_available: 'Offline'
+      retain: false
+
+    - name: pump_village
+      icon: mdi:pump
+      command_topic: 'cmnd/pump-pm-village/json'
+      payload_on: '{ "power1": "on" }'
+      payload_off: '{ "power1": "off" }'
+      state_topic: 'tele/pump-pm-village/STATE'
+      value_template: '{{ value_json.POWER }}'
+      state_on: 'ON'
+      state_off: 'OFF'
+      availability_topic: 'tele/pump-pm-village/LWT'
+      payload_available: 'Online'
+      payload_not_available: 'Offline'
+      retain: false
+
+    - name: waterheater_village_schedule
+      icon: mdi:timetable
+      state_topic: 'stat/waterheater-village/RESULT'
+      value_template: >-
+        {%- if value_json.Timers is defined -%}
+          {{ value_json.Timers }}
+        {%- else -%}
+          {{ states('switch.waterheater_village_schedule') }}
+        {%- endif -%}
+      command_topic: 'cmnd/waterheater-village/Timers'
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      availability_topic: 'tele/waterheater-village/LWT'
+      payload_available: 'Online'
+      payload_not_available: 'Offline'
+      retain: false
+
+    - name: waterheater_village
+      icon: mdi:water-boiler
+      command_topic: 'cmnd/waterheater-village/json'
+      payload_on: '{ "power1": "on" }'
+      payload_off: '{ "power1": "off" }'
+      state_topic: 'tele/waterheater-village/STATE'
+      value_template: '{{ value_json.POWER }}'
+      state_on: 'ON'
+      state_off: 'OFF'
+      availability_topic: 'tele/waterheater-village/LWT'
+      payload_available: 'Online'
+      payload_not_available: 'Offline'
+      retain: false
+
+    - name: village_power_switch_1
+      state_topic: 'tele/power-switch-1/STATE'
+      value_template: '{{ value_json.POWER }}'
+      command_topic: 'cmnd/power-switch-1/POWER'
+      json_attributes_topic: tele/power-switch-1/STATE
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'channel': value_json["Wifi"]["Channel"],
+          'rssi': value_json["Wifi"]["RSSI"],
+          'load': value_json.LoadAvg,
+          'heap': value_json.Heap
+          }
+          -%}
+        {{ attrs | to_json }}
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      availability_topic: 'tele/power-switch-1/LWT'
+      payload_available: 'Online'
+      payload_not_available: 'Offline'
+      retain: false
+
+    - name: water_valve_2
+      state_topic: tele/watermeter/STATE
+      value_template: '{{ value_json.POWER }}'
+      command_topic: cmnd/watermeter/POWER
+      json_attributes_topic: tele/watermeter/STATE
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'channel': value_json["Wifi"]["Channel"],
+          'rssi': value_json["Wifi"]["RSSI"],
+          'load': value_json.LoadAvg,
+          'heap': value_json.Heap
+          }
+          -%}
+        {{ attrs | to_json }}
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      availability_topic: tele/watermeter/LWT
+      payload_available: Online
+      payload_not_available: Offline
+      retain: false
+
+    - name: city_3
+      icon: mdi:radiator
+      state_topic: tele/switch-city-3/STATE
+      value_template: '{{ value_json.POWER }}'
+      command_topic: cmnd/switch-city-3/POWER
+      json_attributes_topic: tele/switch-city-3/STATE
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'channel': value_json["Wifi"]["Channel"],
+          'rssi': value_json["Wifi"]["RSSI"],
+          'load': value_json.LoadAvg,
+          'heap': value_json.Heap
+          }
+          -%}
+        {{ attrs | to_json }}
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      availability_topic: tele/switch-city-3/LWT
+      payload_available: Online
+      payload_not_available: Offline
+      retain: false
+
+    - name: pump_ctrl_cooling
+      state_topic: 'tele/thermostat-pump/STATE'
+      value_template: '{{ value_json.POWER2 }}'
+      command_topic: 'cmnd/thermostat-pump/POWER2'
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      availability_topic: 'tele/thermostat-pump/LWT'
+      payload_available: 'Online'
+      payload_not_available: 'Offline'
+      retain: false
+
+    - name: pump_ctrl_heating
+      state_topic: 'tele/thermostat-pump/STATE'
+      value_template: '{{ value_json.POWER1 }}'
+      command_topic: 'cmnd/thermostat-pump/POWER1'
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      availability_topic: 'tele/thermostat-pump/LWT'
+      payload_available: 'Online'
+      payload_not_available: 'Offline'
+      retain: false
+
+  light:
+    - name: shutter_living_1
+      command_topic: cmnd/shutter-living-1/POWER4
+      state_topic: stat/shutter-living-1/RESULT
+      state_value_template: >-
+        {%- if ('POWER4' in value_json) -%}
+          {{ value_json.POWER4 }}
+        {%- else -%}
+          {{ states('light.shutter_living_1').upper() }}
+        {%- endif -%}
+      availability_topic: tele/shutter-living-1/LWT
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: shutter_living_2
+      command_topic: cmnd/shutter-living-2/POWER4
+      state_topic: stat/shutter-living-2/RESULT
+      state_value_template: >-
+        {%- if ('POWER4' in value_json) -%}
+          {{ value_json.POWER4 }}
+        {%- else -%}
+          {{ states('light.shutter_living_2').upper() }}
+        {%- endif -%}
+      availability_topic: tele/shutter-living-2/LWT
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: shutter_bed
+      command_topic: cmnd/shutter-bed/POWER4
+      state_topic: stat/shutter-bed/RESULT
+      state_value_template: >-
+        {%- if ('POWER4' in value_json) -%}
+          {{ value_json.POWER4 }}
+        {%- else -%}
+          {{ states('light.shutter_bed').upper() }}
+        {%- endif -%}
+      availability_topic: tele/shutter-bed/LWT
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: shutter_office
+      command_topic: cmnd/shutter-office/POWER4
+      state_topic: stat/shutter-office/RESULT
+      state_value_template: >-
+        {%- if ('POWER4' in value_json) -%}
+          {{ value_json.POWER4 }}
+        {%- else -%}
+          {{ states('light.shutter_office').upper() }}
+        {%- endif -%}
+      availability_topic: tele/shutter-office/LWT
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      payload_available: Online
+      payload_not_available: Offline
+
+    # {"NAME":"Generic","GPIO":[1216,1,417,1,418,416,1,1,1,1,1,1,1,1],"FLAG":0,"BASE":18}
+    # SetOption17 1
+    - name: rgb_village
+      command_topic: cmnd/rgb-light-1/POWER
+      state_topic: tele/rgb-light-1/STATE
+      state_value_template: "{{ value_json.POWER }}"
+      availability_topic: tele/rgb-light-1/LWT
+      brightness_command_topic: cmnd/rgb-light-1/Dimmer
+      brightness_state_topic: tele/rgb-light-1/STATE
+      brightness_scale: 100
+      on_command_type: brightness
+      brightness_value_template: "{{ value_json.Dimmer }}"
+      rgb_command_topic: cmnd/rgb-light-1/Color2
+      rgb_state_topic: tele/rgb-light-1/STATE
+      rgb_value_template: "{{ value_json.Color.split(',')[0:3]|join(',') }}"
+      effect_command_topic: cmnd/rgb-light-1/Scheme
+      effect_state_topic: tele/rgb-light-1/STATE
+      effect_value_template: "{{ value_json.Scheme }}"
+      effect_list:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+      payload_on: 'ON'
+      payload_off: 'OFF'
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: city_2
+      schema: template
+      command_topic: cmnd/zha-bridge-city/Backlog
+      state_topic: tele/zha-bridge-city/54EE/SENSOR
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {% from 'tools.jinja' import ikea_group_on %}
+        {{ ikea_group_on('200', brightness, color_temp) }}
+      command_off_template: >-
+        {% from 'tools.jinja' import ikea_group_off %}
+        {{ ikea_group_off('200') }}
+      state_template: >
+        {% from 'tools.jinja' import ikea_state %}
+        {{ ikea_state(value_json, '0x54EE', 'light.city_2') }}
+      brightness_template: >
+        {% from 'tools.jinja' import ikea_brightness %}
+        {{ ikea_brightness(value_json, '0x54EE', 'light.city_2') }}
+      color_temp_template: >-
+        {% from 'tools.jinja' import ikea_color_temp %}
+        {{ ikea_color_temp(value_json, '0x54EE', 'light.city_2') }}
+      availability_topic: tele/zha-bridge-city/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: village_1
+      schema: template
+      command_topic: cmnd/zha-bridge-village/Backlog
+      state_topic: tele/zha-bridge-village/1357/SENSOR
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {% from 'tools.jinja' import ikea_on %}
+        {{ ikea_on('0x1357', brightness, color_temp) }}
+      command_off_template: >-
+        {% from 'tools.jinja' import ikea_off %}
+        {{ ikea_off('0x1357') }}
+      state_template: >
+        {% from 'tools.jinja' import ikea_state %}
+        {{ ikea_state(value_json, '0x1357', 'light.village_1') }}
+      brightness_template: >
+        {% from 'tools.jinja' import ikea_brightness %}
+        {{ ikea_brightness(value_json, '0x1357', 'light.village_1') }}
+      color_temp_template: >-
+        {% from 'tools.jinja' import ikea_color_temp %}
+        {{ ikea_color_temp(value_json, '0x1357', 'light.village_1') }}
+      availability_topic: tele/zha-bridge-village/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: village_out
+      schema: template
+      command_topic: cmnd/zha-bridge-village/Backlog
+      state_topic: tele/zha-bridge-village/1541/SENSOR
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {% from 'tools.jinja' import ikea_group_on %}
+        {{ ikea_group_on('200', brightness, color_temp) }}
+      command_off_template: >-
+        {% from 'tools.jinja' import ikea_group_off %}
+        {{ ikea_group_off('200') }}
+      state_template: >
+        {% from 'tools.jinja' import ikea_state %}
+        {{ ikea_state(value_json, '0x1541', 'light.village_out') }}
+      brightness_template: >
+        {% from 'tools.jinja' import ikea_brightness %}
+        {{ ikea_brightness(value_json, '0x1541', 'light.village_out') }}
+      color_temp_template: >-
+        {% from 'tools.jinja' import ikea_color_temp %}
+        {{ ikea_color_temp(value_json, '0x1541', 'light.village_out') }}
+      availability_topic: tele/zha-bridge-village/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: village_top_1
+      schema: template
+      command_topic: cmnd/zha-bridge-village/Backlog
+      state_topic: tele/zha-bridge-village/19A3/SENSOR
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {% from 'tools.jinja' import ikea_on %}
+        {{ ikea_on('0x19A3', brightness, color_temp) }}
+      command_off_template: >-
+        {% from 'tools.jinja' import ikea_off %}
+        {{ ikea_off('0x19A3') }}
+      state_template: >
+        {% from 'tools.jinja' import ikea_state %}
+        {{ ikea_state(value_json, '0x19A3', 'light.village_top_1') }}
+      brightness_template: >
+        {% from 'tools.jinja' import ikea_brightness %}
+        {{ ikea_brightness(value_json, '0x19A3', 'light.village_top_1') }}
+      color_temp_template: >-
+        {% from 'tools.jinja' import ikea_color_temp %}
+        {{ ikea_color_temp(value_json, '0x19A3', 'light.village_top_1') }}
+      availability_topic: tele/zha-bridge-village/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+    - name: village_garage
+      schema: template
+      command_topic: cmnd/zha-bridge-village/Backlog
+      state_topic: tele/zha-bridge-village/6DA8/SENSOR
+      command_on_template: >-
+        ZbSend {"Device": "0x6DA8", "send":{"Power":true}}
+      command_off_template: >-
+        ZbSend { "Device": "0x6DA8", "send":{"Power":false }}
+      state_template: >
+        {%- if value_json.ZbReceived is defined -%}
+          {%- set payload = value_json.ZbReceived -%}
+        {%- elif value_json.ZbInfo is defined -%}
+          {%- set payload = value_json.ZbInfo -%}
+        {%- endif -%}
+        {%- if payload["0x6DA8"].Power is defined -%}
+          {%- if payload["0x6DA8"].Power == true -%}
+            on
+          {%- else -%}
+            off
+          {%- endif -%}
+        {%- else -%}
+          {{ states('light.village_garage') }}
+        {%- endif -%}
+      availability_topic: tele/zha-bridge-village/LWT
+      payload_available: Online
+      payload_not_available: Offline
+
+  #{"NAME":"WF-CS01","GPIO":[544,227,289,34,226,161,0,0,160,224,290,225,288,0],"FLAG":0,"BASE":18}
+  cover:
+    - name: living 1
+      availability_topic: tele/shutter-living-1/LWT
+      payload_available: Online
+      payload_not_available: Offline
+      state_topic: stat/shutter-living-1/RESULT
+      value_template: >-
+        {%- if ('Shutter1' in value_json) and ('Direction' in value_json.Shutter1) -%}
+          {{ value_json.Shutter1.Direction }}
+        {%- else -%}
+          0
+        {%- endif -%}
+      state_stopped: 0
+      state_opening: 1
+      state_closing: -1
+      position_topic: stat/shutter-living-1/RESULT
+      position_template: >-
+        {%- if ('Shutter1' in value_json) and ('Position' in value_json.Shutter1) -%}
+          {{ value_json.Shutter1.Position }}
+        {%- else -%}
+          {{ int(state_attr('cover.living_1', 'current_position'), 50) }}
+        {%- endif -%}
+      position_open: 100
+      position_closed: 0
+      set_position_topic: cmnd/shutter-living-1/ShutterPosition1
+      set_position_template: >-
+        {{ position }}
+      command_topic: cmnd/shutter-living-1/Backlog
+      payload_open: ShutterOpen1
+      payload_close: ShutterClose1
+      payload_stop: ShutterStop1
+      tilt_max: 90
+      tilt_min: 0
+      tilt_opened_value: 100
+      tilt_closed_value: 0
+      tilt_command_topic: cmnd/shutter-living-1/ShutterTilt1
+      tilt_command_template: >-
+        {% from 'tools.jinja' import map_val %}
+        {{ map_val(tilt_position, 100, tilt_max) }}
+      tilt_status_topic: stat/shutter-living-1/RESULT
+      # current_tilt_position is in percent of min / max range
+      tilt_status_template: >-
+        {% from 'tools.jinja' import map_val %}
+        {%- if ('Shutter1' in value_json) and ('Tilt' in value_json.Shutter1) -%}
+          {{ value_json.Shutter1.Tilt }}
+        {%- else -%}
+          {{ map_val(int(state_attr('cover.living_1', 'current_tilt_position'), 50), 100, tilt_max) }}
+        {%- endif -%}
+      retain: false
+      optimistic: false
+      qos: 0
+
+    - name: living 2
+      availability_topic: tele/shutter-living-2/LWT
+      payload_available: Online
+      payload_not_available: Offline
+      state_topic: stat/shutter-living-2/RESULT
+      value_template: >-
+        {%- if ('Shutter1' in value_json) and ('Direction' in value_json.Shutter1) -%}
+          {{ value_json.Shutter1.Direction }}
+        {%- else -%}
+          0
+        {%- endif -%}
+      state_stopped: 0
+      state_opening: 1
+      state_closing: -1
+      position_topic: stat/shutter-living-2/RESULT
+      position_template: >-
+        {%- if ('Shutter1' in value_json) and ('Position' in value_json.Shutter1) -%}
+          {{ value_json.Shutter1.Position }}
+        {%- else -%}
+          {{ int(state_attr('cover.living_2', 'current_position'), 50) }}
+        {%- endif -%}
+      position_open: 100
+      position_closed: 0
+      set_position_topic: cmnd/shutter-living-2/ShutterPosition1
+      set_position_template: >-
+        {{ position }}
+      command_topic: cmnd/shutter-living-2/Backlog
+      payload_open: ShutterOpen1
+      payload_close: ShutterClose1
+      payload_stop: ShutterStop1
+      tilt_max: 90
+      tilt_min: 0
+      tilt_opened_value: 100
+      tilt_closed_value: 0
+      tilt_command_topic: cmnd/shutter-living-2/ShutterTilt1
+      tilt_command_template: >-
+        {% from 'tools.jinja' import map_val %}
+        {{ map_val(tilt_position, 100, tilt_max) }}
+      tilt_status_topic: stat/shutter-living-2/RESULT
+      # current_tilt_position is in percent of min / max range
+      tilt_status_template: >-
+        {% from 'tools.jinja' import map_val %}
+        {%- if ('Shutter1' in value_json) and ('Tilt' in value_json.Shutter1) -%}
+          {{ value_json.Shutter1.Tilt }}
+        {%- else -%}
+          {{ map_val(int(state_attr('cover.living_2', 'current_tilt_position'), 50), 100, tilt_max) }}
+        {%- endif -%}
+      retain: false
+      optimistic: false
+      qos: 0
+
+    - name: bed
+      availability_topic: tele/shutter-bed/LWT
+      payload_available: Online
+      payload_not_available: Offline
+      state_topic: stat/shutter-bed/RESULT
+      value_template: >-
+        {%- if ('Shutter1' in value_json) and ('Direction' in value_json.Shutter1) -%}
+          {{ value_json.Shutter1.Direction }}
+        {%- else -%}
+          0
+        {%- endif -%}
+      state_stopped: 0
+      state_opening: 1
+      state_closing: -1
+      position_topic: stat/shutter-bed/RESULT
+      position_template: >-
+        {%- if ('Shutter1' in value_json) and ('Position' in value_json.Shutter1) -%}
+          {{ value_json.Shutter1.Position }}
+        {%- else -%}
+          {{ int(state_attr('cover.bed', 'current_position'), 50) }}
+        {%- endif -%}
+      position_open: 100
+      position_closed: 0
+      set_position_topic: cmnd/shutter-bed/ShutterPosition1
+      set_position_template: >-
+        {{ position }}
+      command_topic: cmnd/shutter-bed/Backlog
+      payload_open: ShutterOpen1
+      payload_close: ShutterClose1
+      payload_stop: ShutterStop1
+      tilt_max: 90
+      tilt_min: 0
+      tilt_opened_value: 100
+      tilt_closed_value: 0
+      tilt_command_topic: cmnd/shutter-bed/ShutterTilt1
+      tilt_command_template: >-
+        {% from 'tools.jinja' import map_val %}
+        {{ map_val(tilt_position, 100, tilt_max) }}
+      tilt_status_topic: stat/shutter-bed/RESULT
+      # current_tilt_position is in percent of min / max range
+      tilt_status_template: >-
+        {% from 'tools.jinja' import map_val %}
+        {%- if ('Shutter1' in value_json) and ('Tilt' in value_json.Shutter1) -%}
+          {{ value_json.Shutter1.Tilt }}
+        {%- else -%}
+          {{ map_val(int(state_attr('cover.bed', 'current_tilt_position'), 50), 100, tilt_max) }}
+        {%- endif -%}
+      retain: false
+      optimistic: false
+      qos: 0
+
+    - name: office
+      availability_topic: tele/shutter-office/LWT
+      payload_available: Online
+      payload_not_available: Offline
+      state_topic: stat/shutter-office/RESULT
+      value_template: >-
+        {%- if ('Shutter1' in value_json) and ('Direction' in value_json.Shutter1) -%}
+          {{ value_json.Shutter1.Direction }}
+        {%- else -%}
+          0
+        {%- endif -%}
+      state_stopped: 0
+      state_opening: 1
+      state_closing: -1
+      position_topic: stat/shutter-office/RESULT
+      position_template: >-
+        {%- if ('Shutter1' in value_json) and ('Position' in value_json.Shutter1) -%}
+          {{ value_json.Shutter1.Position }}
+        {%- else -%}
+          {{ int(state_attr('cover.office', 'current_position'), 50) }}
+        {%- endif -%}
+      position_open: 100
+      position_closed: 0
+      set_position_topic: cmnd/shutter-office/ShutterPosition1
+      set_position_template: >-
+        {{ position }}
+      command_topic: cmnd/shutter-office/Backlog
+      payload_open: ShutterOpen1
+      payload_close: ShutterClose1
+      payload_stop: ShutterStop1
+      tilt_max: 90
+      tilt_min: 0
+      tilt_opened_value: 100
+      tilt_closed_value: 0
+      tilt_command_topic: cmnd/shutter-office/ShutterTilt1
+      tilt_command_template: >-
+        {% from 'tools.jinja' import map_val %}
+        {{ map_val(tilt_position, 100, tilt_max) }}
+      tilt_status_topic: stat/shutter-office/RESULT
+      # current_tilt_position is in percent of min / max range
+      tilt_status_template: >-
+        {% from 'tools.jinja' import map_val %}
+        {%- if ('Shutter1' in value_json) and ('Tilt' in value_json.Shutter1) -%}
+          {{ value_json.Shutter1.Tilt }}
+        {%- else -%}
+          {{ map_val(int(state_attr('cover.office', 'current_tilt_position'), 50), 100, tilt_max) }}
+        {%- endif -%}
+      retain: false
+      optimistic: false
+      qos: 0
+
+light:
+  - platform: group
+    name: shutter_living
+    entities:
+      - light.shutter_living_1
+      - light.shutter_living_2
+
+input_select:
+  tasmota_ota_url:
+    name: version
+    icon: mdi:file-link
+    options:
+      - latest
+      - release
+    initial: latest
+
+script:
+  tasmota_ota_url_set:
+    alias: tasmota Url
+    icon: mdi:cloud-upload
+    mode: single
+    variables:
+      esp_url: >-
+        {%-
+              set url = {
+                'latest': 'http://ota.tasmota.com/tasmota',
+                'release': 'http://ota.tasmota.com/tasmota/release'
+              }
+          -%}
+        {{ url[states('input_select.tasmota_ota_url')] }}
+      esp32_url: >-
+        {%-
+              set url = {
+                'latest': 'http://ota.tasmota.com/tasmota32',
+                'release': 'http://ota.tasmota.com/tasmota32/release'
+              }
+          -%}
+        {{ url[states('input_select.tasmota_ota_url')] }}
+
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: binary_sensor.tasmota_update
+            state: 'on'
+      - repeat:
+          for_each:
+            - device: switch-city-av
+              payload: >-
+               { 'OtaUrl': '{{esp_url}}/tasmota.bin.gz' }
+            - device: pm-village
+              payload:  >-
+               { 'OtaUrl': '{{esp_url}}/tasmota.bin.gz' }
+            - device: pump-pm-village
+              payload:  >-
+               { 'OtaUrl': '{{esp32_url}}/tasmota32.bin' }
+            - device: waterheater-village
+              payload:  >-
+               { 'OtaUrl': '{{esp32_url}}/tasmota32.bin' }
+            - device: switch-city-1
+              payload:  >-
+               { 'OtaUrl': '{{esp_url}}/tasmota.bin.gz' }
+            - device: waterheater-city
+              payload:  >-
+               { 'OtaUrl': '{{esp32_url}}/tasmota32.bin' }
+            - device: zha-bridge-city
+              payload:  >-
+               { 'OtaUrl': '{{esp_url}}/tasmota-zbbridge.bin.gz' }
+            - device: zha-bridge-village
+              payload:  >-
+               { 'OtaUrl': '{{esp_url}}/tasmota-zbbridge.bin.gz' }
+            - device: shutter-living-1
+              payload:  >-
+               { 'OtaUrl': '{{esp_url}}/tasmota.bin.gz' }
+            - device: shutter-living-2
+              payload:  >-
+               { 'OtaUrl': '{{esp_url}}/tasmota.bin.gz' }
+            - device: shutter-bed
+              payload:  >-
+               { 'OtaUrl': '{{esp_url}}/tasmota.bin.gz' }
+            - device: shutter-office
+              payload:  >-
+               { 'OtaUrl': '{{esp_url}}/tasmota.bin.gz' }
+            - device: rgb-light-1
+              payload:  >-
+               { 'OtaUrl': '{{esp_url}}/tasmota.bin.gz' }
+            - device: power-switch-1
+              payload:  >-
+               { 'OtaUrl': '{{esp_url}}/tasmota.bin.gz' }
+            - device: thermostat-pump
+              payload:  >-
+               { 'OtaUrl': '{{esp_url}}/tasmota.bin.gz' }
+            - device: sonoff-1
+              payload:  >-
+               { 'OtaUrl': '{{esp_url}}/tasmota.bin.gz' }
+          sequence:
+            - action: mqtt.publish
+              data_template:
+                topic: >-
+                  cmnd/{{ repeat.item.device }}/json
+                payload: >-
+                  {{ repeat.item.payload | to_json }}
+            - delay:
+                milliseconds: 1000
+
+  tasmota_ota:
+    alias: tasmota OTA
+    icon: mdi:cloud-download
+    mode: single
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: binary_sensor.tasmota_update
+            state: 'on'
+      - repeat:
+          for_each:
+            - device: switch-city-av
+              payload: { 'Upgrade': 1 }
+            - device: pm-village
+              payload: { 'Upgrade': 1 }
+            - device: pump-pm-village
+              payload: { 'Upgrade': 1 }
+            - device: switch-city-1
+              payload: { 'Upgrade': 1 }
+            - device: waterheater-city
+              payload: { 'Upgrade': 1 }
+            - device: zha-bridge-city
+              payload: { 'Upgrade': 1 }
+            - device: waterheater-village
+              payload: { 'Upgrade': 1 }
+            - device: zha-bridge-village
+              payload: { 'Upgrade': 1 }
+            - device: shutter-living-1
+              payload: { 'Upgrade': 1 }
+            - device: shutter-living-2
+              payload: { 'Upgrade': 1 }
+            - device: shutter-bed
+              payload: { 'Upgrade': 1 }
+            - device: shutter-office
+              payload: { 'Upgrade': 1 }
+            - device: rgb-light-1
+              payload: { 'Upgrade': 1 }
+            - device: power-switch-1
+              payload: { 'Upgrade': 1 }
+            - device: thermostat-pump
+              payload: { 'Upgrade': 1 }
+            - device: sonoff-1
+              payload: { 'Upgrade': 1 }
+          sequence:
+            - action: mqtt.publish
+              data_template:
+                topic: >-
+                  cmnd/{{ repeat.item.device }}/json
+                payload: >-
+                  {{ repeat.item.payload | to_json }}
+            - delay:
+                milliseconds: 5000
+      - delay:
+          minutes: 5
+      - action: mqtt.publish
+        data_template:
+          topic: cmnd/tasmotas/json
+          payload: >-
+            {{ { 'restart': 99 } | to_json }}
+      - delay:
+          minutes: 1
+      - action: script.turn_on
+        target:
+          entity_id: script.tasmota_status
+
+  tasmota_status:
+    alias: status
+    icon: mdi:information-slab-symbol
+    mode: single
+    sequence:
+      - action: mqtt.publish
+        data_template:
+          topic: cmnd/tasmotas/json
+          payload: >-
+            {{ { 'Status': '0' } | to_json }}
+      - delay:
+          milliseconds: 1000
+
+  zha_reboot:
+    alias: zha reboot
+    icon: mdi:zigbee
+    mode: single
+    sequence:
+      - repeat:
+          for_each:
+            - topic: cmnd/zha-bridge-city/json
+              payload: { 'restart': 99 }
+            - topic: cmnd/zha-bridge-village/json
+              payload: { 'restart': 99 }
+          sequence:
+            - action: mqtt.publish
+              data_template:
+                topic: >-
+                  {{repeat.item.topic}}
+                payload: >-
+                  {{repeat.item.payload | to_json }}
+
+climate:
+  - platform: tasmota_irhvac
+    name: city_1
+    command_topic: cmnd/ir-bridge-city-1/irhvac
+    state_topic: tele/ir-bridge-city-1/RESULT
+    temperature_sensor: sensor.city_temp_in_1
+    vendor: panasonic_ac
+    min_temp: 18
+    max_temp: 26
+    # target_temp: 24
+    initial_operation_mode: 'off'
+    away_temp: 20
+    precision: 1
+    supported_modes:
+      - 'heat'
+      - 'cool'
+      - 'off'
+    supported_fan_speeds:
+      - 'medium'
+      - 'high'
+      - 'min'
+      - 'max'
+      - 'auto'
+    supported_swing_list:
+      - 'off'
+      - 'vertical'
+      - 'horizontal'
+      - 'both'
+    default_quiet_mode: 'Off'
+    default_turbo_mode: 'Off'
+    default_econo_mode: 'Off'
+    hvac_model: '3'
+    celsius_mode: 'On'
+    default_light_mode: 'Off'
+    default_filter_mode: 'Off'
+    default_clean_mode: 'Off'
+    default_beep_mode: 'Off'
+    default_sleep_mode: '-1'
+    availability_topic: tele/ir-bridge-city-1/LWT
+    payload_available: Online
+    payload_not_available: Offline
+
+  - platform: tasmota_irhvac
+    name: city_3
+    command_topic: cmnd/ir-bridge-city-3/irhvac
+    state_topic: tele/ir-bridge-city-3/RESULT
+    vendor: FUJITSU_AC
+    min_temp: 20
+    max_temp: 30
+    # target_temp: 24
+    initial_operation_mode: 'off'
+    away_temp: 20
+    precision: 1
+    supported_modes:
+      - 'heat'
+      - 'cool'
+      - 'off'
+    supported_fan_speeds:
+      - 'max'
+      - 'medium'
+      - 'min'
+      - 'auto'
+    supported_swing_list:
+      - 'off'
+      - 'vertical'
+      - 'horizontal'
+      - 'both'
+    default_quiet_mode: 'Off'
+    default_turbo_mode: 'Off'
+    default_econo_mode: 'Off'
+    hvac_model: '1'
+    celsius_mode: 'On'
+    default_light_mode: 'Off'
+    default_filter_mode: 'Off'
+    default_clean_mode: 'Off'
+    default_beep_mode: 'Off'
+    default_sleep_mode: '-1'
+    availability_topic: tele/ir-bridge-city-3/LWT
+    payload_available: Online
+    payload_not_available: Offline
+
+automation:
+  - alias: ligths_auto_off
+    id: ligths_auto_off
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.village_conn
+        to: 'on'
+        for:
+          seconds: 30
+        id: village_lights_off
+      - trigger: state
+        entity_id: binary_sensor.city_conn
+        to: 'on'
+        for:
+          seconds: 30
+        id: city_lights_off
+
+    mode: parallel
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - village_lights_off
+          sequence:
+            - repeat:
+                for_each:
+                  - light.village_1
+                  - light.village_garage
+                  - light.village_out
+                  - light.village_top_1
+                sequence:
+                  - action: light.turn_on
+                    target:
+                      entity_id: >-
+                        {{
+                            repeat.item
+                          }}
+                  - delay:
+                      milliseconds: 500
+            - delay:
+                seconds: 20
+            - repeat:
+                for_each:
+                  - light.village_1
+                  - light.village_garage
+                  - light.village_out
+                  - light.village_top_1
+                sequence:
+                  - action: light.turn_off
+                    target:
+                      entity_id: >-
+                        {{
+                            repeat.item
+                          }}
+                  - delay:
+                      milliseconds: 500
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - city_lights_off
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.city_2
+            - delay:
+                seconds: 20
+            - action: light.turn_off
+              target:
+                entity_id:
+                  - light.city_2

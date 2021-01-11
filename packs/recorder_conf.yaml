@@ -1,0 +1,203 @@
+recorder:
+  auto_purge: true
+  purge_keep_days: 180
+  commit_interval: 60
+
+  include:
+    entities:
+      - climate.temp_living
+      - climate.temp_bed
+      - climate.temp_office
+      - climate.hot_water
+      - sensor.eink_eink_battery
+      - climate.pump
+      - sensor.city_water_flow
+      - sensor.mobile_battery_level
+      - sensor.sof_gw_batt
+  #     - automation.n0ll_home
+  #     - automation.n0ll_not_home
+  #     - automation.auto_reboot_all
+  #     - automation.home_near
+  #     - automation.just_home
+  #     - automation.home_motion_detect
+  #     - automation.event_android_alarm
+  #     - automation.just_home
+  #     - automation.motion_light_extend
+  #     - automation.living_tv
+  #     - automation.update_video_db
+
+  exclude:
+    domains:
+      - fan
+      - weblink
+      - update
+      - notify
+      - group
+      - persistent_notification
+      - camera
+      - script
+      - climate
+      - automation
+      - alert
+      - utility_meter
+      - input_boolean
+      - input_number
+      - update
+    entity_globs:
+      - sensor.*_batt*
+      - binary_sensor.*_occupancy*
+      - light.shutter*
+      - cover.living*
+      - cover.bed*
+      - cover.office*
+      - sensor.city_water_*
+      # daikin
+      - sensor.null_*
+      - button.bosch_*
+      - switch.bosch_*
+      - select.bosch_*
+      - sensor.bosch_*
+      - binary_sensor.bosch_*
+    entities:
+      - switch.pm_village_switch
+      - switch.tv_cec
+      - switch.sonoff_1
+      - switch.city_1
+      - switch.switch_city_av
+      - sensor.view_root
+      - sensor.mapbox_key
+      - sensor.mapbox_url
+      - sensor.tasmota_r_v
+      - sensor.tasmota_l_v
+      - sensor.wled_r_v
+      - sensor.wled_l_v
+      - sensor.hts_recording_sensor
+      # - sensor.work_acc
+      - sensor.pressure_derivative
+      - sensor.trans_completed_torrents
+      - sensor.trans_paused_torrents
+      - sensor.trans_started_torrents
+      - sensor.trans_status
+      - sensor.trans_active_torrents
+      - sensor.trans_total_torrents
+      - sensor.video_rec
+      - sensor.village_today_energy
+      - sensor.village_pressure_in
+      - sensor.village_pressure_derivative
+      - sensor.village_pump_total_power
+      - sensor.city_pressure_derivative
+      - sensor.mains_freq
+      - sensor.mains_factor
+      - sensor.mains_energy
+      - sensor.monthly_energy_peak
+      - sensor.monthly_energy_offpeak
+      - sensor.batt_max_current
+      - sensor.batt_drain
+      - timer.start_up_delay
+      - timer.dummy_in_bed
+      - media_player.soundbar
+      - media_player.livingtv
+      - binary_sensor.bravia
+      - binary_sensor.kodi_screen_saver
+      - binary_sensor.isp_conn
+      - binary_sensor.home_motion
+      - binary_sensor.download_active
+      - binary_sensor.in_call
+      - binary_sensor.light_video_pause
+      - binary_sensor.tasmota_update
+      - binary_sensor.wled_update
+      - binary_sensor.kodi_active
+      # - binary_sensor.work_acc
+      - binary_sensor.day
+      - binary_sensor.wled_living
+      - binary_sensor.grabber_living
+      - binary_sensor.night_mode
+      - binary_sensor.clean_vacuum
+      - binary_sensor.w_alert
+      - binary_sensor.warn_valve_1
+      - binary_sensor.batt_lock_critical
+      - binary_sensor.batt_building_critical
+      - sensor.car_fines
+      - binary_sensor.dummy_clima_max_restore_sensor
+      - binary_sensor.shutter_move
+      - light.wled_living
+      - light.wled_window
+      - light.city_2
+      - light.office_desk
+      - light.office_window
+      # valetudo
+      - vacuum.valetudo_rockrobo
+      - sensor.valetudo_rockrobo_map_segments
+      - sensor.valetudo_rockrobo_current_statistics_area
+      - sensor.valetudo_rockrobo_current_statistics_time
+      - sensor.valetudo_rockrobo_main_brush
+      - sensor.valetudo_rockrobo_main_filter
+      - sensor.valetudo_rockrobo_right_brush
+      - sensor.valetudo_rockrobo_sensor_cleaning
+      - sensor.valetudo_rockrobo_wi_fi_configuration
+      - binary_sensor.rockrobo_dustbin
+      # kaiterra
+      - air_quality.city_air_quality
+      - sensor.city_humidity
+      - sensor.city_temperature
+      # pirate weather
+      - sensor.dummy_local
+      # city wh
+      - binary_sensor.city_wh_warning
+      - binary_sensor.city_wh_time
+      # proximity city
+      - sensor.city_nearest_device
+      - sensor.city_nearest_direction_of_travel
+      - sensor.city_nearest_distance
+      - sensor.city_root_direction_of_travel
+      - sensor.city_root_distance
+      # proximity home
+      - sensor.home_nearest_device
+      - sensor.home_nearest_direction_of_travel
+      - sensor.home_nearest_distance
+      - sensor.home_root_direction_of_travel
+      # airfryer
+      - sensor.xiaomi_airfryer_appoint_time_left
+      - sensor.xiaomi_airfryer_apponit_time
+      - sensor.xiaomi_airfryer_food_quanty
+      - sensor.xiaomi_airfryer_preheat_phase
+      - sensor.xiaomi_airfryer_recipe_id
+      - sensor.xiaomi_airfryer_remaining
+      - sensor.xiaomi_airfryer_status
+      - sensor.xiaomi_airfryer_target_temperature
+      - sensor.xiaomi_airfryer_target_time
+      - sensor.xiaomi_airfryer_turn_pot
+      # daikin
+      - binary_sensor.hot_water_tank_state
+      - binary_sensor.space_heating_unit_state
+      - water_heater.domestic_hot_water_tank
+      - number.temperature_control
+      - select.operation_mode
+      - switch.climate_control
+      # eink
+      - binary_sensor.eink_notification
+      - input_boolean.eink_disable_sleep
+      # modbus
+      - sensor.state_living_climate
+      - sensor.ctrl_living_climate
+      # - sensor.speed_living_climate
+      - sensor.state_bed_climate
+      - sensor.ctrl_bed_climate
+      # - sensor.speed_bed_climate
+      - sensor.state_office_climate
+      - sensor.ctrl_office_climate
+      # - sensor.speed_office_climate
+      # cliamte
+      - binary_sensor.living_cooling
+      - binary_sensor.living_heating
+      - binary_sensor.bed_cooling
+      - binary_sensor.bed_heating
+      - binary_sensor.office_cooling
+      - binary_sensor.office_heating
+      - binary_sensor.alert_dummy_pump_temp_on_off
+      - input_number.living_offset
+      - input_number.office_offset
+      - input_number.bed_offset
+      # city 1 climate
+      - input_select.cliamate_city1_swingv
+      - input_select.cliamate_city1_swingh

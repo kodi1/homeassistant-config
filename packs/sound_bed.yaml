@@ -1,0 +1,368 @@
+homeassistant:
+  customize:
+    automation.bed_sleep_on:
+      icon: mdi:youtube
+    automation.bed_sleep_on_spot:
+      icon: mdi:spotify
+    automation.bed_music:
+      icon: mdi:speaker-play
+
+template:
+  - binary_sensor:
+    - name: bedmusic
+      icon: mdi:cast-audio
+      device_class: sound
+      delay_on:
+        seconds: 1
+      delay_off:
+        seconds: 300
+      state: >-
+        {{
+            is_state('input_boolean.in_bed_dummy_switch', 'on')
+          }}
+
+automation:
+  - alias: bed_sleep_on_spot
+    id: bed_sleep_on_spot
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.bedmusic
+        to: 'on'
+    actions:
+      - action: input_select.select_option
+        data:
+          entity_id: input_select.select_spotify
+          option: sleep
+      - action: script.spot_bed
+      - wait_template: >-
+          {{
+              is_state('media_player.bedroom_speaker', 'playing')
+            }}
+        timeout:
+          seconds: 60
+        continue_on_timeout: true
+      - action: media_player.volume_set
+        data:
+          entity_id: media_player.bedroom_speaker
+          volume_level: 0.14
+      - action: timer.start
+        entity_id: timer.bed_music
+        data:
+          duration: 00:45:00
+
+  - alias: bed_sleep_on
+    id: bed_sleep_on
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.bedmusic
+        to: 'on'
+    conditions:
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: >-
+              {{
+                  not is_state('media_player.bedroom_speaker', 'playing')
+                }}
+    actions:
+      - action: input_select.select_option
+        data_template:
+          entity_id: input_select.select_sleep_sound
+          option: >-
+            {%- set c = states('input_select.select_sleep_sound') -%}
+            {%- set a = state_attr('input_select.select_sleep_sound', 'options') -%}
+            {{ (((a | join("|")) | regex_replace(c, replace='')) | regex_replace('\|\|', replace='|')).split('|') | random }}
+
+  - alias: bed_sleep_on_select
+    id: bed_sleep_on_select
+    triggers:
+      - trigger: state
+        entity_id: input_select.select_sleep_sound
+    conditions:
+      condition: and
+      conditions:
+        - condition: template
+          value_template: '{{trigger.from_state.state != trigger.to_state.state}}'
+    actions:
+      - action: script.bed_sleep_on
+
+  - alias: bed_music
+    id: bed_music
+    triggers:
+      - trigger: state
+        entity_id: media_player.bedroom_speaker
+        from: 'off'
+        # to: 'idle'
+        for:
+          seconds: 3
+        id: to_on
+      - trigger: state
+        entity_id: input_select.select_radio_bed
+        not_from:
+          - 'unknown'
+          - 'unavailable'
+          - 'none'
+        id: to_on
+      - trigger: event
+        event_type: up_down_my
+        event_data:
+          data: start
+        id: start
+      - trigger: state
+        entity_id: binary_sensor.bedmusic
+        to: 'off'
+        id: to_off
+      - trigger: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.bed_music
+        id: to_off
+      - trigger: state
+        entity_id: media_player.bedroom_speaker
+        to: 'off'
+        for:
+          seconds: 3
+        id: timer_clear
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - to_on
+          - condition: template
+            value_template: >-
+              {{
+                  ('input_select.select_radio_bed' == trigger.entity_id) or
+                    not is_state('media_player.bedroom_speaker', 'playing')
+                }}
+          - condition: state
+            entity_id:
+              - script.bed_sleep_on
+              - script.spot_bed
+            state: 'off'
+          sequence:
+            - action: script.bed_music_on
+
+        - conditions:
+          - condition: trigger
+            id:
+              - to_off
+          - condition: template
+            value_template: >-
+              {{
+                now() - (
+                    state_attr('automation.event_android_alarm', 'last_triggered') |
+                      default(now() - timedelta(minutes=16), true)
+                  ) >
+                  timedelta(minutes=15)
+                }}
+          sequence:
+            - action: media_player.turn_off
+              entity_id: media_player.bedroom_speaker
+
+        - conditions:
+          - condition: trigger
+            id:
+              - timer_clear
+          - condition: template
+            value_template: "{{ not is_state('timer.bed_music', 'idle') }}"
+          sequence:
+            - action: media_player.turn_off
+              entity_id: media_player.bedroom_speaker
+            - action: timer.cancel
+              entity_id: timer.bed_music
+
+        - conditions:
+          - condition: trigger
+            id:
+              - start
+          sequence:
+            - action: input_select.set_options
+              target:
+                entity_id: input_select.select_radio_bed
+              data:
+                options: >-
+                  {% from 'tools.jinja' import radio_names %}
+                  {{ radio_names() }}
+
+input_select:
+  select_radio_bed:
+    name: bed online radio
+    options:
+      - none
+    icon: mdi:radio
+
+  select_sleep_sound:
+    options:
+      - '-i8IMw5WeXc'
+      - 'AsD5u6k6dKI'
+      - 'hwsEjtlr9yw'
+      - 'kygoJiJAWG4'
+      - 'T9IJKwEspI8'
+      - 'Mr9T-943BnE'
+      - 'cO_IFJaWmhA'
+      - 'V9Xu6mkacg8'
+      - 'EgzGy9fadpM'
+      - 'XVBOtQHKVzQ'
+      - 'kdKCqJUGCgM'
+      - 'b57XWNLEflY'
+      - 'gD0HYrLhT1Q'
+      - 'y4h_4NIOxuY'
+      - '_zLxFb4Tly4'
+      - 'gGo5Rcrb6m0'
+      - 'cmVq2Lwbz58'
+      - 'NLQdBROU5aE'
+      - 'qH8S9_m2N3o'
+      - '-L2C44_Qqo0'
+      - 'oUE9V9-yPR4'
+      - 'otFfC9L9UwY'
+      - 'FnQfhSgLj_0'
+
+script:
+  bed_sleep_on:
+    sequence:
+      - action: logbook.log
+        data_template:
+          name: 'sleep on'
+          message: >-
+            https://www.youtube.com/watch?v={{ states("input_select.select_sleep_sound") }}
+      - action: media_extractor.play_media
+        data_template:
+          entity_id: media_player.bedroom_speaker
+          media_content_type: 'audio/mp3'
+          media_content_id: >-
+            https://www.youtube.com/watch?v={{ states("input_select.select_sleep_sound") }}
+      - wait_template: >-
+          {{
+              is_state('media_player.bedroom_speaker', 'idle')
+            }}
+        timeout:
+          seconds: 30
+        continue_on_timeout: true
+      - wait_template: >-
+          {{
+              is_state('media_player.bedroom_speaker', 'playing')
+            }}
+        timeout:
+          seconds: 90
+        continue_on_timeout: true
+      - action: media_player.media_play_pause
+        data:
+          entity_id: media_player.bedroom_speaker
+      - delay:
+          milliseconds: 500
+      - action: media_player.media_play_pause
+        data:
+          entity_id: media_player.bedroom_speaker
+      - action: media_player.volume_set
+        data:
+          entity_id: media_player.bedroom_speaker
+          volume_level: 0.16
+      - action: timer.start
+        entity_id: timer.bed_music
+        data:
+          duration: 00:45:00
+
+  bed_music_on:
+    sequence:
+      - action: logbook.log
+        data_template:
+          name: 'bed music on'
+          message: '{{ states("input_select.select_radio_bed") }}'
+      # - if:
+      #     - condition: state
+      #       entity_id: media_player.bedroom_speaker
+      #       state: 'off'
+      #   then:
+      #     - action: media_player.turn_on
+      #       entity_id: media_player.bedroom_speaker
+      #     - wait_template: >-
+      #         {{
+      #             not is_state('media_player.bedroom_speaker', 'off')
+      #           }}
+      #       timeout:
+      #         seconds: 10
+      #       continue_on_timeout: true
+      # - action: media_player.media_stop
+      #   entity_id: media_player.bedroom_speaker
+      # - wait_template: >-
+      #     {{
+      #         is_state('media_player.bedroom_speaker', 'idle')
+      #       }}
+      #   timeout:
+      #     seconds: 10
+      #   continue_on_timeout: true
+      - action: media_player.play_media
+        data_template:
+          entity_id: media_player.bedroom_speaker
+          media_content_type: 'audio/mp3'
+          media_content_id: >-
+            {% from 'tools.jinja' import name_to_url %}
+            {{ name_to_url('input_select.select_radio_bed') }}
+      - wait_template: >-
+          {{
+              is_state('media_player.bedroom_speaker', 'playing')
+            }}
+        timeout:
+          seconds: 10
+        continue_on_timeout: true
+      - action: media_player.media_play_pause
+        data:
+          entity_id: media_player.bedroom_speaker
+      - delay:
+          milliseconds: 500
+      - action: media_player.media_play_pause
+        data:
+          entity_id: media_player.bedroom_speaker
+      - action: media_player.volume_set
+        data:
+          entity_id: media_player.bedroom_speaker
+          volume_level: 0.12
+      - action: timer.start
+        entity_id: timer.bed_music
+        data_template:
+          duration: "00:{{ states('input_number.bed_music_timer') | int(0) }}:00"
+
+  start_up_bedroom_speaker:
+    sequence:
+      - if:
+        - condition: state
+          entity_id: switch.bed_switch_1
+          state: 'on'
+        then:
+            - wait_template: >-
+                {{
+                    states('media_player.bedroom_speaker') not in ['unknown', 'unavailable']
+                  }}
+              timeout:
+                seconds: 30
+              continue_on_timeout: false
+
+            - condition: state
+              entity_id: media_player.bedroom_speaker
+              state: 'playing'
+            - action: timer.start
+              entity_id: timer.bed_music
+
+        else:
+          - action: logbook.log
+            data_template:
+              name: bedroom_speaker
+              message: 'living_tv is not on'
+
+timer:
+  bed_music:
+    name: 'music time'
+    icon: mdi:timer-sand
+    duration: '00:01:30'
+
+input_number:
+  bed_music_timer:
+    name: 'music time'
+    unit_of_measurement: 'min'
+    min: 5
+    max: 90
+    step: 5
+    icon: mdi:av-timer

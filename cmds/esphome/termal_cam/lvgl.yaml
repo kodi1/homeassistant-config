@@ -1,0 +1,37 @@
+font:
+  - file: "gfonts://Montserrat"
+    id: montserrat_14
+    size: 14
+  - file: "gfonts://Montserrat"
+    id: montserrat_18
+    size: 18
+  - file: "gfonts://Montserrat"
+    id: montserrat_20
+    size: 20
+
+image:
+  - file: "common/esphome.png"
+    id: boot_image
+    resize: 320x240
+    type: RGB565
+
+lvgl:
+  id: my_lvgl
+  displays: 
+    - lcd
+  touchscreens: 
+    - touch
+  pages:
+    - id: boot_page
+      <<: !include boot_page.yaml
+    - id: main_page
+      <<: !include main_page.yaml
+  on_boot:
+    # - lvgl.page.show: main_page
+    - lvgl.dropdown.update:
+        id: palette_dropdown
+        selected_index: !lambda |-
+          return id(active_palette_index);
+    - lambda: |-
+        init_buffers(id(palette_legend_canvas));
+        update_legend(id(palette_legend_canvas), palettes[id(active_palette_index)]);

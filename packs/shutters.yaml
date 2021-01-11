@@ -1,0 +1,785 @@
+homeassistant:
+  customize:
+    sensor.shutters_open_speed_wind:
+      friendly_name: wind trigger
+    sensor.shutters_vibration:
+      friendly_name: shutters
+      icon: mdi:waveform
+    sensor.wind_vibration:
+      friendly_name: wind
+      icon: mdi:waveform
+    automation.shutter_wind:
+      friendly_name: shutters
+      icon: mdi:window-shutter-auto
+    automation.shutter_position_ctrl:
+      friendly_name: restore ctrl
+      icon: mdi:toggle-switch-variant-off
+cover:
+  - platform: group
+    name: shutters
+    entities:
+      - cover.living_1
+      - cover.living_2
+      - cover.bed
+      - cover.office
+
+sensor:
+  - platform: history_stats
+    name: shutters_vibration
+    entity_id: binary_sensor.shutters_vibration
+    state: 'on'
+    type: ratio
+    start: >-
+      {{
+          now() - timedelta(minutes=30)
+        }}
+    end: >-
+      {{
+          now()
+        }}
+
+  - platform: history_stats
+    name: wind_vibration
+    entity_id: binary_sensor.wind_vibration
+    state: 'on'
+    type: ratio
+    start: >-
+      {{
+          now() - timedelta(minutes=60)
+        }}
+    end: >-
+      {{
+          now()
+        }}
+
+template:
+  - trigger:
+    - trigger: event
+      event_type: shutter_event
+      variables:
+        event: >-
+          {{ trigger.event.data.wind }}
+
+    sensor:
+      - name: shutters_open_speed_wind
+        unique_id: shutters_open_speed_wind
+        device_class: wind_speed
+        state: >-
+          {{
+              states('sensor.local_wind_speed') | float(0)
+            }}
+        unit_of_measurement: km/h
+        icon: >-
+          {%-
+              set _map = {
+                  'open': 'mdi:wind-turbine-alert',
+                  'close': 'mdi:wind-turbine-check',
+                  'tilt_open_shutters': 'mdi:windsock',
+                  'tilt_open_wind': 'mdi:tailwind',
+                  'notify': 'mdi:message-badge-outline',
+                  'detected': 'mdi:weather-tornado',
+                }
+            -%}
+            {{ _map[event] }}
+        attributes:
+          speed_open: >-
+            {%- if event in ['tilt_open_shutters', 'tilt_open_wind'] -%}
+              {{
+                  float(states('sensor.local_wind_speed'), 0)
+                }}
+            {%- else -%}
+              {{
+                  float(state_attr('sensor.shutters_open_speed_wind', 'speed_open'), 0)
+                }}
+            {%- endif -%}
+          forecast_speed_open: >-
+            {%- if event in ['tilt_open_shutters', 'tilt_open_wind'] -%}
+              {{
+                  float(states('sensor.local_forecast_wind_speed'), 0)
+                }}
+            {%- else -%}
+              {{
+                  float(state_attr('sensor.shutters_open_speed_wind', 'forecast_speed_open'), 0)
+                }}
+            {%- endif -%}
+          last_update: >-
+            {{
+                now().isoformat()
+              }}
+          state_shutters: >-
+            {%- if event in ['tilt_open_wind', 'tilt_open_shutters', 'open', 'close'] -%}
+              {{
+                  event
+                }}
+            {%- else -%}
+              {{
+                  state_attr('sensor.shutters_open_speed_wind', 'state_shutters')
+                }}
+            {%- endif -%}
+        availability: >-
+          {{
+              not (
+                  states('sensor.local_wind_speed') in ['unavailable', 'unknown', 'none']
+                )
+            }}
+
+  - trigger:
+    - trigger: state
+      entity_id:
+        - cover.bed
+      id: move
+    - trigger: event
+      event_type: call_service
+      event_data:
+        domain: cover
+      id: ctrl
+
+    binary_sensor:
+      - name: shutter_move
+        auto_off:
+          seconds: 60 # max move time
+        delay_off:
+          seconds: 3
+        state: >-
+          {%- if trigger.id == 'ctrl' and 'cover.bed' in trigger.event.data.service_data.entity_id -%}
+            {{ true }}
+          {%- elif trigger.id == 'move' -%}
+            {{ states('cover.bed') in ['opening', 'closing'] }}
+          {%- else -%}
+             {{ is_state('binary_sensor.shutter_move', 'on') }}
+          {%- endif -%}
+        attributes:
+          id: >-
+            {{
+                trigger.id
+              }}
+
+automation:
+  - alias: shutter_wind
+    id: shutter_wind
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.shutters_vibration
+        above: 2.5
+        id: notify
+      - trigger: numeric_state
+        entity_id: sensor.shutters_vibration
+        above: 0
+        id: detected
+      - trigger: numeric_state
+        entity_id: sensor.shutters_vibration
+        above: 5.5
+        id: move_first
+      - trigger: numeric_state
+        entity_id: sensor.shutters_vibration
+        above: 15.5
+        id: move_second
+      - trigger: numeric_state
+        entity_id: sensor.wind_vibration
+        above: 15.0
+        id: move_tilt
+      - trigger: template
+        value_template: >-
+          {{
+              (
+                  float(state_attr('sensor.shutters_open_speed_wind', 'speed_open'), 5) >
+                    float(states('sensor.local_wind_speed'), 6)
+                ) and
+              (
+                  float(states('sensor.local_wind_speed'), 5) >
+                    float(states('sensor.local_forecast_wind_speed'), 6)
+                ) and
+              (
+                  float(state_attr('sensor.shutters_open_speed_wind', 'forecast_speed_open'), 5) >
+                    float(states('sensor.local_forecast_wind_speed'), 6)
+                ) and
+              (
+                  float(states('sensor.wind_vibration'), 6) < 3.0
+                )
+            }}
+        id: move_restore
+      - trigger: event
+        event_type: up_down_my
+        event_data:
+          data: start
+        id: start
+
+    conditions:
+      - condition: template
+        value_template: >-
+          {{
+              ( trigger.from_state is defined and
+                  trigger.from_state.state not in ['unknown', 'unavailable'] and
+                  trigger.to_state.state not in ['unknown', 'unavailable']
+                ) or
+                trigger.id == 'start'
+            }}
+
+    mode: queued
+    trace:
+      stored_traces: 30
+
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - notify
+          - condition: numeric_state
+            entity_id: cover.bed
+            attribute: current_tilt_position
+            below: 80
+          sequence:
+            - action: script.all_notify
+              data:
+                icon_notify: window-shutter-alert
+                tit: shutters
+                msg: detected vibration
+            - event: shutter_event
+              event_data:
+                wind: notify
+
+        - conditions:
+          - condition: trigger
+            id:
+              - detected
+          - condition: numeric_state
+            entity_id: cover.bed
+            attribute: current_tilt_position
+            above: 80
+          - condition: numeric_state
+            entity_id: cover.bed
+            attribute: current_position
+            above: 30
+          sequence:
+            - action: script.all_notify
+              data:
+                icon_notify: window-shutter-alert
+                tit: shutters
+                msg: detected vibration while opned
+            - event: shutter_event
+              event_data:
+                wind: detected
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - move_second
+          - condition: numeric_state
+            entity_id: sensor.temp_out
+            value_template: >-
+              {{ float( float(state.state, states('sensor.local_temperature')), -1) }}
+            above: 0.0
+          - condition: numeric_state
+            entity_id: cover.bed
+            attribute: current_position
+            below: 30
+          sequence:
+            - action: cover.open_cover
+              data:
+                entity_id: cover.shutters
+            - action: script.all_notify
+              data:
+                icon_notify: window-shutter-alert
+                tit: shutter
+                msg: open
+            - event: shutter_event
+              event_data:
+                wind: open
+
+        - conditions:
+          - condition: trigger
+            id:
+              - move_first
+          - condition: numeric_state
+            entity_id: sensor.temp_out
+            value_template: >-
+              {{ float( float(state.state, states('sensor.local_temperature')), -1) }}
+            above: 0.0
+          sequence:
+            - if:
+                - condition: numeric_state
+                  entity_id: cover.bed
+                  attribute: current_tilt_position
+                  below: 80
+              then:
+                - action: cover.open_cover_tilt
+                  data:
+                    entity_id: cover.shutters
+                - action: script.all_notify
+                  data:
+                    icon_notify: window-shutter-alert
+                    tit: shutter
+                    msg: tilt open
+                - event: shutter_event
+                  event_data:
+                    wind: tilt_open_shutters
+              else:
+                - action: cover.open_cover
+                  data:
+                    entity_id: cover.shutters
+                - action: script.all_notify
+                  data:
+                    icon_notify: window-shutter-alert
+                    tit: shutter
+                    msg: open
+                - event: shutter_event
+                  event_data:
+                    wind: open
+
+        - conditions:
+          - condition: trigger
+            id:
+              - move_restore
+          - condition: numeric_state
+            entity_id: sensor.temp_out
+            value_template: >-
+              {{ float( float(state.state, states('sensor.local_temperature')), -1) }}
+            above: 0.0
+          - condition: numeric_state
+            entity_id: sensor.wind_vibration
+            below: 3.0
+          sequence:
+            - choose:
+              - conditions:
+                - condition: state
+                  entity_id: sensor.shutters_open_speed_wind
+                  attribute: state_shutters
+                  state:
+                    - open
+                sequence:
+                  - if:
+                    - condition: template
+                      value_template: >-
+                        {{
+                            states.scene.shutter_restore_pre.state is defined and
+                              states.scene.shutter_restore_post.state is defined
+                          }}
+                    then:
+                      # workaround if only tilt is open
+                      # when scene is set cover go to full open
+                      # - action: cover.close_cover
+                      #   data:
+                      #     entity_id: cover.shutters
+                      # - wait_template: >-
+                      #     {{
+                      #         is_state('cover.shutters', 'closed')
+                      #       }}
+                      #   timeout:
+                      #     seconds: 120
+                      # continue_on_timeout: true
+                      - action: scene.turn_on
+                        data:
+                          entity_id: scene.shutter_restore_pre
+                      # wait shutters to start
+                      - delay:
+                          milliseconds: 750
+                      - wait_template: >-
+                          {{
+                              states('cover.shutters') not in ['closing', 'openopening']
+                            }}
+                        timeout:
+                          seconds: 120
+                        continue_on_timeout: true
+                      - action: scene.turn_on
+                        data:
+                          entity_id: scene.shutter_restore_post
+                      - action: script.all_notify
+                        data:
+                          icon_notify: window-shutter-alert
+                          tit: shutter
+                          msg: restore
+                    else:
+                      - action: script.turn_on
+                        entity_id:
+                          - script.shutters_position_1
+                      - action: script.all_notify
+                        data:
+                          icon_notify: window-shutter-alert
+                          tit: shutter
+                          msg: pos 1
+
+              - conditions:
+                - condition: state
+                  entity_id: sensor.shutters_open_speed_wind
+                  attribute: state_shutters
+                  state:
+                    - tilt_open_wind
+                    - tilt_open_shutters
+                sequence:
+                  - action: cover.set_cover_tilt_position
+                    data:
+                      entity_id: cover.shutters
+                      tilt_position: >-
+                        {{
+                            states('input_number.shutters_tilt_position_1') | int(20)
+                          }}
+                  - action: script.all_notify
+                    data:
+                      icon_notify: window-shutter-alert
+                      tit: shutter
+                      msg: pos tilt
+
+            - event: shutter_event
+              event_data:
+                wind: close
+            - if:
+              - condition: template
+                value_template: >-
+                  {{
+                      states.scene.shutter_restore_pre.state is defined and
+                        states.scene.shutter_restore_post.state
+                    }}
+              then:
+              - action: scene.delete
+                data:
+                  entity_id:
+                    - scene.shutter_restore_pre
+                    - scene.shutter_restore_post
+
+        - conditions:
+          - condition: trigger
+            id:
+              - move_tilt
+          - condition: state
+            entity_id: input_boolean.shutter_wind_vibration_en
+            state: 'on'
+          - condition: numeric_state
+            entity_id: sensor.temp_out
+            value_template: >-
+              {{ float( float(state.state, states('sensor.local_temperature')), -1) }}
+            above: 0.0
+          - condition: state
+            entity_id: sensor.shutters_open_speed_wind
+            attribute: state_shutters
+            state:
+              - close
+          sequence:
+            - action: cover.open_cover_tilt
+              data:
+                entity_id: cover.shutters
+            - action: script.all_notify
+              data:
+                icon_notify: window-shutter-alert
+                tit: shutter
+                msg: tilt open
+            - event: shutter_event
+              event_data:
+                wind: tilt_open_wind
+
+        - conditions:
+          - condition: trigger
+            id:
+              - move_second
+              - move_first
+              - move_restore
+          - condition: numeric_state
+            entity_id: sensor.temp_out
+            value_template: >-
+              {{ float( float(state.state, states('sensor.local_temperature')), -1) }}
+            below: 0.0
+          sequence:
+            - action: script.all_notify
+              data:
+                icon_notify: window-shutter-alert
+                tit: shutters
+              data_template:
+                msg: >-
+                  temp low {{ trigger.id }}
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - notify
+          - condition: numeric_state
+            entity_id: cover.bed
+            attribute: current_tilt_position
+            below: 80
+          - condition: numeric_state
+            entity_id: cover.bed
+            attribute: current_position
+            below: 30
+          sequence:
+            - action: scene.create
+              data:
+                scene_id: shutter_restore_post
+                snapshot_entities:
+                  - cover.living_1
+                  - cover.living_2
+                  - cover.bed
+                  - cover.office
+            - action: scene.create
+              data:
+                scene_id: shutter_restore_pre
+                entities:
+                  cover.living_1:
+                    current_position: >-
+                      {{ int(state_attr('cover.living_1', 'current_position')) }}
+                    current_tilt_position: 100
+                    state: open
+                  cover.living_2:
+                    current_position: >-
+                      {{ int(state_attr('cover.living_2', 'current_position')) }}
+                    current_tilt_position: 100
+                    state: open
+                  cover.bed:
+                    current_position: >-
+                      {{ int(state_attr('cover.bed', 'current_position')) }}
+                    current_tilt_position: 100
+                    state: open
+                  cover.office:
+                    current_position: >-
+                      {{ int(state_attr('cover.office', 'current_position')) }}
+                    current_tilt_position: 100
+                    state: open
+            - action: script.all_notify
+              data:
+                icon_notify: window-shutter-alert
+                tit: shutter
+                msg: store position
+
+        - conditions:
+          - condition: trigger
+            id:
+              - start
+          - condition: numeric_state
+            entity_id: sensor.temp_out
+            value_template: >-
+              {{ float( float(state.state, states('sensor.local_temperature')), -1) }}
+            above: 0.0
+          - condition: numeric_state
+            entity_id: cover.bed
+            attribute: current_tilt_position
+            above: 80
+          - condition: numeric_state
+            entity_id: cover.bed
+            attribute: current_position
+            above: 30
+          - condition: template
+            value_template: >-
+              {{
+                  (
+                      float(state_attr('sensor.shutters_open_speed_wind', 'speed_open'), 5) >
+                        float(states('sensor.local_wind_speed'), 6)
+                    ) and
+                  (
+                      float(states('sensor.local_wind_speed'), 5) >
+                        float(states('sensor.local_forecast_wind_speed'), 6)
+                    ) and
+                  (
+                      float(state_attr('sensor.shutters_open_speed_wind', 'forecast_speed_open'), 5) >
+                        float(states('sensor.local_forecast_wind_speed'), 6)
+                    )
+                }}
+          - condition: numeric_state
+            entity_id: sensor.shutters_vibration
+            below: 2.5
+          - condition: numeric_state
+            entity_id: sensor.wind_vibration
+            below: 3.0
+          - condition: state
+            entity_id: sensor.shutters_open_speed_wind
+            attribute: state_shutters
+            state:
+              - open
+              - tilt_open_wind
+              - tilt_open_shutters
+          sequence:
+            - action: script.turn_on
+              entity_id:
+                - script.shutters_position_1
+            - action: script.all_notify
+              data:
+                icon_notify: window-shutter-alert
+                tit: shutters
+              data_template:
+                msg: >-
+                  move to pos 1 wind {{ states('sensor.local_wind_speed') }}
+            - event: shutter_event
+              event_data:
+                wind: close
+
+  - alias: shutter_position_ctrl
+    id: shutter_position_ctrl
+    triggers:
+      - trigger: numeric_state
+        entity_id:
+          - cover.living_2
+          - cover.office
+        attribute: current_position
+        above: 30
+        id: open
+      - trigger: numeric_state
+        entity_id:
+          - cover.living_2
+          - cover.office
+        attribute: current_position
+        below: 30
+        id: close
+
+    conditions:
+      - condition: template
+        value_template: >-
+          {{
+              trigger.from_state.state not in ['unknown', 'unavailable'] and
+                trigger.from_state.attributes.current_position != 50 and
+                trigger.to_state.attributes.current_position != 50
+            }}
+
+    mode: queued
+    actions:
+      - variables:
+          _map: >-
+            {%-
+                set _map = {
+                    'cover.office': 'input_boolean.shutter_position_office',
+                    'cover.living_2': 'input_boolean.shutter_position_living_2',
+                  }
+              -%}
+            {{ _map }}
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - open
+          - condition: state
+            entity_id:
+              - sensor.shutters_open_speed_wind
+            attribute: state_shutters
+            state:
+              - close
+          - condition: template
+            value_template: >-
+              {{  is_state(_map[trigger.entity_id], 'on') }}
+          sequence:
+            - action: input_boolean.turn_off
+              data:
+                entity_id: >-
+                  {{ _map[trigger.entity_id] }}
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - close
+          - condition: state
+            entity_id:
+              - sensor.shutters_open_speed_wind
+            attribute: state_shutters
+            state:
+              - close
+          - condition: template
+            value_template: >-
+              {{  is_state(_map[trigger.entity_id], 'off') }}
+          sequence:
+            - action: input_boolean.turn_on
+              data:
+                entity_id: >-
+                  {{ _map[trigger.entity_id] }}
+
+script:
+  shutters_position_1:
+    alias: position
+    icon: mdi:numeric-1-box-outline
+    mode: restart
+    sequence:
+      - action: script.turn_on
+        entity_id: script.shutters_position_ctrl
+        data:
+          variables:
+            target_suhtter: cover.living_1
+      - action: script.turn_on
+        entity_id: script.shutters_position_ctrl
+        data:
+          variables:
+            target_suhtter: cover.bed
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: input_boolean.shutter_position_office
+            state: 'on'
+          sequence:
+            - action: script.turn_on
+              entity_id: script.shutters_position_ctrl
+              data:
+                variables:
+                  target_suhtter: cover.office
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: input_boolean.shutter_position_living_2
+            state: 'on'
+          sequence:
+            - action: script.turn_on
+              entity_id: script.shutters_position_ctrl
+              data:
+                variables:
+                  target_suhtter: cover.living_2
+
+  shutters_position_ctrl:
+    mode: parallel
+    sequence:
+      - action: cover.close_cover
+        data:
+          entity_id: >-
+            {{
+                target_suhtter
+              }}
+      - wait_template: >-
+          {{
+              is_state(target_suhtter, 'closed')
+            }}
+        timeout:
+          seconds: 120
+        continue_on_timeout: true
+      - action: cover.set_cover_position
+        data:
+          entity_id: >-
+            {{
+                target_suhtter
+              }}
+          position: 1
+      - action: cover.set_cover_tilt_position
+        data:
+          entity_id: >-
+            {{
+                target_suhtter
+              }}
+          tilt_position: >-
+            {{
+                states('input_number.shutters_tilt_position_1') | int(20)
+              }}
+
+  shutters_position_default:
+    mode: restart
+    sequence:
+      - action: script.turn_on
+        entity_id:
+          - script.shutters_position_1
+      - event: shutter_event
+        event_data:
+          wind: close
+
+input_number:
+  shutters_tilt_position_1:
+    name: tilt
+    unit_of_measurement: '%'
+    min: 20
+    max: 80
+    step: 5
+    icon: mdi:sun-angle
+
+input_boolean:
+  shutter_position_office:
+    name: office
+    icon: mdi:chair-rolling
+
+  shutter_position_living_2:
+    name: living
+    icon: mdi:sofa
+
+  shutter_wind_vibration_en:
+    name: wind vibration
+    icon: mdi:tailwind

@@ -1,0 +1,28 @@
+climate:
+  - platform: pid
+    id: hotplate_thermostat
+    sensor: temp_predicted
+    default_target_temperature: 20°C
+    heat_output: heater_output
+    control_parameters:
+      kp: 0.03385
+      ki: 0.00084
+      kd: 0.34218
+      output_averaging_samples: 5
+      derivative_averaging_samples: 5
+    visual:
+      min_temperature: $min_temp
+      max_temperature: $max_temp
+    # deadband_parameters:
+    #   threshold_high: 3.5°C
+    #   threshold_low: -3.5°C
+    #   kp_multiplier: 0.0
+    #   ki_multiplier: 0.5
+    #   kd_multiplier: 0.5
+    #   deadband_output_averaging_samples: 1
+    on_control:
+      - script.execute:
+          id: print_temps
+          head_print: true
+      # - delay: 1s
+      # - climate.pid.reset_integral_term: hotplate_thermostat

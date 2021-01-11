@@ -1,0 +1,330 @@
+homeassistant:
+  customize:
+    automation.auto_lock:
+      icon: mdi:lock
+      friendly_name: auto lock
+    automation.disable_continuous_mode:
+      icon: mdi:autorenew-off
+      friendly_name: continuous off
+
+mqtt:
+  lock:
+    - name: door
+      state_topic: nuki/lock/state
+      command_topic: nuki/lock/action
+      availability_topic: nuki/maintenance/mqttConnectionState
+      payload_lock: lock
+      payload_unlock: unlock
+      payload_open: unlatch
+      state_locked: locked
+      state_unlocked: unlocked
+      payload_available: online
+      payload_not_available: offline
+
+    - name: building
+      state_topic: nuki/opener/state
+      command_topic: nuki/opener/action
+      availability_topic: nuki/maintenance/mqttConnectionState
+      payload_lock: deactivateRTO
+      payload_unlock: activateRTO
+      payload_open: electricStrikeActuation
+      state_locked: locked
+      state_unlocked: unlocked
+      value_template: >-
+        {%- if value in [ 'RTOactive', 'open', 'opening', 'ContinuousMode' ] -%}
+          unlocked
+        {%- elif value in [ 'ring', 'uncalibrated' ] -%}
+          {{ states('lock.building') }}
+        {%- else -%}
+          locked
+        {%- endif-%}
+      payload_available: online
+      payload_not_available: offline
+
+  sensor:
+    - name: lock
+      object_id: batt_lock
+      state_topic: nuki/lock/battery/level
+      device_class: battery
+      unit_of_measurement: '%'
+
+    - name: current
+      object_id: batt_max_current
+      state_topic: nuki/lock/battery/maxTurnCurrent
+      device_class: current
+      unit_of_measurement: A
+
+    - name: drain
+      object_id: batt_drain
+      state_topic: nuki/lock/battery/drain
+      device_class: power
+      unit_of_measurement: mW
+
+  binary_sensor:
+    - name: lock
+      object_id: batt_lock_critical
+      state_topic: nuki/lock/battery/critical
+      device_class: battery
+      icon: mdi:battery-alert-bluetooth
+      payload_on: '1'
+      payload_off: '0'
+
+    - name: building
+      object_id: batt_building_critical
+      state_topic: nuki/opener/battery/critical
+      device_class: battery
+      icon: mdi:battery-alert-bluetooth
+      payload_on: '1'
+      payload_off: '0'
+
+    - name: ring
+      object_id: building_ring
+      state_topic: nuki/opener/ring
+      icon: mdi:bell-ring-outline
+      value_template: >-
+        {{ 'standby' not in value }}
+      payload_on: true
+      payload_off: false
+
+input_boolean:
+  auto_lock:
+    name: door relock
+    icon: mdi:door-closed-lock
+
+script:
+  doors_full_lock:
+    alias: lock
+    icon: mdi:key-plus
+    sequence:
+      - action: lock.lock
+        target:
+          entity_id: lock.building
+      - delay:
+          milliseconds: 500
+      - action: mqtt.publish
+        data:
+          topic: nuki/lock/action
+          payload: fullLock
+
+  doors_full_unlock:
+    alias: unlock
+    icon: mdi:key-minus
+    sequence:
+      - action: lock.unlock
+        target:
+          entity_id:
+            - lock.building
+            - lock.door
+      - delay:
+          milliseconds: 500
+
+  door_building_open:
+    alias: open
+    icon: mdi:dialpad
+    sequence:
+      - action: lock.open
+        target:
+          entity_id: lock.building
+      - delay:
+          milliseconds: 500
+
+  reboot_nuki_hub:
+    alias: reboot
+    icon: mdi:restart
+    sequence:
+      - action: mqtt.publish
+        data:
+          topic: nuki/maintenance/reset
+          payload: 1
+
+automation:
+  - alias: auto_lock
+    id: auto_lock
+    trace:
+      stored_traces: 20
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.door
+        from: 'on'
+        to: 'off'
+        id: lock_on_door
+        for:
+          seconds: 30
+
+      - trigger: state
+        entity_id: lock.building
+        to: locked
+        for:
+          minutes: 1
+        id: lock_on_building
+
+      - trigger: zone
+        entity_id: device_tracker.root
+        zone: zone.home
+        event: enter
+        id: lock_off
+
+      - trigger: zone
+        entity_id: device_tracker.root
+        zone: zone.home
+        event: leave
+        id: lock_on
+
+      - trigger: state
+        entity_id: input_boolean.in_bed_dummy_switch
+        to: 'on'
+        for:
+          minutes: 1
+        id: lock_on
+
+      # - trigger: state
+      #   entity_id: lock.building
+      #   to: unlocked
+      #   id: lock_off_building
+
+      - trigger: mqtt
+        topic: nuki/opener/trigger
+        payload: button
+        id: lock_off_building
+
+    conditions:
+      - condition: template
+        value_template: >-
+          {{
+              trigger.from_state != None
+            }}
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - lock_on_door
+          - condition: state
+            entity_id: lock.door
+            state: unlocked
+          - condition: state
+            entity_id: input_boolean.auto_lock
+            state: 'on'
+          sequence:
+            - action: lock.lock
+              target:
+                entity_id: lock.door
+
+        - conditions:
+          - condition: or
+            conditions:
+              - condition: trigger
+                id:
+                  - lock_on
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id:
+                      - lock_on_building
+                  - condition: state
+                    entity_id:
+                      - device_tracker.root
+                    state: not_home
+          - condition: state
+            entity_id: lock.door
+            state: unlocked
+          sequence:
+            - if:
+              - condition: state
+                entity_id: binary_sensor.door
+                state: 'off'
+              then:
+                - action: lock.lock
+                  target:
+                    entity_id: lock.door
+              else:
+                - action: notify.gmail
+                  data:
+                    title: front door
+                    message: >-
+                      {%-
+                          set door = {
+                            'on': 'open',
+                            'off': 'close'
+                          }
+                        -%}
+                      is {{ door[states('binary_sensor.door')]}}
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - lock_on
+          - condition: state
+            entity_id: lock.building
+            state: unlocked
+          sequence:
+            - action: lock.lock
+              target:
+                entity_id: lock.building
+
+        - conditions:
+          - condition: trigger
+            id:
+              - lock_off
+          - condition: state
+            entity_id: lock.building
+            state: locked
+          sequence:
+            - action: script.turn_on
+              target:
+                entity_id: script.doors_full_unlock
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - lock_off_building
+          - condition: state
+            entity_id: lock.building
+            state: unlocked
+          - condition: state
+            entity_id: lock.door
+            state: locked
+          sequence:
+            - action: lock.unlock
+              target:
+                entity_id: lock.door
+
+  - alias: ring_notify
+    id: ring_notify
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.building_ring
+        to: 'on'
+    mode: single
+    max_exceeded: silent
+    actions:
+      - action: script.all_notify
+        data:
+          icon_notify: door
+          tit: ring
+          msg: door
+      - delay:
+          seconds: 60
+
+  - alias: disable_continuous_mode
+    id: disable_continuous_mode
+    triggers:
+      - trigger: mqtt
+        topic: nuki/opener/continuousMode
+        payload: 'on'
+    mode: single
+    action:
+      - delay:
+          seconds: 60
+      - service: mqtt.publish
+        data:
+          topic: nuki/opener/action
+          payload: 'deactivateCM'
+      - action: script.all_notify
+        data:
+          tit: 'nuki opener'
+          msg: 'deactivateCM'

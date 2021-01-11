@@ -1,0 +1,71 @@
+# interval:
+#   - interval: 1s
+#     then:
+#       - lambda: |-
+#           if ((id(enable_fuzzy_control).state) || (id(manual_override).state)) {
+#               ESP_LOGD("hotplate", "target: %.1f temp: %.2f rate: %.2f predict: %.2f out: %.5f",
+#                           id(temp_target).state,
+#                           id(temp_sens).state,
+#                           id(temp_speed).state,
+#                           id(temp_predicted).state,
+#                           id(fuzzy_sens).state);
+#             }
+
+switch:
+  - platform: template
+    id: manual_override
+    turn_on_action:
+      - lambda: |-
+          // id(sd_heater_output).set_max_power(1.0);
+          ESP_LOGD("hotplate", "Manual On");
+      - switch.template.publish:
+          id: manual_override
+          state: ON
+    turn_off_action:
+      - lambda: |-
+          ESP_LOGD("hotplate", "Manual Off");
+          // id(sd_heater_output).set_max_power(0.01);
+      - switch.template.publish:
+          id: manual_override
+          state: OFF
+    restore_mode: ALWAYS_OFF
+
+  - platform: template
+    id: hotplate_verbose
+    turn_on_action:
+      - switch.template.publish:
+          id: hotplate_verbose
+          state: ON
+      # - logger.set_level:
+      #     tag: hotplate
+      #     level: VERBOSE
+      # - logger.set_level:
+      #     tag: fuzzy_logic
+      #     level: VERBOSE
+      - logger.set_level:
+          tag: fuzzy
+          level: VERBOSE
+    turn_off_action:
+      - switch.template.publish:
+          id: hotplate_verbose
+          state: OFF
+      # - logger.set_level:
+      #     tag: hotplate
+      #     level: DEBUG
+      # - logger.set_level:
+      #     tag: fuzzy_logic
+      #     level: DEBUG
+      - logger.set_level:
+          tag: fuzzy
+          level: DEBUG
+    restore_mode: ALWAYS_OFF
+
+number:
+  - platform: template
+    id: test_power
+    optimistic: true
+    min_value: 0
+    max_value: 1.0
+    step: 0.01
+    initial_value: 0
+    restore_value: false

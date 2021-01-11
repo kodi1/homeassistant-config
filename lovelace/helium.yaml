@@ -1,0 +1,20 @@
+title: helium
+icon: mdi:currency-btc
+path: helium
+
+cards:
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - sensor.helium_day_1
+      - sensor.helium_month_1
+      - type: divider
+      - sensor.helium_day_2
+      - sensor.helium_month_2
+      - type: divider
+      - sensor.helium_day_3
+      - sensor.helium_month_3
+      - type: divider
+      - sensor.helium_day_4
+      - sensor.helium_month_4

@@ -1,0 +1,212 @@
+      # hotplate/util_screen.yaml
+
+      on_swipe_left:
+        - lvgl.page.show: boot # Go to the boot screen
+
+      widgets:
+        # --- FEEDBACK LABELS (Kept) ---
+        - label:
+            id: out_power_label
+            text: "Pw: N/A"
+            text_font: $font_small
+            text_color: 0xFFFFFF
+            x: 10px
+            y: 30px
+
+        - label:
+            id: tune_delay_label
+            text: "T: N/A"
+            text_font: $font_small
+            text_color: 0xFFFFFF
+            x: 10px
+            y: 50px
+
+        # --- 6 PRESET BUTTONS (New Layout) ---
+
+        # Button sizing and spacing:
+        # Buttons are ~150px wide, with 10px spacing, totaling 3*150 + 2*10 = 470px wide,
+        # fitting nicely on a standard 480px wide display.
+
+        # --- ROW 1 (50°C, 100°C, 125°C) ---
+
+        - button:
+            id: preset_40
+            width: 150px
+            height: 80px
+            x: 5px
+            y: 100px
+            bg_color: 0x87CEEB # Light Blue
+            on_click:
+              - lambda: |-
+                  // Heat Transfer Power 5.8 W
+                  float target = 40.0;
+                  float power_max = 0.17;
+                  float delay = 15;
+
+                  id(sd_heater_output).set_max_power(power_max);
+
+                  auto call = id(temp_delay).make_call();
+                  call.set_value(delay);
+                  call.perform();
+
+                  auto call1 = id(temp_target).make_call();
+                  call1.set_value(target);
+                  call1.perform();
+
+            widgets:
+              - label:
+                  text: "40°C"
+                  text_font: $font_large
+                  text_color: 0xFFFFFF
+
+        - button:
+            id: preset_100
+            width: 150px
+            height: 80px
+            x: 165px
+            y: 100px
+            bg_color: 0x4682B4 # Steel Blue (Original 100°C)
+            on_click:
+              - lambda: |-
+                  // Heat Transfer Power 18.5 W
+                  float target = 100.0;
+                  float power_max = 0.35;
+                  float delay = 15;
+
+                  id(sd_heater_output).set_max_power(power_max);
+
+                  auto call = id(temp_delay).make_call();
+                  call.set_value(delay);
+                  call.perform();
+
+                  auto call1 = id(temp_target).make_call();
+                  call1.set_value(target);
+                  call1.perform();
+
+            widgets:
+              - label:
+                  text: "100°C"
+                  text_font: $font_large
+                  text_color: 0xFFFFFF
+
+        - button:
+            id: preset_125
+            width: 150px
+            height: 80px
+            x: 325px
+            y: 100px
+            bg_color: 0xADFF2F # Green/Yellow
+            on_click:
+              - lambda: |-
+                  // Heat Transfer Power 25.6 W
+                  float target = 125.0;
+                  float power_max = 0.37;
+                  float delay = 15;
+
+                  id(sd_heater_output).set_max_power(power_max);
+
+                  auto call = id(temp_delay).make_call();
+                  call.set_value(delay);
+                  call.perform();
+
+                  auto call1 = id(temp_target).make_call();
+                  call1.set_value(target);
+                  call1.perform();
+
+            widgets:
+              - label:
+                  text: "125°C"
+                  text_font: $font_large
+                  text_color: 0xFFFFFF
+
+        # --- ROW 2 (150°C, 175°C, 200°C) ---
+
+        - button:
+            id: preset_150
+            width: 150px
+            height: 80px
+            x: 5px
+            y: 190px # New row starting 10px below the first row
+            bg_color: 0x32CD32 # Lime Green (Original P2)
+            on_click:
+              - lambda: |-
+                  // Heat Transfer Power 33.2 W
+                  float target = 150.0;
+                  float power_max = 0.40;
+                  float delay = 15;
+
+                  id(sd_heater_output).set_max_power(power_max);
+
+                  auto call = id(temp_delay).make_call();
+                  call.set_value(delay);
+                  call.perform();
+
+                  auto call1 = id(temp_target).make_call();
+                  call1.set_value(target);
+                  call1.perform();
+
+            widgets:
+              - label:
+                  text: "150°C"
+                  text_font: $font_large
+                  text_color: 0xFFFFFF
+
+        - button:
+            id: preset_175
+            width: 150px
+            height: 80px
+            x: 165px
+            y: 190px
+            bg_color: 0xFFA500 # Orange
+            on_click:
+              - lambda: |-
+                  // Heat Transfer Power 41.5 W
+                  float target = 175.0;
+                  float power_max = 0.50;
+                  float delay = 15;
+
+                  id(sd_heater_output).set_max_power(power_max);
+
+                  auto call = id(temp_delay).make_call();
+                  call.set_value(delay);
+                  call.perform();
+
+                  auto call1 = id(temp_target).make_call();
+                  call1.set_value(target);
+                  call1.perform();
+
+            widgets:
+              - label:
+                  text: "175°C"
+                  text_font: $font_large
+                  text_color: 0xFFFFFF
+
+        - button:
+            id: preset_200
+            width: 150px
+            height: 80px
+            x: 325px
+            y: 190px
+            bg_color: 0xDC143C # Crimson (Original P3)
+            on_click:
+              - lambda: |-
+                  // Heat Transfer Power 50.5
+                  float target = 200.0;
+                  float power_max = 0.50;
+                  float delay = 15;
+
+                  id(sd_heater_output).set_max_power(power_max);
+
+                  auto call = id(temp_delay).make_call();
+                  call.set_value(delay);
+                  call.perform();
+
+                  auto call1 = id(temp_target).make_call();
+                  call1.set_value(target);
+                  call1.perform();
+
+            widgets:
+              - label:
+                  text: "200°C"
+                  text_font: $font_large
+                  text_color: 0xFFFFFF
