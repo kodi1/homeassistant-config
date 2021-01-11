@@ -1,0 +1,271 @@
+homeassistant:
+  customize:
+    sensor.cpu_usage:
+      icon: mdi:chip
+    sensor.cpu_temp:
+      icon: mdi:oil-temperature
+    sensor.disk_free:
+      icon: mdi:harddisk
+    sensor.mem_free:
+      icon: mdi:memory
+    binary_sensor.isp_conn:
+      friendly_name: Isp
+    binary_sensor.ext_port:
+      friendly_name: Ext port
+    automation.updates_notify:
+      friendly_name: update
+      icon: mdi:cellphone-arrow-down
+    automation.auto_reboot_all:
+      friendly_name: all reboot
+      icon: mdi:server
+    automation.open_ports:
+      friendly_name: ports open
+      icon: mdi:lan-connect
+    automation.once_week_reboot:
+      friendly_name: reboot weekly
+      icon: mdi:restart-alert
+
+command_line:
+  - sensor:
+      name: Cpu Temp
+      command: '/config/cmds/cpu_temp'
+      unit_of_measurement: '°C'
+      scan_interval: 300
+
+  - sensor:
+      name: Disk Free
+      command: '/config/cmds/disk_free'
+      unit_of_measurement: 'MB'
+      scan_interval: 300
+
+  - sensor:
+      name: Cpu Usage
+      command: '/config/cmds/cpu_usage'
+      unit_of_measurement: '%'
+      scan_interval: 300
+
+  - sensor:
+      name: Mem Free
+      command: '/config/cmds/mem_free'
+      unit_of_measurement: 'MB'
+      scan_interval: 300
+
+  - binary_sensor:
+      name: 'Bravia'
+      command: '/config/cmds/bravia_check'
+      device_class: plug
+      payload_on: 'success'
+      payload_off: 'fail'
+      scan_interval: 300
+
+template:
+  - binary_sensor:
+    - name: isp_conn
+      device_class: connectivity
+      state: >-
+        {%- if states('sensor.ping_isp') | float(-1) < 0 or
+          states('sensor.ping_isp') | float(0) > 200 -%}
+          False
+        {%- else -%}
+          True
+        {%- endif %}
+
+automation:
+  - alias: auto_reboot_all
+    id: auto_reboot_all
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.isp_conn
+        to: 'off'
+        for:
+          minutes: 6
+    conditions:
+      - condition: template
+        value_template: >-
+          {{
+            now() - (
+                state_attr('automation.mydelay', 'last_triggered') |
+                  default(now()-timedelta(minutes=61), true)
+              ) >
+              timedelta(minutes=60)
+            }}
+    actions:
+      - action: script.all_notify
+        data:
+          icon_notify: restart-alert
+          tit: 'reboot all'
+          msg: >-
+            {%- if states('sensor.ping_isp') | float(-1) < 0 -%}
+              cant ping isp
+            {%- else -%}
+              high isp ping {{states('sensor.ping_isp') }} ms
+            {%- endif -%}
+      - action: script.reboot_all
+
+  - alias: open_ports
+    id: open_ports
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.ext_port
+        to: 'off'
+        for:
+          minutes: 11
+    actions:
+      - action: script.all_notify
+        data:
+          icon_notify: router-network-wireless
+          tit: 'router'
+          msg: 'open ports'
+#       - action: shell_command.local_reboot
+
+  - alias: isp_notify
+    id: isp_notify
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.village_conn
+          - binary_sensor.city_conn
+          - binary_sensor.main_conn
+          - binary_sensor.city_waterheater_conn
+          - binary_sensor.village_pump_conn
+          - binary_sensor.village_waterheater_conn
+        to:
+        not_from:
+          - unknown
+          - unavailable
+        for:
+          minutes: 1
+
+    mode: parallel
+    actions:
+      - action: script.all_notify
+        data_template:
+          icon_notify: connection
+          tit: >-
+            {{ trigger.to_state.name }}
+          msg: >-
+            {%-
+              set sts = {
+                    'on': 'up',
+                    'off': 'down',
+                  }
+              -%}
+            {{ sts[trigger.to_state.state] }}
+
+      - choose:
+        - conditions:
+          - condition: template
+            value_template: >-
+              {{
+                  trigger.to_state.state == 'on'
+                }}
+          sequence:
+            - action: script.turn_on
+              data:
+                entity_id:
+                  - script.startup_mqtt
+
+  - alias: change_current_theme
+    id: change_current_theme
+    triggers:
+      - trigger: state
+        entity_id: input_select.current_theme
+    actions:
+      - action: frontend.set_theme
+        data_template:
+          name: "{{ states('input_select.current_theme') }}"
+
+  - alias: theme_switch
+    id: theme_switch
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.day
+      - trigger: homeassistant
+        event: start
+    actions:
+      - action: input_select.select_option
+        data:
+          entity_id: input_select.current_theme
+        data_template:
+          option: >-
+            {%- set _map = {'on': 'default', 'off': 'midnight'} -%}
+            {{ _map[states('binary_sensor.day')] }}
+
+  - alias: updates_notify
+    id: updates_notify
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.docker_hub_update_available
+        to: 'on'
+        for:
+          seconds: 60
+        id: hass
+      - trigger: numeric_state
+        entity_id: sensor.hacs
+        value_template: >-
+          {{
+              expand(states.update)
+                | selectattr('state', 'eq', 'on')
+                | map(attribute='entity_id')
+                | map('device_attr', 'identifiers')
+                | map('contains', 'hacs')
+                | list
+                | count
+            }}
+        above: 0
+        for:
+          seconds: 60
+        id: hacs
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - hass
+          sequence:
+            - action: script.all_notify
+              data:
+                icon_notify: update
+                tit: 'Update'
+              data_template:
+                msg: >-
+                  {{trigger.id}}: {{ states('sensor.docker_hub') }}
+        - conditions:
+          - condition: trigger
+            id:
+              - hacs
+          sequence:
+            - action: script.all_notify
+              data:
+                icon_notify: update
+                tit: 'Update'
+              data_template:
+                msg: >-
+                  {{trigger.id}}: {{ trigger.to_state.state }}
+
+  - alias: once_week_reboot
+    id: once_week_reboot
+    triggers:
+      - trigger: time
+        at: '03:00:00'
+    conditions:
+        - condition: time
+          weekday:
+            # - mon
+            - tue
+            # - wed
+            # - thu
+            # - fri
+            # - sat
+            # - sun
+    actions:
+      - action: script.roborock_reboot
+      # - action: script.reboot_nuki_hub
+      - action: script.all_notify
+        data:
+          icon_notify: restart-alert
+          tit: 'weekly'
+          msg: 'reboot'
+
+shell_command:
+  local_reboot: '/config/cmds/local_reboot {{ value }}'

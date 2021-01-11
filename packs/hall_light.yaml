@@ -1,0 +1,155 @@
+homeassistant:
+  customize:
+    binary_sensor.hall_motion:
+      friendly_name: hall
+    light.hall:
+      icon: mdi:wall-sconce-flat
+    automation.hall_light:
+      friendly_name: hall
+      icon: mdi:lightbulb-auto
+
+automation:
+  - alias: hall_light
+    id: hall_light
+    initial_state: false
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.hall_motion
+        to: 'on'
+        id: light_on
+      - trigger: state
+        entity_id: binary_sensor.hall_occupancy
+        to: 'off'
+        for:
+          seconds: >-
+            {%- if int(states('counter.hall_motion'), 30) > 6 -%}
+              90
+            {%- elif int(states('counter.hall_motion'), 30) > 3 -%}
+              45
+            {%- else -%}
+              30
+            {%- endif -%}
+        id: light_off
+      # - trigger: state
+      #   entity_id: binary_sensor.living_motion
+      #   to: 'on'
+      #   id: light_off
+      # - trigger: state
+      #   entity_id: binary_sensor.office_motion
+      #   to: 'on'
+      #   id: light_off
+      # - trigger: state
+      #   entity_id: binary_sensor.bed_motion
+      #   to: 'on'
+      #   id: light_off
+      - trigger: event
+        event_type: lights_check
+        event_data:
+          light: turn_off
+        id: light_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: light.hall
+            state: 'off'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id:
+            - action: script.lights_on
+              data:
+                ctrl_light: light.hall
+                ctrl_all: >-
+                  {{ is_state('binary_sensor.night_mode', 'off') }}
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+          - condition: state
+            entity_id: light.hall
+            state: 'on'
+          sequence:
+            - action: script.lights_off
+              data:
+                ctrl_light: light.hall
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          sequence:
+            - action: counter.increment
+              data:
+                entity_id:
+                  - counter.hall_motion
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+          sequence:
+            - action: counter.reset
+              data:
+                entity_id:
+                  - counter.hall_motion
+
+script:
+  hall_light_on:
+    mode: restart
+    sequence:
+      - variables:
+          target_light: >-
+            {%- set l_off = expand(state_attr('light.hall', 'entity_id')) |
+                    selectattr('state', 'eq', 'off') |
+                    map(attribute='entity_id') |
+                    list
+                -%}
+            {%- if is_state('binary_sensor.night_mode', 'off') -%}
+              light.hall
+            {%- elif l_off -%}
+              {{
+                  l_off | random
+                }}
+            {%- else -%}
+              {{
+                  expand(state_attr('light.hall', 'entity_id')) |
+                    map(attribute='entity_id') |
+                    list | random
+                }}
+            {%- endif -%}
+      - choose:
+          - conditions:
+            - condition: state
+              entity_id: binary_sensor.night_mode
+              state: 'on'
+            sequence:
+              - action: light.turn_off
+                target:
+                  entity_id:
+                    - light.hall
+
+      - action: light.turn_on
+        target:
+          entity_id: >-
+            {{ target_light }}
+
+light:
+  - platform: group
+    name: 'hall'
+    entities:
+      - light.hall_1
+      - light.hall_2
+
+counter:
+  hall_motion:
+    name: motion
+    icon: mdi:motion-sensor
+    restore: false

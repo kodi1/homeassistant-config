@@ -1,0 +1,107 @@
+# homeassistant:
+#   customize:
+#     sensor.helium_day_1:
+#       icon: mdi:gauge
+#       friendly_name: day
+#     sensor.helium_month_1:
+#       icon: mdi:counter
+#       friendly_name: month
+#     sensor.helium_day_2:
+#       icon: mdi:gauge
+#       friendly_name: day
+#     sensor.helium_month_2:
+#       icon: mdi:counter
+#       friendly_name: month
+#     sensor.helium_day_3:
+#       icon: mdi:gauge
+#       friendly_name: day
+#     sensor.helium_month_3:
+#       icon: mdi:counter
+#       friendly_name: month
+#     sensor.helium_day_4:
+#       icon: mdi:gauge
+#       friendly_name: day
+#     sensor.helium_month_4:
+#       icon: mdi:counter
+#       friendly_name: month
+
+# sensor:
+#   - platform: rest
+#     name: 'helium day 1'
+#     method: 'GET'
+#     resource_template: "https://api.helium.io/v1/hotspots/118CBftNcsLH4cg9QuGCnnkR6rXsF1wQCfe3BmiuNACqwZRsV2H/rewards/sum?max_time={{ utcnow().strftime('%Y-%m-%dT%H:%M:%S') }}&min_time={{ (utcnow()-timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%S') }}"
+#     headers:
+#        User-Agent: xxx/1.5
+#     value_template: "{{ value_json.data.total | round(6) }}"
+#     scan_interval: 1800
+#     unit_of_measurement: HNT
+
+#   - platform: rest
+#     name: 'helium month 1'
+#     method: 'GET'
+#     resource_template: "https://api.helium.io/v1/hotspots/118CBftNcsLH4cg9QuGCnnkR6rXsF1wQCfe3BmiuNACqwZRsV2H/rewards/sum?max_time={{ utcnow().strftime('%Y-%m-%dT%H:%M:%S') }}&min_time={{ (utcnow()-timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%S') }}"
+#     headers:
+#        User-Agent: xxx/1.5
+#     value_template: "{{ value_json.data.total | round(4) }}"
+#     scan_interval: 1800
+#     unit_of_measurement: HNT
+
+#   - platform: rest
+#     name: 'helium day 2'
+#     method: 'GET'
+#     resource_template: "https://api.helium.io/v1/hotspots/11uRiwiZMgz8shzqQsik7UvTdJhZXgBhESt5a2i43WZVgkHYDkw/rewards/sum?max_time={{ utcnow().strftime('%Y-%m-%dT%H:%M:%S') }}&min_time={{ (utcnow()-timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%S') }}"
+#     headers:
+#        User-Agent: xxx/1.5
+#     value_template: "{{ value_json.data.total | round(6) }}"
+#     scan_interval: 1800
+#     unit_of_measurement: HNT
+
+#   - platform: rest
+#     name: 'helium month 2'
+#     method: 'GET'
+#     resource_template: "https://api.helium.io/v1/hotspots/11uRiwiZMgz8shzqQsik7UvTdJhZXgBhESt5a2i43WZVgkHYDkw/rewards/sum?max_time={{ utcnow().strftime('%Y-%m-%dT%H:%M:%S') }}&min_time={{ (utcnow()-timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%S') }}"
+#     headers:
+#        User-Agent: xxx/1.5
+#     value_template: "{{ value_json.data.total | round(4) }}"
+#     scan_interval: 1800
+#     unit_of_measurement: HNT
+
+#   - platform: rest
+#     name: 'helium day 3'
+#     method: 'GET'
+#     resource_template: "https://api.helium.io/v1/hotspots/112Q8EZ6yaX2Dv71zHcoAdnfWYB4hj4FqjkLy74FktD456eooNek/rewards/sum?max_time={{ utcnow().strftime('%Y-%m-%dT%H:%M:%S') }}&min_time={{ (utcnow()-timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%S') }}"
+#     headers:
+#        User-Agent: xxx/1.5
+#     value_template: "{{ value_json.data.total | round(6) }}"
+#     scan_interval: 1800
+#     unit_of_measurement: HNT
+
+#   - platform: rest
+#     name: 'helium month 3'
+#     method: 'GET'
+#     resource_template: "https://api.helium.io/v1/hotspots/112Q8EZ6yaX2Dv71zHcoAdnfWYB4hj4FqjkLy74FktD456eooNek/rewards/sum?max_time={{ utcnow().strftime('%Y-%m-%dT%H:%M:%S') }}&min_time={{ (utcnow()-timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%S') }}"
+#     headers:
+#        User-Agent: xxx/1.5
+#     value_template: "{{ value_json.data.total | round(4) }}"
+#     scan_interval: 1800
+#     unit_of_measurement: HNT
+
+#   - platform: rest
+#     name: 'helium day 4'
+#     method: 'GET'
+#     resource_template: "https://api.helium.io/v1/hotspots/112PbfWvf4m6kqSqmEf7NF5pV1GCeiVbkQJhmjffisgfU2PDJAUt/rewards/sum?max_time={{ utcnow().strftime('%Y-%m-%dT%H:%M:%S') }}&min_time={{ (utcnow()-timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%S') }}"
+#     headers:
+#        User-Agent: xxx/1.5
+#     value_template: "{{ value_json.data.total | round(6) }}"
+#     scan_interval: 1800
+#     unit_of_measurement: HNT
+
+#   - platform: rest
+#     name: 'helium month 4'
+#     method: 'GET'
+#     resource_template: "https://api.helium.io/v1/hotspots/112PbfWvf4m6kqSqmEf7NF5pV1GCeiVbkQJhmjffisgfU2PDJAUt/rewards/sum?max_time={{ utcnow().strftime('%Y-%m-%dT%H:%M:%S') }}&min_time={{ (utcnow()-timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%S') }}"
+#     headers:
+#        User-Agent: xxx/1.5
+#     value_template: "{{ value_json.data.total | round(4) }}"
+#     scan_interval: 1800
+#     unit_of_measurement: HNT

@@ -1,0 +1,54 @@
+title: tracker
+icon: mdi:radar
+path: tracker
+
+badges:
+  - device_tracker.ffeeddccbbaa
+  - device_tracker.google_maps_107209225675467950565
+  - device_tracker.livingtv
+  - device_tracker.n0ll
+
+cards:
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - automation.track_merge_startup
+      - automation.track_merge
+      - input_number.tracker_delay
+      - input_number.tracker_accuracy
+      - input_number.tracker_force_update
+
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - automation.root_home
+      - automation.root_not_home
+      # - automation.root_work
+      - automation.n0ll_home
+      - automation.n0ll_not_home
+      - automation.home_away
+      - automation.home_near
+      - automation.just_home
+      - type: divider
+      - input_boolean.away_skip
+
+  - type: picture-entity
+    entity: camera.api_mapbox_com
+    show_name: false
+    show_state: false
+
+  - type: map
+    entities:
+      - device_tracker.root
+    hours_to_show: 8
+
+  - type: history-graph
+    hours_to_show: 6
+    entities:
+      - sensor.gps_accuracy_g
+      - sensor.gps_accuracy_t
+
+  - type: history-graph
+    hours_to_show: 6
+    entities:
+      - sensor.home_root_distance

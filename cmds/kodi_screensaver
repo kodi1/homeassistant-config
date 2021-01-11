@@ -1,0 +1,5 @@
+#!/bin/bash
+source /config/set_env
+
+sshpass -p ${PASS} ssh ${USERNAME}@${HOST} \
+'kodi-send --action="ActivateScreensaver"'

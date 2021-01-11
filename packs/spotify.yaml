@@ -1,0 +1,142 @@
+spotcast:
+  sp_dc: !secret sp_dc
+  sp_key: !secret sp_key
+
+# spotify:
+#   client_id: !secret client_id
+#   client_secret: !secret client_secret
+
+# sensor:
+#   - trigger: spotcast
+
+input_select:
+  select_spotify:
+    icon: mdi:record-player
+    name: spotify playlist
+    options:
+      - music
+      - sleep
+
+script:
+  spot_turn_on_helper:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ not is_state(player, 'idle') }}"
+      - action: >-
+          {%-
+              set scr = {
+                'off': 'media_player.turn_on',
+                'playing': 'media_player.media_stop'
+              }
+            -%}
+          {{ scr[states(player)] }}
+        data_template:
+          entity_id: '{{player}}'
+
+  spot_living:
+    alias: living
+    icon: mdi:sofa
+    sequence:
+      - action: automation.turn_off
+        data:
+          entity_id:
+            - automation.sound_bar_music
+      - action: script.spot_turn_on_helper
+        data:
+          player: media_player.ht_mt500_501_b34d6a
+      - wait_template: >-
+          {{
+            is_state('media_player.ht_mt500_501_b34d6a', 'idle')
+            }}
+        timeout: '00:00:15'
+        continue_on_timeout: true
+      - action: automation.turn_on
+        data:
+          entity_id:
+            - automation.sound_bar_music
+      - delay:
+          seconds: 20
+      - action: spotcast.start
+        data:
+          device_name: HT-MT500/501 B34D6A
+          force_playback: true
+          random_song: true
+          repeat: context
+          shuffle: true
+        data_template:
+          uri: >-
+            {%-
+                set play = {
+                  'sleep': 'spotify:playlist:4XUm5yVSnVH4WhU9iG9ZES',
+                  'music': 'spotify:playlist:7g0nMKfCYvuMZkzFHgMtbT'
+                }
+              -%}
+            {{ play[states('input_select.select_spotify')] }}
+      - wait_template: >-
+          {{
+              is_state('media_player.ht_mt500_501_b34d6a', 'playing')
+            }}
+        timeout:
+          seconds: 15
+        continue_on_timeout: false
+      - action: songpal.set_sound_setting
+        data:
+          entity_id: media_player.soundbar
+          name: subwooferLevel
+          value: 9
+      - action: songpal.set_sound_setting
+        data:
+          entity_id: media_player.soundbar
+          name: voice
+          value: type1
+      - action: media_player.volume_set
+        data:
+          entity_id: media_player.ht_mt500_501_b34d6a
+          volume_level: 0.22
+
+  spot_bed:
+    alias: bed
+    icon: mdi:bed-king
+    sequence:
+      - action: script.spot_turn_on_helper
+        data:
+          player: media_player.bedroom_speaker
+      - wait_template: >-
+          {{
+            is_state('media_player.bedroom_speaker', 'idle')
+            }}
+        timeout: '00:00:15'
+        continue_on_timeout: true
+      - action: spotcast.start
+        data:
+          device_name: Bedroom Speaker
+          force_playback: true
+          random_song: true
+          repeat: context
+          shuffle: true
+        data_template:
+          uri: >-
+            {%-
+                set play = {
+                  'sleep': 'spotify:playlist:4XUm5yVSnVH4WhU9iG9ZES',
+                  'music': 'spotify:playlist:7g0nMKfCYvuMZkzFHgMtbT'
+                }
+              -%}
+            {{ play[states('input_select.select_spotify')] }}
+      - wait_template: >-
+          {{
+              is_state('media_player.bedroom_speaker', 'playing')
+            }}
+        timeout:
+          seconds: 15
+        continue_on_timeout: false
+      - action: media_player.volume_set
+        data:
+          entity_id: media_player.bedroom_speaker
+          volume_level: 0.18
+      - action: timer.start
+        entity_id: timer.bed_music
+        data:
+          duration: '01:00:00'
