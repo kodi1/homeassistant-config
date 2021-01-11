@@ -1,0 +1,29 @@
+homeassistant:
+  customize:
+    sensor.ping_isp:
+      icon: mdi:earth
+    sensor.owrt_disk_free:
+      icon: mdi:cloud-sync
+
+command_line:
+  - sensor:
+      name: ping isp
+      command: '/config/cmds/test_isp'
+      unit_of_measurement: 'ms'
+      scan_interval: 300
+
+  - sensor:
+      name: owrt disk free
+      command: '/config/cmds/owrt_disk_free'
+      unit_of_measurement: 'MB'
+      scan_interval: 600
+
+script:
+  owrt_reboot:
+    alias: owrt reboot
+    icon: mdi:router-wireless
+    sequence:
+      - action: shell_command.owrt_reboot
+
+shell_command:
+  owrt_reboot: '/config/cmds/owrt_reboot'
