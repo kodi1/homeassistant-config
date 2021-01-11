@@ -1,0 +1,378 @@
+homeassistant:
+  customize:
+    sensor.daily_water:
+      friendly_name: day
+    utility_meter.daily_water:
+      friendly_name: water
+    switch.water_valve_2:
+      icon: mdi:valve
+      friendly_name: pre water
+    automation.water_city_1:
+      icon: mdi:water
+      friendly_name: water
+    automation.water_city_1_time:
+      icon: mdi:valve-closed
+      friendly_name: water times
+    automation.water_boiler:
+      icon: mdi:water-boiler
+      friendly_name: hot water
+
+climate:
+  - platform: climate_template
+    name: hot water
+    unique_id: hot_water
+    modes:
+      - 'heat'
+      - 'off'
+    max_temp: 60.0
+    min_temp: 30.0
+    icon_template: mdi:water-boiler
+    target_temperature_template: >-
+     {{
+        state_attr('water_heater.domestic_hot_water_tank', 'temperature')
+      }}
+    set_temperature:
+      - action: water_heater.set_temperature
+        target:
+          entity_id: water_heater.domestic_hot_water_tank
+        data:
+          temperature: >-
+            {{
+                temperature
+              }}
+    current_temperature_template: >-
+      {{
+          state_attr('water_heater.domestic_hot_water_tank', 'current_temperature')
+        }}
+    hvac_mode_template: >-
+      {%-
+          set mode = {
+              'on': 'heat',
+              'off': 'off'
+            }
+        -%}
+      {{
+          mode[states('water_heater.domestic_hot_water_tank')]
+        }}
+    set_hvac_mode:
+      - action: water_heater.set_operation_mode
+        target:
+          entity_id: water_heater.domestic_hot_water_tank
+        data:
+          operation_mode: >-
+            {%-
+                set mode = {
+                    'heat': 'on',
+                    'off': 'off'
+                  }
+              -%}
+            {{
+                mode[hvac_mode]
+              }}
+
+utility_meter:
+  daily_water:
+    source: sensor.city_water_total
+    cycle: daily
+
+template:
+  - trigger:
+    - trigger: state
+      entity_id:
+        - binary_sensor.bath_motion_1
+        - binary_sensor.bath_motion_2
+        - binary_sensor.kitchen_motion
+    binary_sensor:
+      - name:  water_motion
+        state: >-
+          {{
+              is_state('binary_sensor.bath_motion_1', 'on') or
+                is_state('binary_sensor.bath_motion_2', 'on') or
+                is_state('binary_sensor.kitchen_motion', 'on')
+            }}
+        device_class: motion
+        attributes:
+          triggers: >-
+            {{ trigger.to_state.name }}
+
+  - trigger:
+    - trigger: state
+      entity_id:
+        - binary_sensor.bath_occupancy_1
+        - binary_sensor.bath_occupancy_2
+        - binary_sensor.kitchen_occupancy
+    binary_sensor:
+      - name: water_occupancy
+        state: >-
+          {{
+              is_state('binary_sensor.bath_occupancy_1', 'on') or
+                is_state('binary_sensor.bath_occupancy_2', 'on') or
+                is_state('binary_sensor.kitchen_occupancy', 'on')
+            }}
+        device_class: occupancy
+
+automation:
+  - id: water_boiler
+    alias: water_boiler
+    triggers:
+      - trigger: time
+        at: '05:05:00'
+        id: time_heat
+        variables:
+          s: win
+      - trigger: time
+        at: '06:05:00'
+        id: time_heat
+        variables:
+          s: sum
+
+      - trigger: time
+        at: '04:45:00'
+        id: time_clean
+        variables:
+          s: win
+      - trigger: time
+        at: '05:00:00'
+        id: time_clean
+        variables:
+          s: sum
+
+      - trigger: time
+        at: '06:35:00'
+        id: time_off
+        variables:
+          s: win
+      - trigger: time
+        at: '07:35:00'
+        id: time_off
+        variables:
+          s: sum
+
+    conditions:
+      - condition: template
+        value_template: >-
+          {%- set data = {
+                  'win' : [1, 2, 3, 11, 12],
+                  'sum' : [4, 5, 6, 7, 8, 9, 10],
+                }
+            -%}
+          {{ now().month in data[s] }}
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - time_heat
+          - condition: time
+            weekday:
+              - mon
+              #- tue
+              #- wed
+              #- thu
+              #- fri
+              - sat
+              #- sun
+          - condition: state
+            entity_id: device_tracker.root
+            state: home
+          - condition: numeric_state
+            entity_id: climate.hot_water
+            attribute: current_temperature
+            below: 38.0
+          - condition: state
+            entity_id: climate.hot_water
+            state: 'off'
+          sequence:
+            - action: climate.set_temperature
+              target:
+                entity_id: climate.hot_water
+              data:
+                hvac_mode: heat
+                temperature: 45
+        - conditions:
+          - condition: trigger
+            id:
+              - time_clean
+          - condition: time
+            weekday:
+              #- mon
+              #- tue
+              #- wed
+              - thu
+              #- fri
+              #- sat
+              #- sun
+          - condition: state
+            entity_id: climate.hot_water
+            state: 'off'
+          sequence:
+            - action: climate.set_hvac_mode
+              target:
+                entity_id: climate.hot_water
+              data:
+                hvac_mode: heat
+
+        - conditions:
+          - condition: trigger
+            id:
+              - time_off
+          - condition: state
+            entity_id: climate.hot_water
+            state: heat
+          sequence:
+            - action: climate.set_hvac_mode
+              target:
+                entity_id: climate.hot_water
+              data:
+                hvac_mode: 'off'
+
+  - id: water_city_1
+    alias: water_city_1
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.water_motion
+          - binary_sensor.water_wash
+        to: 'on'
+        id: water_on
+      - trigger: state
+        entity_id: binary_sensor.water_occupancy
+        to: 'off'
+        id: water_off
+        for:
+          seconds: >-
+            {%- if int(states('counter.water_motion'), 5) > 50 -%}
+              300
+            {%- elif int(states('counter.water_motion'), 5) > 30 -%}
+              180
+            {%- elif int(states('counter.water_motion'), 5 ) > 10 -%}
+              120
+            {%- else -%}
+              60
+            {%- endif -%}
+      - trigger: state
+        entity_id: binary_sensor.water_wash
+        to: 'off'
+        id: water_off
+      - trigger: event
+        event_type: up_down_my
+        event_data:
+          data: start
+        id: water_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - water_on
+          sequence:
+            - action: counter.increment
+              data:
+                entity_id:
+                  - counter.water_motion
+
+        - conditions:
+          - condition: trigger
+            id:
+              - water_off
+          sequence:
+            - action: counter.reset
+              data:
+                entity_id:
+                  - counter.water_motion
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - water_on
+          - condition: state
+            entity_id: switch.water_valve
+            state: 'off'
+          sequence:
+            # - action: switch.turn_on
+            #   data:
+            #     entity_id: switch.water_valve_2
+            # - delay:
+            #     seconds: 2
+            - action: switch.turn_on
+              data:
+                entity_id: switch.water_valve
+            # - delay:
+            #     seconds: 1
+            # - action: switch.turn_off
+            #   data:
+            #     entity_id: switch.water_valve_2
+
+        - conditions:
+          - condition: trigger
+            id:
+              - water_off
+          - condition: state
+            entity_id: switch.water_valve
+            state: 'on'
+          - condition: state
+            entity_id: binary_sensor.water_occupancy
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.water_wash
+            state: 'off'
+          sequence:
+            - action: switch.turn_off
+              data:
+                entity_id: switch.water_valve
+
+  - id: whater_meter_calibration
+    alias: whater_meter_calibration
+    triggers:
+      - trigger: numeric_state
+        entity_id: input_number.whater_meter_calibration
+        value_template: >-
+          {{
+              states('input_number.whater_meter_calibration') | int(0) | abs
+            }}
+        above: 0
+        for:
+          seconds: 3
+
+    mode: restart
+    actions:
+      # Sensor53 c1 calibration_value => { "Sensor53": "c1 56617"}
+      - variables:
+          val: >-
+            {{
+                state_attr('sensor.daily_water', 'last_valid_state') | int(0) +
+                  states('input_number.whater_meter_calibration') | int(0)
+              }}
+      - action: mqtt.publish
+        data:
+          topic:  cmnd/watermeter/json
+          payload: >-
+            {%-
+                set payload = {
+                    'Sensor53': 'c1 %d' % val
+                  }
+              -%}
+            {{ payload | to_json }}
+      - action: input_number.set_value
+        data:
+          entity_id: input_number.whater_meter_calibration
+          value: 0
+
+counter:
+  water_motion:
+    name: water
+    icon: mdi:motion-sensor
+    restore: false
+
+input_number:
+  whater_meter_calibration:
+    name: diff
+    initial: 0
+    min: -100
+    max: 100
+    step: 1
+    mode: box

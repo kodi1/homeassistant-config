@@ -1,0 +1,85 @@
+title: homeconnect
+icon: mdi:transit-connection-variant
+path: homeconnect
+
+badges:
+  - device_tracker.washer
+  - device_tracker.dryer
+  - device_tracker.dishwasher
+cards:
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - automation.reload_homeconect
+      - type: divider
+      - binary_sensor.water_wash
+      - binary_sensor.wash_fan
+      - binary_sensor.warn_valve_1
+      - type: divider
+      - input_boolean.water_manual_ctrl
+      - type: divider
+      - binary_sensor.bosch_dishwasher_remote_start_allowed
+      - binary_sensor.bosch_washer_remote_start_allowed
+      - binary_sensor.bosch_dryer_remote_start_allowed
+
+
+  - type: conditional
+    conditions:
+      - entity: device_tracker.washer
+        state: home
+    card:
+      type: entities
+      title: washer
+      show_header_toggle: false
+      state_color: true
+      entities:
+        - binary_sensor.bosch_washer_door
+        - sensor.bosch_washer_operation_state
+        - sensor.bosch_washer_remaining_program_time
+        - type: divider
+        - select.bosch_washer_selected_program
+        - type: divider
+        - button.bosch_washer_start
+        - button.bosch_washer_abort
+        - type: divider
+        - switch.bosch_washer_child_lock
+        - select.bosch_washer_power_state
+
+  - type: conditional
+    conditions:
+      - entity: device_tracker.dryer
+        state: home
+    card:
+      type: entities
+      title: dryer
+      show_header_toggle: false
+      state_color: true
+      entities:
+        - binary_sensor.bosch_dryer_door
+        - sensor.bosch_dryer_operation_state
+        - sensor.bosch_dryer_remaining_program_time
+        - type: divider
+        - select.bosch_dryer_selected_program
+        - type: divider
+        - button.bosch_dryer_start
+        - button.bosch_dryer_abort
+        - type: divider
+        - switch.bosch_dryer_child_lock
+        - select.bosch_dryer_power_state
+
+  - type: entities
+    title: dishwasher
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - binary_sensor.bosch_dishwasher_door
+      - sensor.bosch_dishwasher_operation_state
+      - sensor.bosch_dishwasher_remaining_program_time
+      - type: divider
+      - select.bosch_dishwasher_selected_program
+      - type: divider
+      - button.bosch_dishwasher_start
+      - button.bosch_dishwasher_abort
+      - type: divider
+      - switch.bosch_dishwasher_power

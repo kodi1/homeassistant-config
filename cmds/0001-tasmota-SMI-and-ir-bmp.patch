@@ -1,0 +1,535 @@
+From 1f3e8c306424a43bba79512432b19c998518d73c Mon Sep 17 00:00:00 2001
+From: kodi1 <kodi.dev.one@gmail.com>
+Date: Thu, 25 May 2023 23:51:01 +0300
+Subject: [PATCH] tasmota SMI and ir-bmp
+
+---
+ .vscode/settings.json                       |   3 +
+ platformio_override.ini                     | 166 +++++++++++++
+ platformio_tasmota_env.ini                  |  12 +
+ script.smi                                  |  30 +++
+ tasmota/tasmota_xsns_sensor/xsns_53_sml.ino |   2 +-
+ tasmota/user_config_override.h              | 248 ++++++++++++++++++++
+ 6 files changed, 460 insertions(+), 1 deletion(-)
+ create mode 100644 platformio_override.ini
+ create mode 100644 script.smi
+ create mode 100644 tasmota/user_config_override.h
+
+diff --git a/.vscode/settings.json b/.vscode/settings.json
+index 7714ebe96..86b0dcc87 100644
+--- a/.vscode/settings.json
++++ b/.vscode/settings.json
+@@ -1,4 +1,6 @@
+ {
++    "files.trimTrailingWhitespace": true,
++    "files.autoSave": "onFocusChange",
+     "platformio-ide.toolbar": [
+       {
+         "text": "$(home)",
+@@ -72,3 +74,4 @@
+       }
+     ]
+   }
++}
+diff --git a/platformio_override.ini b/platformio_override.ini
+new file mode 100644
+index 000000000..e3009a49a
+--- /dev/null
++++ b/platformio_override.ini
+@@ -0,0 +1,166 @@
++; ***  Example PlatformIO Project Configuration Override File   ***
++; ***  Changes done here override settings in platformio.ini    ***
++;
++; *****************************************************************
++; ***  to activate rename this file to platformio_override.ini  ***
++; *****************************************************************
++;
++; Please visit documentation for the options and examples
++; http://docs.platformio.org/en/stable/projectconf.html
++
++[platformio]
++; For best Gitpod performance remove the ";" in the next line. Needed Platformio files are cached and installed at first run
++;core_dir = .platformio
++; Custom config Zigbee [env] -> platformio_tasmota_cenv_example.ini
++extra_configs = platformio_tasmota_cenv.ini
++
++; *** Build/upload environment
++default_envs =
++; *** Uncomment the line(s) below to select version(s)
++                tasmota-smi
++;                tasmota
++;                tasmota-debug
++;                tasmota-ircustom
++;                tasmota-minimal
++;                tasmota-lite
++;                tasmota-knx
++;                tasmota-sensors
++;                tasmota-display
++;                tasmota-zbbridge
++;                tasmota-ir
++;                tasmota32
++;                tasmota32-bluetooth
++;                tasmota32-webcam
++;                tasmota32-knx
++;                tasmota32-sensors
++;                tasmota32-display
++;                tasmota32-ir
++;                tasmota32-ircustom
++;                tasmota32solo1
++;                tasmota32c3
++;                tasmota32s2
++;                tasmota32-odroidgo
++;                tasmota32-core2
++
++
++[common]
++platform_packages           = ${core.platform_packages}
++build_unflags               = ${core.build_unflags}
++build_flags                 = ${core.build_flags}
++; *** Optional Debug messages
++;                            -DDEBUG_TASMOTA_CORE
++;                            -DDEBUG_TASMOTA_DRIVER
++;                            -DDEBUG_TASMOTA_SENSOR
++
++; *** CAUTION *** This setting is ONLY possible since 12.01.2021 with development version !!!
++; *** Enable only if you exactly know what are you doing
++; *** If you try with earlier builds a serial erase and flash is probably needed
++;
++; Build variant 1MB = 1MB firmware no filesystem (default)
++;board                       = esp8266_1M
++; Build variant 2MB = 1MB firmware, 1MB filesystem (most Shelly devices)
++;board                       = esp8266_2M1M
++; Build variant 4MB = 1MB firmware, 1MB OTA, 2MB filesystem (WEMOS D1 Mini, NodeMCU, Sonoff POW)
++;board                       = esp8266_4M2M
++
++; set CPU frequency to 80MHz (default) or 160MHz
++;board_build.f_cpu           = 160000000L
++
++; set Flash chip frequency to 40MHz (default), 20MHz, 26Mhz, 80Mhz
++;board_build.f_flash         = 20000000L
++;board_build.f_flash         = 26000000L
++;board_build.f_flash         = 80000000L
++
++; *** Upload Serial reset method for Wemos and NodeMCU
++upload_port                 = /dev/ttyUSB0
++upload_speed                = 921600
++
++extra_scripts               = ${scripts_defaults.extra_scripts}
++;                              pio-tools/obj-dump.py
++
++lib_extra_dirs              = ${library.lib_extra_dirs}
++
++[core]
++; Activate only (one set) if you want to override the standard core defined in platformio.ini !!!
++
++;platform_packages           = ${tasmota_stage.platform_packages}
++;build_unflags               = ${tasmota_stage.build_unflags}
++;build_flags                 = ${tasmota_stage.build_flags}
++
++;platform_packages           = ${core_stage.platform_packages}
++;build_unflags               = ${core_stage.build_unflags}
++;build_flags                 = ${core_stage.build_flags}
++
++
++[tasmota_stage]
++; *** Esp8266 core for Arduino version Tasmota stage. Backport for PWM selection
++platform_packages           = tasmota/framework-arduinoespressif8266 @ ~2.7.4
++build_unflags               = ${esp_defaults.build_unflags}
++build_flags                 = ${esp82xx_defaults.build_flags}
++; *** Use ONE of the two PWM variants. Tasmota default is Locked PWM
++                              ;-DWAVEFORM_LOCKED_PHASE
++                              -DWAVEFORM_LOCKED_PWM
++
++[core_stage]
++; *** Esp8266 core for Arduino version stage
++platform_packages           = framework-arduinoespressif8266 @ https://github.com/esp8266/Arduino.git
++; *** Use Xtensa build chain 10.2. GNU23 from https://github.com/earlephilhower/esp-quick-toolchain
++                              tasmota/toolchain-xtensa @ 5.100200.210303
++build_unflags               = ${esp_defaults.build_unflags}
++                              -Wswitch-unreachable
++build_flags                 = ${esp82xx_defaults.build_flags}
++; *** Use ONE of the two PWM variants. Tasmota default is Locked PWM
++                              ;-DWAVEFORM_LOCKED_PHASE
++                              -DWAVEFORM_LOCKED_PWM
++                              -Wno-switch-unreachable
++
++[common32]
++platform_packages           = ${core32.platform_packages}
++build_unflags               = ${core32.build_unflags}
++build_flags                 = ${core32.build_flags}
++upload_port                 = COM4
++lib_extra_dirs              = ${library.lib_extra_dirs}
++; *** ESP32 lib. ALWAYS needed for ESP32 !!!
++                              lib/libesp32
++; *** comment the following line if you dont use LVGL in a Tasmota32 build. Reduces compile time
++                              lib/libesp32_lvgl
++; *** comment the following line if you dont use Bluetooth or Apple Homekit in a Tasmota32 build. Reduces compile time
++                              lib/libesp32_div
++; *** uncomment the following line if you dont use Epaper driver epidy in your Tasmota32 build. Reduces compile time
++                              lib/libesp32_epdiy
++
++[core32]
++; Activate Stage Core32 by removing ";" in next 3 lines, if you want to override the standard core32
++;platform_packages           = ${core32_stage.platform_packages}
++;build_unflags               = ${core32_stage.build_unflags}
++;build_flags                 = ${core32_stage.build_flags}
++
++[core32_stage]
++platform_packages           = framework-arduinoespressif32 @ https://github.com/espressif/arduino-esp32.git
++                              platformio/tool-mklittlefs @ ~1.203.200522
++build_unflags               = ${esp32_defaults.build_unflags}
++build_flags                 = ${esp32_defaults.build_flags}
++                              -DESP32_STAGE=true
++
++[library]
++shared_libdeps_dir          = lib
++; *** Library disable / enable for variant Tasmota(32). Disable reduces compile time
++; *** !!! Disabling needed libs will generate compile errors !!!
++; *** The resulting firmware will NOT be different if you leave all libs enabled
++; *** Disabling by putting a ";" in front of the lib name
++; *** If you dont know what it is all about, do not change
++lib_extra_dirs              =
++; *** Only disabled for Tasmota minimal and Tasmota light. For all other variants needed!
++                              lib/lib_basic
++; **** I2C devices. Most sensors. Disable only if you dont have ANY I2C device enabled
++                              lib/lib_i2c
++; *** Displays. Disable if you dont have any Display activated
++                              lib/lib_display
++; *** Bear SSL and base64. Disable if you dont have SSL or TLS activated
++                              lib/lib_ssl
++; *** Audio needs a lot of time to compile. Mostly not used functions. Recommended to disable
++                              lib/lib_audio
++; *** RF 433 stuff (not RF Bridge). Recommended to disable
++                              lib/lib_rf
++; *** Mostly not used functions. Recommended to disable
++                              lib/lib_div
+diff --git a/platformio_tasmota_env.ini b/platformio_tasmota_env.ini
+index f14720194..31773a2a5 100644
+--- a/platformio_tasmota_env.ini
++++ b/platformio_tasmota_env.ini
+@@ -17,6 +17,18 @@ lib_ignore                  = ${esp82xx_defaults.lib_ignore}
+ ; Add files to Filesystem for all env (global). Remove no files entry and add add a line with the file to include
+ custom_files_upload         = no_files
+ 
++[env:tasmota-smi]
++build_flags             = ${env.build_flags}
++                            -D_USE_SMI_
++                            -DOTA_URL='""'
++lib_extra_dirs          =
++
++[env:tasmota-ir-bmp]
++build_flags             = ${env.build_flags}
++                            -D_USE_IR_BMP_
++                            -DOTA_URL='""'
++lib_extra_dirs          = lib/lib_basic, lib/lib_i2c
++
+ [env:tasmota]
+ build_flags             = ${env.build_flags} -DOTA_URL='"http://ota.tasmota.com/tasmota/release/tasmota.bin.gz"'
+ 
+diff --git a/script.smi b/script.smi
+new file mode 100644
+index 000000000..1d310dbd6
+--- /dev/null
++++ b/script.smi
+@@ -0,0 +1,30 @@
++>D
++v1=0
++v2=0
++>B
++=>sensor53 r
++>M
+++1,14,c,1,-10,H2O
++1,1-0:1.7.0*255(@1,Flow,L/min,flow,1)
++1,1-0:1.8.0*255(@1,Total,L,total,0)
++#
++#WATER
++=>publish tele/%topic%/WATER {"flow":"%1v1%","total":"%0v2%","m3":"%1(v2/1000)%"}
++#
++>U
++>T
++>S
++v1=sml[1]
++v2=sml[2]
++if chg[v1]>0
++then
++=#WATER
++else
++if upsecs%600==0
++then
++=#WATER
++endif
++endif
++>W
++H2O{m}%3(v2/1000)% m3
++>R
+\ No newline at end of file
+diff --git a/tasmota/tasmota_xsns_sensor/xsns_53_sml.ino b/tasmota/tasmota_xsns_sensor/xsns_53_sml.ino
+index af3120d62..d4f73b6ae 100755
+--- a/tasmota/tasmota_xsns_sensor/xsns_53_sml.ino
++++ b/tasmota/tasmota_xsns_sensor/xsns_53_sml.ino
+@@ -3940,7 +3940,7 @@ uint32_t ctime = millis();
+ 				uint32_t time = millis();
+ 				if ((time - sml_counters[cindex].sml_counter_lfalltime) > CNT_PULSE_TIMEOUT) {
+ 					InjektCounterValue(meters, RtcSettings.pulse_counter[cindex], 0);
+-					sml_counters[cindex].sml_counter_lfalltime = time;
++					sml_counters[cindex].sml_counter_lfalltime = time - CNT_PULSE_TIMEOUT;
+ 				}
+       }
+       cindex++;
+diff --git a/tasmota/user_config_override.h b/tasmota/user_config_override.h
+new file mode 100644
+index 000000000..43366433e
+--- /dev/null
++++ b/tasmota/user_config_override.h
+@@ -0,0 +1,248 @@
++/*
++  user_config_override.h - user configuration overrides my_user_config.h for Tasmota
++
++  Copyright (C) 2021  Theo Arends
++
++  This program is free software: you can redistribute it and/or modify
++  it under the terms of the GNU General Public License as published by
++  the Free Software Foundation, either version 3 of the License, or
++  (at your option) any later version.
++
++  This program is distributed in the hope that it will be useful,
++  but WITHOUT ANY WARRANTY; without even the implied warranty of
++  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++  GNU General Public License for more details.
++
++  You should have received a copy of the GNU General Public License
++  along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#ifndef _USER_CONFIG_OVERRIDE_H_
++#define _USER_CONFIG_OVERRIDE_H_
++
++/*****************************************************************************************************\
++ * USAGE:
++ *   To modify the stock configuration without changing the my_user_config.h file:
++ *   (1) copy this file to "user_config_override.h" (It will be ignored by Git)
++ *   (2) define your own settings below
++ *
++ ******************************************************************************************************
++ * ATTENTION:
++ *   - Changes to SECTION1 PARAMETER defines will only override flash settings if you change define CFG_HOLDER.
++ *   - Expect compiler warnings when no ifdef/undef/endif sequence is used.
++ *   - You still need to update my_user_config.h for major define USE_MQTT_TLS.
++ *   - All parameters can be persistent changed online using commands via MQTT, WebConsole or Serial.
++\*****************************************************************************************************/
++
++/*
++Examples :
++
++// -- Master parameter control --------------------
++#undef  CFG_HOLDER
++#define CFG_HOLDER        4617                   // [Reset 1] Change this value to load SECTION1 configuration parameters to flash
++
++// -- Setup your own Wifi settings  ---------------
++#undef  STA_SSID1
++#define STA_SSID1         "YourSSID"             // [Ssid1] Wifi SSID
++
++#undef  STA_PASS1
++#define STA_PASS1         "YourWifiPassword"     // [Password1] Wifi password
++
++// -- Setup your own MQTT settings  ---------------
++#undef  MQTT_HOST
++#define MQTT_HOST         "your-mqtt-server.com" // [MqttHost]
++
++#undef  MQTT_PORT
++#define MQTT_PORT         1883                   // [MqttPort] MQTT port (10123 on CloudMQTT)
++
++#undef  MQTT_USER
++#define MQTT_USER         "YourMqttUser"         // [MqttUser] Optional user
++
++#undef  MQTT_PASS
++#define MQTT_PASS         "YourMqttPass"         // [MqttPassword] Optional password
++
++// You might even pass some parameters from the command line ----------------------------
++// Ie:  export PLATFORMIO_BUILD_FLAGS='-DUSE_CONFIG_OVERRIDE -DMY_IP="192.168.1.99" -DMY_GW="192.168.1.1" -DMY_DNS="192.168.1.1"'
++
++#ifdef MY_IP
++#undef  WIFI_IP_ADDRESS
++#define WIFI_IP_ADDRESS     MY_IP                // Set to 0.0.0.0 for using DHCP or enter a static IP address
++#endif
++
++#ifdef MY_GW
++#undef  WIFI_GATEWAY
++#define WIFI_GATEWAY        MY_GW                // if not using DHCP set Gateway IP address
++#endif
++
++#ifdef MY_DNS
++#undef  WIFI_DNS
++#define WIFI_DNS            MY_DNS               // If not using DHCP set DNS IP address (might be equal to WIFI_GATEWAY)
++#endif
++
++// !!! Remember that your changes GOES AT THE BOTTOM OF THIS FILE right before the last #endif !!!
++*/
++
++#if defined (_USE_SMI_) or defined (_USE_IR_BMP_)
++
++#ifdef CODE_IMAGE_STR
++#undef CODE_IMAGE_STR
++#endif
++
++#undef USE_RULES
++#undef USE_ARDUINO_OTA
++#undef USE_DOMOTICZ
++#undef USE_HOME_ASSISTANT
++#undef USE_TASMOTA_DISCOVERY
++#undef USE_MQTT_TLS
++#undef USE_KNX
++#undef USE_ENHANCED_GUI_WIFI_SCAN
++#undef USE_WEBSEND_RESPONSE
++#undef USE_EMULATION
++#undef USE_EMULATION_HUE
++#undef USE_EMULATION_WEMO
++#undef USE_CUSTOM
++#undef USE_DISCOVERY
++#undef USE_SCRIPT
++#undef ROTARY_V1
++#undef USE_SONOFF_RF
++#undef USE_RF_FLASH
++#undef USE_SONOFF_SC
++#undef USE_TUYA_MCU
++#undef USE_ARMTRONIX_DIMMERS
++#undef USE_PS_16_DZ
++#undef USE_SONOFF_IFAN
++#undef USE_BUZZER
++#undef USE_ARILUX_RF
++#undef USE_SHUTTER
++#undef USE_DEEPSLEEP
++#undef USE_EXS_DIMMER
++#undef USE_HOTPLUG
++#undef USE_DEVICE_GROUPS
++#undef USE_PWM_DIMMER
++#undef USE_PWM_DIMMER_REMOTE
++#undef USE_KEELOQ
++#undef USE_SONOFF_D1
++#undef USE_SHELLY_DIMMER
++
++#undef USE_LIGHT
++#undef USE_WS2812
++#undef USE_MY92X1
++#undef USE_SM16716
++#undef USE_SM2135
++#undef USE_SM2335
++#undef USE_BP5758D
++#undef USE_SONOFF_L1
++#undef USE_ELECTRIQ_MOODL
++#undef USE_LIGHT_PALETTE
++#undef USE_LIGHT_VIRTUAL_CT
++#undef USE_DGR_LIGHT_SEQUENCE
++
++#undef USE_COUNTER
++#undef USE_DS18x20
++#undef USE_I2C
++#undef USE_SPI
++#undef USE_DISPLAY
++#undef USE_MHZ19
++#undef USE_SENSEAIR
++#undef USE_PMS5003
++#undef USE_NOVA_SDS
++#undef USE_HPMA
++#undef USE_SR04
++#undef USE_ME007
++#undef USE_DYP
++#undef USE_SERIAL_BRIDGE
++#undef USE_MODBUS_BRIDGE
++#undef USE_TCP_BRIDGE
++#undef USE_MP3_PLAYER
++#undef USE_AZ7798
++#undef USE_PN532_HSU
++#undef USE_ZIGBEE
++#undef USE_RDM6300
++#undef USE_IBEACON
++#undef USE_GPS
++#undef USE_HM10
++#undef USE_BLE_ESP32
++#undef USE_MI_ESP32
++#undef USE_HRXL
++#undef USE_TASMOTA_CLIENT
++#undef USE_OPENTHERM
++#undef USE_MIEL_HVAC
++#undef USE_PROJECTOR_CTRL
++#undef USE_AS608
++#undef USE_TFMINIPLUS
++#undef USE_HRG15
++#undef USE_VINDRIKTNING
++#undef USE_LOX_O2
++
++#undef USE_ENERGY_SENSOR
++#undef USE_ENERGY_SENSOR
++#undef USE_PZEM004T
++#undef USE_PZEM_AC
++#undef USE_PZEM_DC
++#undef USE_MCP39F501
++#undef USE_SDM72
++#undef USE_SDM120
++#undef USE_SDM230
++#undef USE_SDM630
++#undef USE_DDS2382
++#undef USE_DDSU666
++#undef USE_SOLAX_X1
++#undef USE_LE01MR
++#undef USE_BL09XX
++#undef USE_TELEINFO
++#undef USE_IEM3000
++#undef USE_BL6523
++#undef USE_WE517
++#undef USE_MODBUS_ENERGY
++
++#undef USE_DHT
++#undef USE_MAX31855
++#undef USE_MAX31865
++#undef USE_LMT01
++#undef USE_WIEGAND
++#undef USE_IR_REMOTE
++
++#undef USE_SHIFT595
++#undef USE_TM1638
++#undef USE_HX711
++#undef USE_TX20_WIND_SENSOR
++#undef USE_TX23_WIND_SENSOR
++#undef USE_WINDMETER
++#undef USE_FTC532
++#undef USE_RC_SWITCH
++#undef USE_RF_SENSOR
++#undef USE_HRE
++#undef USE_A4988_STEPPER
++#undef USE_NEOPOOL
++#undef USE_PROMETHEUS
++#undef USE_THERMOSTAT
++#undef DEBUG_THEO
++#undef USE_DEBUG_DRIVER
++#undef USE_AC_ZERO_CROSS_DIMMER
++
++#define USE_ADC_VCC
++#endif //defined _USE_SMI_ or defined _USE_IR_BMP_
++
++#ifdef _USE_SMI_
++#define USE_SCRIPT
++#define USE_SML_M
++#define NO_USE_SML_DECRYPT
++#define MAX_METERS (1)
++#define TMSBSIZ (8)
++#define UFSYS_SIZE (10000)
++// #define DEBUG_CNT_LED1 (2)
++#define CNT_PULSE_TIMEOUT (55000)
++#define USE_SCRIPT_SUB_COMMAND
++#define USE_SCRIPT_WEB_DISPLAY
++#define CODE_IMAGE_STR "tasmota SMI"
++#endif //_USE_SMI_
++
++#ifdef _USE_IR_BMP_
++#define CODE_IMAGE_STR "ir-bmp"
++#define USE_IR_REMOTE
++#define USE_IR_REMOTE_FULL
++#define USE_BMP
++#define USE_I2C
++#endif //_USE_IR_BMP
++
++#endif // _USER_CONFIG_OVERRIDE_H_
+-- 
+2.34.1
+

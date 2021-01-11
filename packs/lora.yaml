@@ -1,0 +1,37 @@
+script:
+  lora_send:
+    alias: send
+    mode: restart
+    sequence:
+      - variables:
+          gw_id: >
+            {%-
+                set _val = {
+                    'stz': '!8fd1fadc',
+                    'mir': '!c1f31c28',
+                  }
+              -%}
+              {{ _val[states('input_select.lora_gw')] }}
+      - service: meshtastic_tracker.send_packet
+        data:
+          from_id: >-
+            {{
+                gw_id
+              }}
+          text: >-
+            {{
+                now().strftime('%H:%M:%S hass.io test')
+              }}
+          to_id: '!ffffffff'
+          channel: 2
+      - delay:
+          milliseconds: 500
+
+input_select:
+  lora_gw:
+    name: lora gw
+    options:
+      - sof
+      - stz
+      - mir
+    icon: mdi:antenna

@@ -1,0 +1,864 @@
+homeassistant:
+  customize:
+    light.wled_living:
+      icon: mdi:led-strip-variant
+    light.wled_window:
+      icon: mdi:led-strip-variant
+    automation.send_effect_hyperion:
+      friendly_name: hyperion
+      icon: mdi:led-strip-variant
+    automation.video_grabber:
+      friendly_name: video grabber
+      icon: mdi:television-ambient-light
+    automation.wled_lights:
+      friendly_name: wled
+      icon: mdi:lightbulb-auto
+    alert.wled_update:
+      icon: mdi:update
+    binary_sensor.wled_ambient:
+      friendly_name: ambi
+    binary_sensor.wled_living:
+      friendly_name: wled
+    binary_sensor.grabber_living:
+      friendly_name: grabber
+
+# living count 340
+# window count 225
+
+alert:
+  wled_update:
+    name: wled check
+    entity_id: binary_sensor.wled_update
+    state: 'on'
+    repeat:
+      - 60
+    can_acknowledge: true
+    title: "wled version {{ states('sensor.wled_r_v') }}"
+    message: available
+    done_message: done
+    notifiers:
+      - kodi
+      - gmail
+
+automation:
+  - alias: wled_lights
+    id: wled_lights
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.wled_living
+        to: 'on'
+        id: to_on
+      - trigger: state
+        entity_id: binary_sensor.wled_living
+        to: 'off'
+        id: to_off
+      - trigger: state
+        entity_id: binary_sensor.wled_living
+        from: 'unavailable'
+        for:
+          seconds: 45
+        id: from_off
+      - trigger: state
+        entity_id:
+          - light.living
+          - light.hall
+        to: 'off'
+        id: after_off
+      - trigger: state
+        entity_id: binary_sensor.wled_ambient
+        to: 'on'
+        id: to_ambient
+      - trigger: state
+        entity_id: binary_sensor.wled_ambient
+        to: 'off'
+        id: from_ambient
+      - trigger: event
+        event_type: up_down_my
+        event_data:
+          data: 'stop'
+        id: to_off
+      - trigger: state
+        entity_id: binary_sensor.day
+        to: 'off'
+      - trigger: event
+        event_type: up_down_my
+        event_data:
+          data: 'start'
+        id: to_start
+      - trigger: state
+        entity_id: device_tracker.n0ll
+        to: not_home
+        for:
+          seconds: 95
+        id: to_start
+      - trigger: event
+        event_type: kodi_living_startup
+        id: to_start
+
+    mode: restart
+    actions:
+      - choose:
+        # - conditions:
+        #   - condition: state
+        #     entity_id:  binary_sensor.wled_ambient
+        #     state: 'off'
+        #   - condition: trigger
+        #     id:
+        #       - to_on
+        #       - to_start
+        #       - to_off
+        #       - from_ambient
+        #       - from_off
+        #       - after_off
+
+        #   sequence:
+        #     - action: mqtt.publish
+        #       data:
+        #         topic: wled/wled-living/api
+        #         payload: SN=1
+
+        - conditions:
+          - condition: trigger
+            id:
+              - to_ambient
+          sequence:
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-living/api
+                payload: SN=0
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-window/api
+                payload: T=0
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-living/api
+                payload: >-
+                  {{
+                      'A=%d' | format( states('input_number.wled_video_brightness') | int(64))
+                    }}
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - to_on
+          sequence:
+            - variables:
+                data: A=200&FP=51&FX=112&NL=0
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-living/api
+                payload: >-
+                  {{ data }}
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-window/api
+                payload: >-
+                  {{ data }}
+
+        - conditions:
+          - condition: trigger
+            id:
+              - to_off
+          - condition: state
+            entity_id: binary_sensor.wled_ambient
+            state: 'off'
+          sequence:
+            - variables:
+                data: NL=1&NF=2&A=200&PL=1
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-living/api
+                payload: >-
+                  {{ data }}
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-window/api
+                payload: >-
+                  {{ data }}
+            # - delay:
+            #     milliseconds: 250
+            # - action: mqtt.publish
+            #   data:
+            #     topic: wled/wled-living/api
+            #     payload: NL=1&NF=2
+
+        - conditions:
+          - condition: trigger
+            id:
+              - from_off
+          - condition: state
+            entity_id: binary_sensor.wled_ambient
+            state: 'off'
+          sequence:
+            - variables:
+                data: >-
+                  {%- if is_state('binary_sensor.wled_living', 'on') -%}
+                    A=200&FP=51&FX=112&NL=0
+                  {%- else -%}
+                    A=200&FP=15&FX=38&NL=5&NF=2
+                  {%- endif -%}
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-living/api
+                payload: >-
+                  {{ data }}
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-window/api
+                payload: >-
+                  {{ data }}
+
+        - conditions:
+          - condition: trigger
+            id:
+              - after_off
+          - condition: state
+            entity_id: binary_sensor.wled_living
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.wled_ambient
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.day
+            state: 'off'
+          sequence:
+            - variables:
+                data: A=200&PL=3&NL=3&NF=2
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-living/api
+                payload: >-
+                  {{ data }}
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-window/api
+                payload: >-
+                  {{ data }}
+
+        - conditions:
+          - condition: trigger
+            id:
+              - to_start
+          - condition: state
+            entity_id: binary_sensor.day
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.wled_living
+            state: 'off'
+          - condition: state
+            entity_id: device_tracker.root
+            state: 'home'
+          sequence:
+            - variables:
+                data: A=200&FP=15&FX=43&NL=1&NF=2
+            # - action: mqtt.publish
+            #   data:
+            #     topic: wled/wled-living/api
+            #     payload: T=1
+            # - delay:
+            #     milliseconds: 250
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-living/api
+                payload: >-
+                  {{ data }}
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-window/api
+                payload: >-
+                  {{ data }}
+            # - delay:
+            #     milliseconds: 250
+            # - action: mqtt.publish
+            #   data:
+            #     topic: wled/wled-living/api
+            #     payload: NL=1&NF=2
+
+        - conditions:
+          - condition: trigger
+            id:
+              - from_ambient
+          sequence:
+            - variables:
+                data: A=200&FP=15&FX=112&NL=1&NF=2
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-living/api
+                payload: >-
+                  {{ data }}
+            - action: mqtt.publish
+              data:
+                topic: wled/wled-window/api
+                payload: >-
+                  {{ data }}
+
+  - alias: hyperion_clear_effects
+    id: hyperion_clear_effects
+    triggers:
+      - trigger: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.hyperion_effect_timer
+    actions:
+      - action: input_select.select_option
+        data:
+          entity_id: input_select.hyperion_select_effect
+          option: None
+
+  - alias: send_effect_hyperion
+    id: send_effect_hyperion
+    triggers:
+      - trigger: state
+        entity_id: input_select.hyperion_select_effect
+    conditions:
+      - condition: template
+        value_template: >-
+          {{
+              trigger.to_state.state != 'None'
+            }}
+      - condition: template
+        value_template: >-
+          {{
+              now() - (
+                  state_attr('automation.tv_ctrl', 'last_triggered') |
+                    default(now() - timedelta(seconds=31), true)
+                ) >
+                timedelta(seconds=30) or
+              is_state('binary_sensor.day', 'off')
+            }}
+
+    actions:
+      # workaround video pause effect
+      - action: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+              '{
+                "command":"componentstate",
+                "componentstate": {
+                    "component": "LEDDEVICE",
+                    "state": false
+                }
+              }'
+      - delay:
+          milliseconds: 250
+      - action: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+            '{
+                "command": "effect",
+                "priority": {{ 105 | int(0) }},
+                "duration": {{ (states('input_number.slider_effect_time') | float(0) * 60000) | int(0) }},
+                "effect": { "name" : "{{ states('input_select.hyperion_select_effect') }}"}
+              }'
+      - delay:
+          milliseconds: 250
+      - action: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+              '{
+                "command":"componentstate",
+                "componentstate": {
+                    "component": "LEDDEVICE",
+                    "state": true
+                }
+              }'
+      - action: timer.start
+        entity_id: timer.hyperion_effect_timer
+        data_template:
+          duration: "{{ (states('input_number.slider_effect_time') | float(0) * 60) | int(0) }}"
+
+  - alias: video_grabber
+    id: video_grabber
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.grabber_living
+      - trigger: event
+        event_type: kodi_living_startup
+    actions:
+      - action: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+            {%-
+                  set cmd = {
+                    'command': 'componentstate',
+                    'componentstate': {
+                      'component': 'GRABBER',
+                      'state': is_state('binary_sensor.grabber_living', 'on')
+                    }
+                  }
+              -%}
+            '{{ cmd | to_json }}'
+      - delay:
+          milliseconds: 250
+      - action: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+            {%-
+                  set cmd = {
+                    'command': 'componentstate',
+                    'componentstate': {
+                      'component': 'LEDDEVICE',
+                      'state': false
+                    }
+                  }
+              -%}
+            '{{ cmd | to_json }}'
+      - delay:
+          milliseconds: 250
+      - action: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+            {%-
+                  set cmd = {
+                    'command': 'componentstate',
+                    'componentstate': {
+                      'component': 'LEDDEVICE',
+                      'state': true
+                    }
+                  }
+              -%}
+            '{{ cmd | to_json }}'
+
+  - alias: send_effect_hyperion_none
+    id: send_effect_hyperion_none
+    triggers:
+      - trigger: state
+        entity_id: input_select.hyperion_select_effect
+        to: None
+        for:
+          seconds: 3
+    actions:
+      - action: shell_command.hyperion_cmd
+        data_template:
+          value: >-
+            '{"command": "clear", "priority": {{ 105 | int(0) }}}'
+      - action: timer.cancel
+        entity_id: timer.hyperion_effect_timer
+
+  - alias: led_scheme_send
+    id: led_scheme_send
+    triggers:
+      - trigger: state
+        entity_id: input_select.wled_colors_palette
+      - trigger: state
+        entity_id: input_select.wled_effects
+    conditions:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: light.wled_living
+          state: 'on'
+    actions:
+      - action: mqtt.publish
+        data:
+          topic: 'wled/wled-living/api'
+          payload_template: "{{states('input_select.wled_effects')}}"
+      - action: mqtt.publish
+        data:
+          topic: 'wled/wled-living/api'
+          payload_template: "{{states('input_select.wled_colors_palette')}}"
+timer:
+  hyperion_effect_timer:
+    name: 'effect time'
+    icon: mdi:timer-outline
+    duration: '00:00:05'
+
+input_number:
+  slider_effect_time:
+    name: 'effect time'
+    min: 3
+    max: 10
+    step: 0.5
+    icon: mdi:timer-sand
+
+  wled_video_brightness:
+    name: 'video bright'
+    min: 5
+    max: 255
+    step: 5
+    icon: mdi:brightness-6
+
+shell_command:
+  hyperion_cmd: '/config/cmds/hyperion_cmd {{ value }}'
+
+sensor:
+  - platform: rest
+    name: 'wled_r_v'
+    method: 'GET'
+    headers:
+      User-Agent: 'Home Assistant REST sensor'
+      Accept: 'application/vnd.github.v3+json'
+      Content-Type: 'application/json'
+    scan_interval: 10800
+    # resource: 'https://api.github.com/repos/Aircoookie/WLED/tags'
+    # value_template: "{{ value_json[0]['name'] }}"
+    resource: 'https://api.github.com/repos/Aircoookie/WLED/releases/latest'
+    value_template: "{{ value_json['tag_name'] }}"
+
+  - platform: rest
+    name: 'wled_l_v'
+    scan_interval: 10800
+    resource: 'http://wled-living/json/info'
+    value_template: "{{value_json['ver']}}"
+
+template:
+  - binary_sensor:
+    - name: wled_update
+      delay_on:
+        seconds: 60
+      delay_off:
+        seconds: 60
+      # state: >-
+      #   {%-
+      #       set remote = (
+      #                     states('sensor.wled_r_v') |
+      #                       regex_findall_index('(\d+)\.(\d+)\.(\d+)\D*(\d+)?')
+      #                     )[:-1] | join('.') | version()
+      #     -%}
+      #   {%-
+      #       set local = (
+      #                     states('sensor.wled_l_v') |
+      #                       regex_findall_index('(\d+)\.(\d+)\.(\d+)\D*(\d+)?')
+      #                     )[:-1] | join('.') | version()
+      #     -%}
+      #   {{ remote > local }}
+      state: >-
+        {%-
+            set remote = states('sensor.wled_r_v') | version()
+          -%}
+        {%-
+            set local = states('sensor.wled_l_v') | version()
+          -%}
+        {{ remote > local }}
+      availability: >-
+        {{
+            (states('sensor.wled_r_v') not in ['unavailable', 'unknown']) and
+                (states('sensor.wled_l_v') not in ['unavailable', 'unknown'])
+          }}
+
+    - name: wled_ambient
+      icon:  mdi:television-ambient-light
+      device_class: light
+      delay_on:
+        milliseconds: 250 # wait to disable wled window
+      delay_off:
+        milliseconds: 2800 # wait wled living to finish udp conection
+      state: >-
+        {{
+            is_state('binary_sensor.grabber_living', 'on')
+          }}
+      availability: >-
+        {{
+            not (
+              is_state('light.wled_window', 'unavailable') or
+                is_state('light.wled_living', 'unavailable')
+              )
+          }}
+
+    - name: wled_living
+      icon: mdi:window-minimize
+      device_class: light
+      delay_on:
+        milliseconds: 2900 # wait wled living to finish udp conection
+      state: >-
+        {{
+            is_state('binary_sensor.day', 'off') and
+              is_state('device_tracker.n0ll', 'not_home') and
+              is_state('device_tracker.root', 'home') and
+              is_state('binary_sensor.sound_bar_active', 'on') and
+              is_state('timer.hyperion_effect_timer', 'idle') and
+              is_state('binary_sensor.grabber_living', 'off')
+          }}
+      availability: >-
+        {{
+            not (
+              is_state('light.wled_window', 'unavailable') or
+                is_state('light.wled_living', 'unavailable')
+              )
+          }}
+
+    - name: grabber_living
+      icon: mdi:television-play
+      device_class: light
+      state: >-
+        {{
+            is_state('binary_sensor.day', 'off') and
+              is_state('switch.tv_cec', 'on')
+          }}
+
+mqtt:
+  light:
+    - name: "wled living"
+      command_topic: "wled/wled-living"
+      state_topic: "wled/wled-living/g"
+      state_value_template: >-
+        {%- if value|int -%}
+              {{"ON"}}
+        {%- else -%}
+              {{"OFF"}}
+        {%- endif -%}
+      availability_topic: "wled/wled-living/status"
+      brightness_command_topic: "wled/wled-living"
+      brightness_state_topic: "wled/wled-living/g"
+      brightness_value_template: "{{value}}"
+      rgb_command_topic: "wled/wled-living/col"
+      rgb_command_template: "{{ '#%02x%02x%02x' | format(red, green, blue)}}"
+      rgb_state_topic: "wled/wled-living/c"
+      rgb_value_template: "{{value[1:3]|int(base=16)}},{{value[3:5]|int(base=16)}},{{value[5:7]|int(base=16)}}"
+      payload_on: "ON"
+      payload_off: "OFF"
+      optimistic: false
+
+    - name: "wled window"
+      command_topic: "wled/wled-window"
+      state_topic: "wled/wled-window/g"
+      state_value_template: >-
+        {%- if value|int -%}
+              {{"ON"}}
+        {%- else -%}
+              {{"OFF"}}
+        {%- endif -%}
+      availability_topic: "wled/wled-window/status"
+      brightness_command_topic: "wled/wled-window"
+      brightness_state_topic: "wled/wled-window/g"
+      brightness_value_template: "{{value}}"
+      rgb_command_topic: "wled/wled-window/col"
+      rgb_command_template: "{{ '#%02x%02x%02x' | format(red, green, blue)}}"
+      rgb_state_topic: "wled/wled-window/c"
+      rgb_value_template: "{{value[1:3]|int(base=16)}},{{value[3:5]|int(base=16)}},{{value[5:7]|int(base=16)}}"
+      payload_on: "ON"
+      payload_off: "OFF"
+      optimistic: false
+
+input_select:
+  hyperion_select_effect:
+    name: effect
+    icon: mdi:palette-advanced
+    initial: None
+    options:
+      - Atomic swirl
+      - Blue mood blobs
+      - Breath
+      - Candle
+      - Cinema brighten lights
+      - Cinema dim lights
+      - Cold mood blobs
+      - Collision
+      - Color traces
+      - Double swirl
+      - Fire
+      - Flags Germany/Sweden
+      - Full color mood blobs
+      - Green mood blobs
+      - Knight rider
+      - Led Test
+      - Light clock
+      - Lights
+      - Matrix
+      - Notify blue
+      - Pac-Man
+      - Plasma
+      - Police Lights Single
+      - Police Lights Solid
+      - Rainbow mood
+      - Rainbow swirl
+      - Rainbow swirl fast
+      - Random
+      - Red mood blobs
+      - Sea waves
+      - Snake
+      - Sparks
+      - Strobe red
+      - Strobe white
+      - System Shutdown
+      - Trails
+      - Trails color
+      - Warm mood blobs
+      - Waves with Color
+      - X-Mas
+      - None
+
+#https://github.com/Aircoookie/WLED/wiki/Subpages
+  wled_effects:
+    name: 'wled effect'
+    icon: mdi:firework
+    options:
+      [
+        "[FX=00] Solid",
+        "[FX=01] Blink",
+        "[FX=02] Breathe",
+        "[FX=03] Wipe",
+        "[FX=04] Wipe Random",
+        "[FX=05] Random Colors",
+        "[FX=06] Sweep",
+        "[FX=07] Dynamic",
+        "[FX=08] Colorloop",
+        "[FX=09] Rainbow",
+        "[FX=10] Scan",
+        "[FX=11] Scan Dual",
+        "[FX=12] Fade",
+        "[FX=13] Theater",
+        "[FX=14] Theater Rainbow",
+        "[FX=15] Running",
+        "[FX=16] Saw",
+        "[FX=17] Twinkle",
+        "[FX=18] Dissolve",
+        "[FX=19] Dissolve Rnd",
+        "[FX=20] Sparkle",
+        "[FX=21] Sparkle Dark",
+        "[FX=22] Sparkle+",
+        "[FX=23] Strobe",
+        "[FX=24] Strobe Rainbow",
+        "[FX=25] Strobe Mega",
+        "[FX=26] Blink Rainbow",
+        "[FX=27] Android",
+        "[FX=28] Chase",
+        "[FX=29] Chase Random",
+        "[FX=30] Chase Rainbow",
+        "[FX=31] Chase Flash",
+        "[FX=32] Chase Flash Rnd",
+        "[FX=33] Rainbow Runner",
+        "[FX=34] Colorful",
+        "[FX=35] Traffic Light",
+        "[FX=36] Sweep Random",
+        "[FX=37] Running 2",
+        "[FX=38] Red & Blue",
+        "[FX=39] Stream",
+        "[FX=40] Scanner",
+        "[FX=41] Lighthouse",
+        "[FX=42] Fireworks",
+        "[FX=43] Rain",
+        "[FX=44] Merry Christmas",
+        "[FX=45] Fire Flicker",
+        "[FX=46] Gradient",
+        "[FX=47] Loading",
+        "[FX=48] Police",
+        "[FX=49] Police All",
+        "[FX=50] Two Dots",
+        "[FX=51] Two Areas",
+        "[FX=52] Circus",
+        "[FX=53] Halloween",
+        "[FX=54] Tri Chase",
+        "[FX=55] Tri Wipe",
+        "[FX=56] Tri Fade",
+        "[FX=57] Lightning",
+        "[FX=58] ICU",
+        "[FX=59] Multi Comet",
+        "[FX=60] Scanner Dual",
+        "[FX=61] Stream 2",
+        "[FX=62] Oscillate",
+        "[FX=63] Pride 2015",
+        "[FX=64] Juggle",
+        "[FX=65] Palette",
+        "[FX=66] Fire 2012",
+        "[FX=67] Colorwaves",
+        "[FX=68] Bpm",
+        "[FX=69] Fill Noise",
+        "[FX=70] Noise 1",
+        "[FX=71] Noise 2",
+        "[FX=72] Noise 3",
+        "[FX=73] Noise 4",
+        "[FX=74] Colortwinkles",
+        "[FX=75] Lake",
+        "[FX=76] Meteor",
+        "[FX=77] Meteor Smooth",
+        "[FX=78] Railway",
+        "[FX=79] Ripple",
+        "[FX=80] Twinklefox",
+        "[FX=81] Twinklecat",
+        "[FX=82] Halloween Eyes",
+        "[FX=83] Solid Pattern",
+        "[FX=84] Solid Pattern Tri",
+        "[FX=85] Spots",
+        "[FX=86] Spots Fade",
+        "[FX=87] Glitter",
+        "[FX=88] Candle",
+        "[FX=89] Fireworks Starburst",
+        "[FX=90] Fireworks 1D",
+        "[FX=91] Bouncing Balls",
+        "[FX=92] Sinelon",
+        "[FX=93] Sinelon Dual",
+        "[FX=94] Sinelon Rainbow",
+        "[FX=95] Popcorn",
+        "[FX=96] Drip",
+        "[FX=97] Plasma",
+        "[FX=98] Percent",
+        "[FX=99] Ripple Rainbow",
+        "[FX=100] Heartbeat",
+        "[FX=101] Pacifica",
+        "[FX=102] Candle Multi",
+        "[FX=103] Solid Glitter",
+        "[FX=104] Sunrise",
+        "[FX=105] Phased",
+        "[FX=106] Twinkleup",
+        "[FX=107] Noise Pal",
+        "[FX=108] Sine",
+        "[FX=109] Phased Noise",
+        "[FX=110] Flow",
+        "[FX=111] Chunchun",
+        "[FX=112] Dancing Shadows",
+        "[FX=113] Washing Machine"
+      ]
+
+  wled_colors_palette:
+    name: 'wled palette'
+    icon: mdi:palette
+    options:
+      [
+        "[FP=00] Default",
+        "[FP=01] * Random Cycle",
+        "[FP=02] * Color 1",
+        "[FP=03] * Colors 1&2",
+        "[FP=04] * Color Gradient",
+        "[FP=05] * Colors Only",
+        "[FP=06] Party",
+        "[FP=07] Cloud",
+        "[FP=08] Lava",
+        "[FP=09] Ocean",
+        "[FP=10] Forest",
+        "[FP=11] Rainbow",
+        "[FP=12] Rainbow Bands",
+        "[FP=13] Sunset",
+        "[FP=14] Rivendell",
+        "[FP=15] Breeze",
+        "[FP=16] Red & Blue",
+        "[FP=17] Yellowout",
+        "[FP=18] Analogous",
+        "[FP=19] Splash",
+        "[FP=20] Pastel",
+        "[FP=21] Sunset 2",
+        "[FP=22] Beech",
+        "[FP=23] Vintage",
+        "[FP=24] Departure",
+        "[FP=25] Landscape",
+        "[FP=26] Beach",
+        "[FP=27] Sherbet",
+        "[FP=28] Hult",
+        "[FP=29] Hult 64",
+        "[FP=30] Drywet",
+        "[FP=31] Jul",
+        "[FP=32] Grintage",
+        "[FP=33] Rewhi",
+        "[FP=34] Tertiary",
+        "[FP=35] Fire",
+        "[FP=36] Icefire",
+        "[FP=37] Cyane",
+        "[FP=38] Light Pink",
+        "[FP=39] Autumn",
+        "[FP=40] Magenta",
+        "[FP=41] Magred",
+        "[FP=42] Yelmag",
+        "[FP=43] Yelblu",
+        "[FP=44] Orange & Teal",
+        "[FP=45] Tiamat",
+        "[FP=46] April Night",
+        "[FP=47] Orangery",
+        "[FP=48] C9",
+        "[FP=49] Sakura",
+        "[FP=50] Aurora",
+        "[FP=51] Atlantica",
+        "[FP=52] C9 2",
+        "[FP=53] C9 New"
+      ]

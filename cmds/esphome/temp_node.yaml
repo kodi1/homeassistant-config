@@ -1,0 +1,135 @@
+substitutions:
+  devicename: village_temperature_out
+  v_max: '4100'
+  v_min: '2750'
+
+packages:
+  # sensor_bme280: !include bme280.yaml
+  sensor_dht22: !include dht22.yaml
+
+esphome:
+  name: ${devicename}
+  platform: ESP8266
+  board: esp01
+  # board: nodemcuv2
+  includes:
+    - power.h
+  on_boot:
+    priority: 0
+    then:
+      - wait_until:
+          condition:
+            and:
+              - mqtt.connected:
+              - wifi.connected:
+          timeout: 5s
+      - if:
+          condition:
+            and:
+              - mqtt.connected:
+              - wifi.connected:
+          then:
+            - component.update: batt_v
+            - component.update: batt_p
+            - component.update: rssi
+            - script.execute: measure
+            - script.wait: measure
+            - mqtt.disable:
+            - delay: 30ms # dht22
+            # - delay: 30ms # bmp260
+            # - wait_until:
+            #     condition:
+            #       - not:
+            #           mqtt.connected
+            #     timeout: 1s
+            - deep_sleep.enter:
+                id: sleep_1
+                sleep_duration: 10min
+          else:
+            - deep_sleep.enter:
+                id: sleep_1
+                sleep_duration: 30min
+
+  # on_shutdown:
+  #   then:
+  #     - deep_sleep.enter: sleep_1
+
+mqtt:
+  broker: !secret mqtt_host
+  username: !secret mqtt_user
+  password: !secret mqtt_pass
+  discovery: false
+  discover_ip: false
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  output_power: 15
+  fast_connect: true
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  # ap:
+  #   ssid: ${devicename}
+  #   password: !secret wifi_password
+
+globals:
+  - id: updates
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+custom_component:
+- lambda: |-
+    return { new power() };
+
+sensor:
+  - platform: adc
+    pin: A0
+    id: batt_v
+    update_interval: never
+    accuracy_decimals: 1
+    filters:
+      - multiply: 4305
+      - round: 0
+    unit_of_measurement: mV
+    on_value:
+      lambda: |-
+        id(updates)++;
+    internal: true
+
+  - platform: template
+    id: batt_p
+    lambda: |-
+      const float min = ${v_min};
+      const float max = ${v_max};
+      if (min > id(batt_v).state) {
+        return 0;
+      } else if (max < id(batt_v).state) {
+        return 100;
+      } else {
+        return (((id(batt_v).state) - min) * 100) / (max - min);
+      }
+    accuracy_decimals: 1
+    filters:
+      - round: 0
+    update_interval: never
+    on_value:
+      lambda: |-
+        id(updates)++;
+    internal: true
+
+  - platform: wifi_signal
+    id: rssi
+    on_value:
+      lambda: |-
+        id(updates)++;
+    update_interval: never
+    internal: true
+
+deep_sleep:
+  id: sleep_1
+
+# debug:
+
+# logger:
+#   level: VERBOSE

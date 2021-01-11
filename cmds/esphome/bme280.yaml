@@ -1,0 +1,59 @@
+i2c:
+  frequency: 400kHz
+  scan: false
+  id: bus_1
+  sda: GPIO4
+  scl: GPIO5
+
+script:
+  - id: measure
+    then:
+      - component.update: bme280s
+      - wait_until:
+          condition:
+            lambda: |-
+              return (id(updates) >= 6);
+          timeout: 1s
+      - mqtt.publish_json:
+          topic: ${devicename}/state
+          payload: |-
+            root["batt_v"] = id(batt_v).state;
+            root["batt_p"] = id(batt_p).state;
+            root["temperature"] = id(temperature).state;
+            root["pressure"] = id(pressure).state;
+            root["humidity"] = id(humidity).state;
+            root["rssi"] = id(rssi).state;
+
+sensor:
+  - platform: bme280_i2c
+    id: bme280s
+    i2c_id: bus_1
+    temperature:
+      id: temperature
+      accuracy_decimals: 2
+      filters:
+        - round: 2
+      on_value:
+        lambda: |-
+          id(updates)++;
+      internal: true
+    pressure:
+      id: pressure
+      accuracy_decimals: 2
+      filters:
+        - round: 2
+      on_value:
+        lambda: |-
+          id(updates)++;
+      internal: true
+    humidity:
+      id: humidity
+      accuracy_decimals: 2
+      filters:
+        - round: 2
+      on_value:
+        lambda: |-
+          id(updates)++;
+      internal: true
+    address: 0x76
+    update_interval: never

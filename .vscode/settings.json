@@ -1,0 +1,49 @@
+{
+    "editor.fontSize": 12,
+    "editor.renderWhitespace": "all",
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "files.eol": "\n",
+    "files.exclude": {
+        "**/.storage": true,
+        "**/.git": true,
+        "**/.esphome": true,
+        ".cloud": true,
+        "deps": true,
+        ".uuid": true,
+        ".HA_VERSION": true,
+        ".google*": true,
+        "tts": true,
+        "*.db*": true,
+        "*.log*": true
+    },
+    "search.exclude": {
+        "**/.storage": true,
+        "**/.git": true,
+        "**/.esphome": true,
+        "known_devices.yaml": true,
+        "neighbours": true,
+        "custom_components": true,
+        "www/community/*": true,
+        "*.db*": true,
+        "*.log*": true
+    },
+    "files.watcherExclude": {
+        "**/.storage": true,
+        "**/.git": true,
+        "**/.esphome": true,
+        "known_devices.yaml": true,
+        "neighbours": true,
+        "custom_components": true,
+        "www/community/*": true,
+        "*.log*": true,
+        "*.db*": true
+    },
+    "indentRainbow.errorColor": "rgba(128,32,32,0.7)",
+    "Find replace": true,
+    "Save active file": true,
+    "files.associations": {
+        "*.yaml": "home-assistant"
+    }
+}

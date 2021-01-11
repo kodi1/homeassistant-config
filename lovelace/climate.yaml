@@ -1,0 +1,218 @@
+title: climate
+icon: mdi:thermometer-lines
+path: climate
+panel: true
+
+cards:
+  - type: vertical-stack
+    cards:
+      - type: custom:simple-thermostat
+        entity: climate.pump
+        unit: false
+        hide:
+          temperature: false
+        sensors:
+          - entity: sensor.outdoor_temperature
+            decimals: 0
+            name: Outside
+          - entity: sensor.temp_out
+            name: Ext
+        header:
+          toggle:
+            entity: switch.climate_control
+            name: ''
+          faults:
+            - entity: binary_sensor.space_heating_unit_state
+              icon: mdi:alert-outline
+        decimals: 1
+        step_size: 1
+        name: false
+        layout:
+          step: row
+          mode:
+            headings: false
+        control: false
+
+      - type: custom:simple-thermostat
+        entity: climate.temp_living
+        unit: false
+        hide:
+          state: true
+        sensors:
+          - entity: sensor.speed_living_climate
+            name: Speed
+          - entity: fan.living_climate
+            attribute: preset_mode
+            name: Mode
+          - entity: sensor.temp_living
+            name: Ext
+        header:
+          name: living
+          icon: mdi:sofa-outline
+        decimals: 1
+        step_size: .5
+        layout:
+          step: row
+          mode:
+            headings: false
+            names: false
+        control: false
+
+      - type: custom:simple-thermostat
+        entity: climate.temp_office
+        unit: false
+        hide:
+          state: true
+        sensors:
+          - entity: sensor.speed_office_climate
+            name: Speed
+          - entity: fan.office_climate
+            attribute: preset_mode
+            name: Mode
+          - entity: sensor.office_temp
+            name: Ext
+        header:
+          name: office
+          icon: mdi:desk
+        decimals: 1
+        step_size: .5
+        layout:
+          step: row
+          mode:
+            headings: false
+            names: false
+        control: false
+
+      - type: custom:simple-thermostat
+        entity: climate.temp_bed
+        unit: false
+        hide:
+          state: true
+        sensors:
+          - entity: sensor.speed_bed_climate
+            name: Speed
+          - entity: fan.bed_climate
+            attribute: preset_mode
+            name: Mode
+          - entity: sensor.bed_temp
+            name: Ext
+        header:
+          name: bed
+          icon: mdi:bed-king-outline
+        decimals: 1
+        step_size: .5
+        layout:
+          step: row
+          mode:
+            headings: false
+            names: false
+        control: false
+
+      - type: custom:simple-thermostat
+        entity: climate.bath_tvr
+        unit: false
+        sensors:
+          - entity: sensor.bath_temp
+            name: Ext
+        header:
+          name: bath
+          icon: mdi:shower-head
+        decimals: 1
+        step_size: 0.5
+        name: false
+        layout:
+          step: row
+          mode:
+            headings: false
+            names: false
+        control: false
+
+      - type: custom:simple-thermostat
+        entity: climate.hot_water
+        unit: false
+        header:
+          faults:
+            - entity: binary_sensor.hot_water_tank_state
+              icon: mdi:alert-outline
+        decimals: 1
+        step_size: 1
+        layout:
+          step: row
+          mode:
+            headings: false
+            names: false
+        control: false
+
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        title: max
+        icon: mdi:weather-partly-snowy-rainy
+        entities:
+          - input_boolean.clima_max
+          - input_number.clima_max
+          - type: divider
+          - automation.clima_max_restore_temps
+          - automation.clima_max_restore_fans
+          - automation.clima_max_restore_switch
+
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        title: climate
+        icon: mdi:floor-plan
+        entities:
+          - binary_sensor.space_heating
+          - binary_sensor.space_cooling
+          - type: divider
+          - binary_sensor.climate_night
+          - type: divider
+          - fan.living_climate
+          - fan.office_climate
+          - fan.bed_climate
+          - type: divider
+          - script.climate_lock_all
+          - script.climate_unlock_all
+
+      - type: entities
+        show_header_toggle: true
+        state_color: true
+        title: auto
+        icon: mdi:floor-plan
+        entities:
+          - automation.clima_max
+          - automation.clima_sync
+          - automation.climate_night
+          - automation.fans_speed_modulation
+          - type: divider
+          - automation.bath_heating
+          - automation.water_boiler
+          - type: divider
+          - switch.pump_ctrl_cooling
+          - switch.pump_ctrl_heating
+
+      - type: entities
+        state_color: true
+        title: states
+        icon: mdi:table
+        entities:
+          - binary_sensor.living_cooling
+          - binary_sensor.office_cooling
+          - binary_sensor.bed_cooling
+          - type: divider
+          - binary_sensor.living_heating
+          - binary_sensor.office_heating
+          - binary_sensor.bed_heating
+          - type: divider
+          - sensor.ctrl_living_climate
+          - sensor.ctrl_office_climate
+          - sensor.ctrl_bed_climate
+          - type: divider
+          - binary_sensor.pump_temp_on_off
+          - type: divider
+          - input_number.living_offset
+          - input_number.office_offset
+          - input_number.bed_offset
+          - type: divider
+          - automation.climate_offset
+          - automation.apply_offsets

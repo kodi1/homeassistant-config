@@ -1,0 +1,105 @@
+homeassistant:
+  customize:
+    binary_sensor.in_call:
+      icon: mdi:phone-in-talk
+    input_boolean.in_call:
+      icon: mdi:cellphone
+
+template:
+  - binary_sensor:
+    - name: in_call
+      delay_off:
+        seconds: 6
+      delay_on:
+        seconds: 3
+      device_class: sound
+      state: "{{ is_state('input_boolean.in_call', 'on') }}"
+
+input_number:
+  sound_bar_save_volume:
+    mode: box
+    min: 0
+    max: 1
+    step: 0.01
+    initial: 0.14
+
+input_boolean:
+  in_call:
+    name: in_call
+    initial: off
+
+automation:
+  - alias: in_call
+    id: in_call
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.in_call
+    actions:
+      - service_template: >-
+          {%-
+              set scr = {
+                'off': 'script.in_call_off',
+                'on': 'script.in_call_on'
+              }
+            -%}
+          {{ scr[trigger.to_state.state] }}
+
+script:
+  in_call_on:
+    sequence:
+      - action: script.in_call_on_kodi
+      - action: script.in_call_on_soundbar
+
+  in_call_off:
+    sequence:
+      - action: script.in_call_off_kodi
+      - action: script.in_call_off_soundbar
+
+  in_call_on_kodi:
+    sequence:
+      - condition: state
+        entity_id: media_player.livingtv
+        state: 'playing'
+      - action: script.kodi_seek_back
+      - delay:
+          seconds: 2
+      - action: media_player.media_pause
+        entity_id: media_player.livingtv
+
+  in_call_on_soundbar:
+    sequence:
+      - condition: state
+        entity_id: media_player.ht_mt500_501_b34d6a
+        state: 'playing'
+      - action: input_number.set_value
+        data_template:
+          entity_id: input_number.sound_bar_save_volume
+          value: >-
+            {%- set volume = state_attr('media_player.ht_mt500_501_b34d6a', 'volume_level') -%}
+            {%- if volume -%}
+              {{volume|round(2)}}
+            {%- else -%}
+              0.18
+            {%- endif -%}
+      - action: media_player.volume_set
+        data:
+          entity_id: media_player.ht_mt500_501_b34d6a
+          volume_level: 0.14
+
+  in_call_off_kodi:
+    sequence:
+      - condition: state
+        entity_id: media_player.livingtv
+        state: 'paused'
+      - action: media_player.media_play
+        entity_id: media_player.livingtv
+
+  in_call_off_soundbar:
+    sequence:
+      - condition: state
+        entity_id: media_player.ht_mt500_501_b34d6a
+        state: 'playing'
+      - action: media_player.volume_set
+        data_template:
+          entity_id: media_player.ht_mt500_501_b34d6a
+          volume_level: "{{ states('input_number.sound_bar_save_volume') }}"

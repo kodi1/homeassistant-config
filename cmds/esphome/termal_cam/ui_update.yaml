@@ -1,0 +1,43 @@
+- lambda: |-
+    char tmp[32];
+    // 1. UPDATE LABELS (Native LVGL C API)
+    
+    // Boot Screen
+    snprintf(tmp, sizeof(tmp), "Ip: %s", id(ip_address_sensor)[0].state.c_str());
+    lv_label_set_text(id(ip_addr_lab), tmp);
+
+    snprintf(tmp, sizeof(tmp), "Signal: %.0f%%", id(wifi_signal_prc).state);
+    lv_label_set_text(id(wifi_rssi_lab), tmp);
+
+    snprintf(tmp, sizeof(tmp), "CPU Temp: %.1f%°C", id(temp_cpu).state);
+    lv_label_set_text(id(cpu_temp_lab), tmp);
+
+    snprintf(tmp, sizeof(tmp), "Mn: %.1f°C", id(min_temp).state);
+    lv_label_set_text(id(boot_min_lab), tmp);
+
+    snprintf(tmp, sizeof(tmp), "Mx: %.1f°C", id(max_temp).state);
+    lv_label_set_text(id(boot_max_lab), tmp);
+
+    snprintf(tmp, sizeof(tmp), "Av: %.1f°C", id(mean_temp).state);
+    lv_label_set_text(id(boot_mean_lab), tmp);
+
+    snprintf(tmp, sizeof(tmp), "Md: %.1f°C", id(mdian_temp).state);
+    lv_label_set_text(id(boot_median_lab), tmp);
+
+    snprintf(tmp, sizeof(tmp), "Vin: %.2fV", id(vcc_sens).state);
+    lv_label_set_text(id(vcc_lab), tmp);
+    
+    // Main Screen
+    snprintf(tmp, sizeof(tmp), "Mn: %.1f°C", id(min_temp).state);
+    lv_label_set_text(id(main_min_lab), tmp);
+
+    snprintf(tmp, sizeof(tmp), "Mx: %.1f°C", id(max_temp).state);
+    lv_label_set_text(id(main_max_lab), tmp);
+
+    snprintf(tmp, sizeof(tmp), "Av: %.1f°C", id(mean_temp).state);
+    lv_label_set_text(id(main_mean_lab), tmp);
+
+    snprintf(tmp, sizeof(tmp), "Md: %.1f°C", id(mdian_temp).state);
+    lv_label_set_text(id(main_median_lab), tmp);
+
+    generate_heat_map();

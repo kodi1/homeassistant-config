@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "check",
+            "type": "shell",
+            "command": "hass-cli service call homeassistant.check_config && hass-cli system log"
+        },
+        {
+            "label": "restart",
+            "type": "shell",
+            "command": "hass-cli service call homeassistant.restart"
+        }
+    ]
+}

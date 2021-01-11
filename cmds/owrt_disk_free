@@ -1,0 +1,7 @@
+#!/bin/bash
+source /config/set_env
+
+sshpass -p ${OWRTPASS} ssh ${OWRTUSER}@${OWRTHOST} \
+df -m /dev/sda2 | awk 'END {srand(); printf("%.f", $4);}'
+
+#df -m /dev/sda2 | awk 'END {srand(); printf("%.2f", $4+rand());}'

@@ -1,0 +1,378 @@
+title: village
+icon: mdi:home
+path: village
+panel: true
+
+cards:
+  - type: vertical-stack
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.village_temp_out
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: -5
+                color: '#260CCD'
+              - value: 0
+                color: '#0066FF'
+              - value: 10
+                color: '#00CC99'
+              - value: 20
+                color: '#00CC00'
+              - value: 26
+                color: '#FFCC00'
+              - value: 30
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.village_humidity_out
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 0
+                color: '#0000CC'
+              - value: 35
+                color: '#00CC00'
+              - value: 85
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.village_temp_in
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 15
+                color: '#0066FF'
+              - value: 20
+                color: '#00CC00'
+              - value: 26
+                color: '#FFCC00'
+              - value: 30
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.village_sea_level_pressure
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 1015
+                color: '#0CB3CD'
+              - value: 1020
+                color: '#00CC00'
+              - value: 1025
+                color: '#CC0000'
+            # color_thresholds_transition: hard
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.village_humidity_in
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 0
+                color: '#0000CC'
+              - value: 35
+                color: '#00CC00'
+              - value: 85
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.village_temp_in_2
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 15
+                color: '#0066FF'
+              - value: 20
+                color: '#00CC00'
+              - value: 26
+                color: '#FFCC00'
+              - value: 30
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.village_humidity_in_2
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 0
+                color: '#0000CC'
+              - value: 35
+                color: '#00CC00'
+              - value: 85
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.village_temp_in_3
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 15
+                color: '#0066FF'
+              - value: 20
+                color: '#00CC00'
+              - value: 26
+                color: '#FFCC00'
+              - value: 30
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.village_humidity_in_3
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 0
+                color: '#0000CC'
+              - value: 35
+                color: '#00CC00'
+              - value: 85
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.village_voltage
+                state_adaptive_color: true
+                # aggregate_func: min
+                show_state: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+              legend: false
+            color_thresholds:
+              - value: 210
+                color: '#FFCC00'
+              - value: 220
+                color: '#00CC00'
+              - value: 240
+                color: '#00CC00'
+              - value: 245
+                color: '#CC0000'
+            # color_thresholds_transition: hard
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.village_current
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 0
+                color: '#00CC00'
+              - value: 4
+                color: '#FFCC00'
+              - value: 16
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.village_power
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 1000
+                color: '#00CC00'
+              - value: 4000
+                color: '#FFCC00'
+              - value: 6000
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - sensor.village_today_energy
+          - switch.pm_village_switch
+          - type: divider
+          - sensor.village_pump_power
+          - sensor.pump_village_total
+          - switch.pump_village
+          - type: divider
+          - light.rgb_village
+          - type: divider
+          - switch.village_power_switch_1
+          - type: divider
+          - automation.village_remote_1
+
+      - type: horizontal-stack
+        cards:
+          - type: entities
+            state_color: true
+            show_header_toggle: true
+            title: auto
+            entities:
+              - automation.ligth_village_out
+              - automation.ligth_village_1
+              - automation.ligth_garage
+              - automation.ligth_top_1
+
+          - type: entities
+            state_color: true
+            show_header_toggle: true
+            title: devices
+            entities:
+              - light.village_out
+              - light.village_1
+              - light.village_garage
+              - light.village_top_1
+
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            name: ''
+            entity: sensor.waterheater_village
+            min: 19.0
+            max: 65.0
+            segments:
+              - from: 0
+                color: blue
+              - from: 20
+                color: green
+              - from: 25
+                color: gold
+              - from: 35
+                color: orangered
+              - from: 40
+                color: red
+
+          - type: entities
+            show_header_toggle: false
+            state_color: true
+            entities:
+              - automation.waterheater_village
+              - automation.waterheater_village_reheat
+              - type: divider
+              - switch.waterheater_village_schedule
+              - type: divider
+              - switch.waterheater_village
+
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - binary_sensor.motion_village_1
+          - binary_sensor.motion_village_2
+          - binary_sensor.motion_village_garage
+          - binary_sensor.motion_village_top_1
+          - binary_sensor.village_presence
+          - binary_sensor.village_garage_door
+          - type: divider
+          - sensor.village_pressure_in
+          - sensor.village_change_pressure
+          - type: divider
+          - sensor.village_top_temp_1
+          - sensor.village_top_hum_1
+
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - sensor.vbatt_in
+          - sensor.vbatt_out
+          - type: divider
+          - sensor.village_batt_motion_1
+          - sensor.village_batt_remote_1
+          - sensor.village_batt_motion_2
+          - sensor.village_batt_motion_top_1
+          - sensor.village_batt_motion_garage
+          - sensor.village_batt_temp_2
+          - sensor.village_batt_temp_3
+          - sensor.village_batt_garage_door

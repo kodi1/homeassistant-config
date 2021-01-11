@@ -1,0 +1,4 @@
+#!/bin/bash
+source /config/set_env
+
+awk '/MemFree/ { printf "%.f \n", $2/1024 }' /proc/meminfo

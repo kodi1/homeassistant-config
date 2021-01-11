@@ -1,0 +1,75 @@
+      # Correct structure for the on_all_events trigger
+      on_swipe_left:
+        - lvgl.page.show: work
+      on_swipe_right:
+        - lvgl.page.show: util
+
+      widgets:
+        - label:
+            id: temp_sens_label
+            y: 10
+            align: top_mid
+            text_font: $font_larger
+            text_color: white
+            text: "Hotplate: -"
+
+        - label:
+            id: temp_cpu_label
+            y: 40
+            align: top_mid
+            text_font: $font_larger
+            text_color: white
+            text: "CPU Temp: -"
+
+        - label:
+            id: wifi_signal_label
+            y: 70
+            align: top_mid
+            text_font: $font_larger
+            text_color: white
+            text: "WiFi Signal: -"
+
+        - label:
+            id: ip_address_label
+            y: 100
+            align: top_mid
+            text_font: $font_larger
+            text_color: white
+            text: "IP: -"
+
+        - button:
+            width: 80px
+            height: 80px
+            x: 5
+            y: -10
+            align: bottom_left
+            bg_color: gray500
+            on_long_press:
+              - switch.turn_on: esphome_shutdown
+
+            widgets:
+              - label:
+                  text: "Power\nOff"
+                  text_font: $font_middle
+                  text_color: black
+        - image:
+            x: 0
+            y: -10
+            align: bottom_mid
+            src: esphome_img
+
+        - button:
+            width: 80px
+            height: 80px
+            x: -5
+            y: -10
+            align: bottom_right
+            bg_color: gray500
+            on_long_press:
+              - switch.turn_on: esphome_restart
+
+            widgets:
+              - label:
+                  text: "Reset"
+                  text_font: $font_middle
+                  text_color: black

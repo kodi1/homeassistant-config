@@ -1,0 +1,15 @@
+---
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  min_auth_mode: WPA2
+  fast_connect: true
+  ap:
+    password: !secret ap_password
+
+captive_portal:
+
+web_server:
+  include_internal: true
+  port: 80
+  version: 3

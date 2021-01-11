@@ -1,0 +1,88 @@
+on_swipe_right:
+  - lvgl.page.show: boot_page
+
+widgets:
+  # 🖤 Background
+  - obj:
+      width: 100%
+      height: 100%
+      bg_color: 0x000000
+      scrollable: false
+
+  # 🔥 Thermal image (FULL SCREEN, SINGLE INSTANCE)
+  - image:
+      id: thermal_img
+      src: boot_image
+      width: 100%
+      height: 100%
+      align: center
+      scrollable: false
+      angle: 180
+
+  # 🔝 TOP OVERLAY BAR (one-line labels)
+  - obj:
+      width: 100%
+      height: 10%
+      align: top_mid
+      bg_color: 0x000000
+      bg_opa: 0%
+      pad_left: 6
+      pad_right: 6
+      border_width: 0
+      scrollable: false
+      layout:
+        type: flex
+        flex_flow: row
+        flex_align_main: space_between
+        flex_align_cross: center
+
+      widgets:
+        - label: { id: main_min_lab, text: "Mn: --", text_color: 0xFFFFFF }
+        - label: { id: main_max_lab, text: "Mx: --", text_color: 0xFFFFFF }
+        - label: { id: main_mean_lab, text: "Av: --", text_color: 0xFFFFFF }
+        - label: { id: main_median_lab, text: "Md: --", text_color: 0xFFFFFF }
+
+  - obj:
+      id: legend_container
+      width: 13
+      height: 262
+      align: left_mid
+      x: 5
+      bg_color: 0x000000
+      border_color: 0xFFFFFF
+      bg_opa: 30%
+      border_width: 1
+      clip_corner: true
+      scrollable: false
+      event_bubble: true
+      widgets:
+        - canvas:
+            id: palette_legend_canvas
+            width: 5
+            height: 255
+            x: -10
+            y: -10
+
+  - dropdown:
+      id: palette_dropdown
+      options:
+        - "Ironbow"
+        - "Viridis"
+        - "Inferno"
+        - "Lava"
+        - "WhiteHot"
+        - "BlackHot"
+      width: 120
+      align: bottom_mid
+      y: -5
+      dir: top
+      text_color: 0xFFFFFF
+      bg_color: 0x000000
+      border_color: 0xFFFFFF
+      border_width: 1
+      event_bubble: true
+      bg_opa: 30%
+      on_value:
+        - lambda: |-
+            id(active_palette_index) = x;
+            update_legend(id(palette_legend_canvas), palettes[x]);

@@ -1,0 +1,35 @@
+#! /bin/bash
+
+set -x
+
+WORK='/tmp/zha_tmp'
+
+mkdir -p ${WORK}
+
+pushd ${WORK}
+
+python3 -m venv ${WORK}
+
+source ${WORK}/bin/activate
+
+pip install intelhex pyserial
+
+git clone https://github.com/JelmerT/cc2538-bsl.git
+
+git clone -b master https://github.com/Koenkk/Z-Stack-firmware.git
+
+unzip Z-Stack-firmware/coordinator/Z-Stack_3.x.0/bin/*launchpad_coordinator*.zip
+
+ls -al cc2538-bsl Z-Stack-firmware .
+
+CMD="./cc2538-bsl/cc2538-bsl.py -ewv --bootloader-sonoff-usb -p ${1}  *.hex"
+
+echo 'Update cmd: ' ${CMD}
+
+${CMD}
+
+deactivate
+
+popd
+
+rm -rf ${WORK}

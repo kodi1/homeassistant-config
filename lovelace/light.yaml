@@ -1,0 +1,131 @@
+title: light
+icon: mdi:ceiling-light
+path: light
+
+cards:
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - binary_sensor.living_motion
+      - binary_sensor.kitchen_motion
+      - counter.kitchen_motion
+      - binary_sensor.hall_motion
+      - counter.hall_motion
+      - binary_sensor.bed_motion
+      - binary_sensor.office_motion
+      - binary_sensor.bath_motion
+      - counter.bath_motion
+      - type: divider
+      - sensor.living_window_lux
+      - sensor.living_lux
+      - sensor.office_lux
+      - type: divider
+      - input_number.just_home_light_timer
+      - type: divider
+      - binary_sensor.day
+      - binary_sensor.night_mode
+      - type: divider
+      - binary_sensor.wled_ambient
+      - binary_sensor.wled_living
+      - binary_sensor.grabber_living
+      - binary_sensor.light_video_pause
+      - binary_sensor.home_light_extend
+      - binary_sensor.night_mode_ctrl
+      - type: divider
+      - binary_sensor.wash_door
+      - type: divider
+      - input_number.ctrl_delay
+
+  - type: entities
+    state_color: true
+    show_header_toggle: true
+    title: auto
+    entities:
+      - automation.motion_light_extend
+      - automation.living_light
+      - automation.kitchen_light
+      - automation.hall_light
+      - automation.bed_light
+      - automation.office_light
+      - automation.bath_light
+      - automation.wash_light
+
+  - type: entities
+    state_color: true
+    show_header_toggle: true
+    title: light
+    entities:
+      - light.living
+      - light.kitchen_led
+      - light.kitchen
+      - light.hall
+      - light.bed
+      - light.office
+      - light.bath
+      - light.wash
+
+  - type: entities
+    state_color: true
+    show_header_toggle: true
+    title: other
+    entities:
+      - automation.other_living_light
+      - automation.other_bed_light
+      - automation.other_office_light
+      - type: divider
+      - automation.kitchen_light_1
+
+  - type: entities
+    state_color: true
+    show_header_toggle: true
+    title: other
+    entities:
+      - light.shutter_living
+      - type: divider
+      - light.shutter_bed
+      - light.bed_wardrobe
+      - type: divider
+      - light.shutter_office
+      - light.office_wardrobe
+
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - input_select.hyperion_select_effect
+      - input_number.slider_effect_time
+      - timer.hyperion_effect_timer
+      - type: divider
+      - light.wled_living
+      - light.wled_window
+      - input_select.wled_effects
+      - input_select.wled_colors_palette
+      - input_number.wled_video_brightness
+      - type: divider
+      - automation.video_grabber
+      - automation.send_effect_hyperion
+      - automation.wled_lights
+
+  - type: entities
+    state_color: true
+    show_header_toggle: true
+    title: remote
+    entities:
+      - automation.living_switch
+      - automation.kitchen_switch
+      - automation.night_light_switch
+      - automation.office_switch
+
+  - type: entities
+    state_color: true
+    show_header_toggle: false
+    title: all lights
+    entities:
+      - input_boolean.lumi_double_switch_1
+      - input_number.lumi_double_switch_1_time
+      - automation.lumi_switch_double_trigger_1
+      - script.lumi_double_switch_on
+      - script.lumi_double_switch_off
+      - timer.lumi_double_switch_1_timer
+      - type: divider
+      - input_boolean.office_enter_dummy

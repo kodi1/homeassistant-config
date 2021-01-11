@@ -1,0 +1,9 @@
+Host *
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    LogLevel ERROR
+    PreferredAuthentications password
+    PubkeyAuthentication no
+    TCPKeepAlive yes
+    ServerAliveInterval 300
+    #ProxyCommand corkscrew 172.20.0.1 8080 %h %p

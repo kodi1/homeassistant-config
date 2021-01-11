@@ -1,0 +1,5 @@
+#!/bin/bash
+source /config/set_env
+
+sshpass -p ${VILLAGEPASS} ssh ${VILLAGEUSER}@${VILLAGEHOST} -p ${VILLAGEPORT} \
+reboot &

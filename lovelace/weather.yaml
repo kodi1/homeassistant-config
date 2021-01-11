@@ -1,0 +1,114 @@
+title: weather
+icon: mdi:image-filter-hdr
+path: weather
+cards:
+  - type: iframe
+    aspect_ratio: 100%
+    url: https://embed.windy.com/embed2.html?lat=42.614&lon=25.115&zoom=4&level=surface&overlay=rain&calendar=now&pressure=true&type=map&location=coordinates&detail=&detailLat=42.614&detailLon=25.115&metricWind=km%2Fh&metricTemp=%C2%B0C
+
+  - type: picture-entity
+    entity: camera.cap_weathermod_bg_eu
+    show_name: false
+    show_state: false
+
+  - type: picture-entity
+    entity: camera.cap_weathermod_bg_eu_2
+    show_name: false
+    show_state: false
+
+  - type: custom:apexcharts-card
+    header:
+      title: forecasts
+      show: false
+    apex_config:
+      legend:
+        show: false
+      grid:
+        show: false
+    graph_span: 120h
+    now:
+      show: true
+    span:
+      start: hour
+    yaxis:
+      - id: wind
+        show: false
+      - id: temperature
+        show: false
+      - id: pressure
+        show: false
+      - id: precipitation
+        show: false
+      - id: precent
+        show: false
+    series:
+      - entity: sensor.dummy_local
+        name: probability prec
+        yaxis_id: precent
+        type: line
+        show:
+          extremas: time
+        data_generator: |
+          return entity.attributes.hourly_forecast.map((entry) => {
+                return [new Date(entry.datetime).getTime(), entry.precipitation_probability];
+              });
+      - entity: sensor.dummy_local
+        name: wind
+        yaxis_id: wind
+        type: line
+        show:
+          extremas: time
+        data_generator: |
+          return entity.attributes.hourly_forecast.map((entry) => {
+                return [new Date(entry.datetime).getTime(), entry.wind_speed];
+              });
+      - entity: sensor.dummy_local
+        name: temperature
+        yaxis_id: temperature
+        type: line
+        show:
+          extremas: time
+        data_generator: |
+          return entity.attributes.hourly_forecast.map((entry) => {
+                return [new Date(entry.datetime).getTime(), entry.temperature];
+              });
+      # - entity: sensor.dummy_local
+      #   name: cloud
+      #   yaxis_id: precent
+      #   type: line
+      #   show:
+      #     extremas: time
+      #   data_generator: |
+      #     return entity.attributes.hourly_forecast.map((entry) => {
+      #           return [new Date(entry.datetime).getTime(), entry.cloud_coverage];
+      #         });
+      - entity: sensor.dummy_local
+        name: pressure
+        yaxis_id: pressure
+        type: line
+        show:
+          extremas: time
+        data_generator: |
+          return entity.attributes.hourly_forecast.map((entry) => {
+                return [new Date(entry.datetime).getTime(), entry.pressure];
+              });
+      - entity: sensor.dummy_local
+        name: precipitation
+        yaxis_id: precipitation
+        type: line
+        show:
+          extremas: time
+        data_generator: |
+          return entity.attributes.hourly_forecast.map((entry) => {
+                return [new Date(entry.datetime).getTime(), entry.precipitation];
+              });
+      # - entity: sensor.dummy_local
+      #   name: humidity
+      #   yaxis_id: precent
+      #   type: line
+      #   show:
+      #     extremas: time
+      #   data_generator: |
+      #     return entity.attributes.hourly_forecast.map((entry) => {
+      #           return [new Date(entry.datetime).getTime(), entry.humidity];
+      #         });

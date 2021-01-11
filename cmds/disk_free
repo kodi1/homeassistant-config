@@ -1,0 +1,5 @@
+#!/bin/bash
+source /config/set_env
+
+sshpass -p ${LOCALPASS} ssh -p2222 ${LOCALUSER}@${LOCALHOST} \
+df -m /dev/sda1 | awk 'END { print $4}'

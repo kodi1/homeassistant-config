@@ -1,0 +1,661 @@
+homeassistant:
+  customize:
+    alert.city_water_heater:
+      icon: mdi:water-boiler-alert
+    automation.ligth_city_2:
+      icon: mdi:lightbulb-auto
+    automation.remote_city_2:
+      icon: mdi:dip-switch
+    automation.heat_city_2:
+      icon: mdi:fireplace
+    automation.waterheater_city:
+      icon: mdi:water-boiler-auto
+      friendly_name: waterheater
+    automation.waterheater_city_reheat:
+      icon: mdi:water-boiler-alert
+      friendly_name: reheat
+    automation.av_switch_city_1:
+      icon: mdi:play-box-outline
+      friendly_name: av switch
+    automation.cliamate_city1_swing_set:
+      icon: mdi:upload
+      friendly_name: set
+    sensor.city_change_pressure:
+      friendly_name: change
+    sensor.city_temperature_out:
+      friendly_name: temp out
+    sensor.city_humidity_out:
+      friendly_name: hum out
+    sensor.city_batt_out:
+      friendly_name: batt out
+
+alert:
+  city_water_heater:
+    name: 'water heater'
+    title: 'city WH'
+    message: >-
+      is {{ states('switch.waterheater_city') }}
+    done_message: >-
+      is {{ states('switch.waterheater_city') }}
+    entity_id: binary_sensor.city_wh_warning
+    state: 'on'
+    repeat:
+      - 5
+      - 15
+      - 30
+    skip_first: false
+    can_acknowledge: true
+    notifiers:
+      - gmail
+
+binary_sensor:
+  - platform: tod
+    name: city_wh_time
+    after: '03:30:00'
+    before: '06:00:00'
+
+sensor:
+  - platform: derivative
+    name: city_pressure_derivative
+    source: sensor.city_sea_level_pressure
+    round: 2
+    unit_time: 'h'
+    time_window: '03:00:00'
+
+template:
+  - sensor:
+    - name: city_change_pressure
+      icon: >-
+        {%if states('sensor.city_pressure_derivative') | float(0) > 0.33 %}
+          {{'mdi:trending-up'}}
+        {% elif states('sensor.city_pressure_derivative') | float(0) < -0.33 %}
+          {{'mdi:trending-down'}}
+        {% else %}
+          {{'mdi:trending-neutral'}}
+        {% endif %}
+      state: >-
+        {{ states('sensor.city_pressure_derivative') or states('sensor.')}}
+      unit_of_measurement: 'hPa/h'
+
+  - binary_sensor:
+    - name: city_wh_warning
+      state: >-
+        {{
+            is_state('switch.waterheater_city', 'on') and
+              is_state('binary_sensor.city_wh_time', 'off')
+          }}
+      delay_on:
+        minutes: 65
+      delay_off:
+        seconds: 20
+
+mqtt:
+  sensor:
+    - name: city_humidity_out
+      state_topic: city_temperature_out/state
+      value_template: '{{ value_json.humidity | round(1) }}'
+      device_class: humidity
+      unit_of_measurement: '%'
+      expire_after: 660
+
+    - name: city_temperature_out
+      state_topic: city_temperature_out/state
+      value_template: '{{ value_json.temperature | round(1) }}'
+      device_class: temperature
+      unit_of_measurement: '°C'
+      expire_after: 660
+
+    - name: city_batt_out
+      state_topic: city_temperature_out/state
+      value_template: '{{ value_json.batt_p | round(0) }}'
+      json_attributes_topic: city_temperature_out/state
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'rssi': value_json.rssi | float(0),
+          'mv': value_json.batt_v | float(0),
+          }
+          -%}
+        {{ attrs | to_json }}
+      device_class: 'battery'
+      unit_of_measurement: '%'
+      expire_after: 660
+
+automation:
+  - alias: ligth_city_2
+    id: ligth_city_2
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.motion_city_2
+        to: 'on'
+        id: light_on
+      - trigger: state
+        entity_id: light.city_2
+        to: 'on'
+        for:
+          minutes: 5
+          seconds: 30
+        id: light_off
+      - trigger: state
+        entity_id: binary_sensor.motion_city_2
+        to: 'off'
+        for:
+          seconds: 90
+        id: light_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: light.city_2
+            state: 'off'
+          - condition: sun
+            after: sunset
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.city_2
+              data:
+                brightness_pct: 90
+            - delay:
+                milliseconds: 250
+            - action: light.turn_on
+              target:
+                entity_id: light.city_2
+              data:
+                color_temp_kelvin: 3300
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: light.city_2
+                state: 'on'
+              - condition: state
+                entity_id: binary_sensor.motion_city_2
+                state: 'off'
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id: light.city_2
+
+  - alias: remote_city_2
+    id: remote_city_2
+    triggers:
+      - trigger: mqtt
+        topic: 'tele/zha-bridge-city/054B/SENSOR'
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: template
+            # press hold - off
+            value_template: >-
+              {{
+                trigger.payload_json.ZbReceived["0x054B"] is defined and
+                trigger.payload_json.ZbReceived["0x054B"].Power == 0
+              }}
+          - condition: state
+            entity_id: light.city_2
+            state: 'on'
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id: light.city_2
+            - condition: state
+              entity_id: automation.ligth_city_2
+              state: 'off'
+            - action: automation.turn_on
+              target:
+                entity_id: automation.ligth_city_2
+
+        - conditions:
+          - condition: template
+            # press hold - force on
+            value_template: >-
+              {{
+                trigger.payload_json.ZbReceived["0x054B"] is defined and
+                trigger.payload_json.ZbReceived["0x054B"].Power == 0
+              }}
+          - condition: state
+            entity_id: light.city_2
+            state: 'off'
+          - condition: state
+            entity_id: automation.ligth_city_2
+            state: 'on'
+          sequence:
+            - action: automation.turn_off
+              target:
+                entity_id: automation.ligth_city_2
+            - action: light.turn_on
+              target:
+                entity_id: light.city_2
+              data:
+                brightness_pct: 95
+            - action: light.turn_on
+              target:
+                entity_id: light.city_2
+              data:
+                color_temp_kelvin: 2850
+
+        - conditions:
+          - condition: template
+            # press double - CT if on
+            value_template: >-
+              {{
+                trigger.payload_json.ZbReceived["0x054B"] is defined and
+                trigger.payload_json.ZbReceived["0x054B"].Power == 1
+              }}
+          - condition: state
+            entity_id: light.city_2
+            state: 'on'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.city_2
+              data:
+                color_temp_kelvin: >-
+                  {% from 'tools.jinja' import to_temp %}
+                  {%- set var = state_attr('light.city_2', 'color_temp') | float(0) + ((454 - 250) / 8) -%}
+                  {%- if var > 454 -%}
+                    {%- set var = 250 -%}
+                  {%- endif -%}
+                  {{ to_temp(var) }}
+
+        - conditions:
+          - condition: template
+            # press single - brigness if on
+            value_template: >-
+              {{
+                  trigger.payload_json.ZbReceived["0x054B"] is defined and
+                  trigger.payload_json.ZbReceived["0x054B"].Power == 2
+                }}
+          - condition: state
+            entity_id: light.city_2
+            state: 'on'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.city_2
+              data:
+                brightness: >-
+                  {%- set var = state_attr('light.city_2', 'brightness') | float(0) + ((254 - 1) / 8) -%}
+                  {%- if var > 254 -%}
+                    {%- set var = 1 -%}
+                  {%- endif -%}
+                  {{ var | int(0) }}
+
+        - conditions:
+          - condition: template
+            # press single - brigness to 85
+            value_template: >-
+              {{
+                  trigger.payload_json.ZbReceived["0x054B"] is defined and
+                  trigger.payload_json.ZbReceived["0x054B"].Power == 1
+                }}
+          - condition: state
+            entity_id: light.city_2
+            state: 'off'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.city_2
+              data:
+                brightness_pct: 85
+
+        - conditions:
+          - condition: template
+            # press double - brigness to 1
+            value_template: >-
+              {{
+                trigger.payload_json.ZbReceived["0x054B"] is defined and
+                trigger.payload_json.ZbReceived["0x054B"].Power == 2
+              }}
+          - condition: state
+            entity_id: light.city_2
+            state: 'off'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.city_2
+              data:
+                brightness_pct: 1
+
+  - alias: heat_city_2
+    id: heat_city_2
+    triggers:
+      - trigger: zone
+        entity_id: device_tracker.root
+        zone: zone.city
+        event: enter
+        id: trigger_on
+      - trigger: zone
+        entity_id: device_tracker.root
+        zone: zone.city
+        event: leave
+        id: trigger_off
+      - trigger: numeric_state
+        entity_id: sensor.city_root_distance
+        above: 15
+        id: trigger_auto_off
+      - trigger: time
+        at: '23:30:00'
+        id: trigger_off
+      - trigger: time
+        at: '10:45:00'
+        id: trigger_on
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_on
+          - condition: zone
+            entity_id: device_tracker.root
+            zone: zone.city
+          - condition: time
+            after: '10:45:00'
+            before: '23:50:00'
+          - condition: state
+            entity_id: climate.city_2
+            state: 'off'
+          sequence:
+            - action: climate.set_hvac_mode
+              data:
+                entity_id: climate.city_2
+                hvac_mode: 'heat'
+
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_off
+          - condition: 'state'
+            entity_id: climate.city_2
+            state: 'heat'
+          sequence:
+            - action: climate.set_hvac_mode
+              data:
+                entity_id: climate.city_2
+                hvac_mode: 'off'
+
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_auto_off
+          sequence:
+            - action: climate.set_hvac_mode
+              data:
+                entity_id: climate.city_2
+                hvac_mode: 'off'
+            - action: automation.turn_off
+              data:
+                entity_id: automation.heat_city_2
+
+  - alias: waterheater_city
+    id: waterheater_city
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.city_root_distance
+        below: 25
+        id: trigger_on
+      - trigger: numeric_state
+        entity_id: sensor.city_root_distance
+        above: 45
+        id: trigger_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_on
+          - condition: state
+            entity_id: switch.waterheater_city_schedule
+            state: 'off'
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id:
+                  - switch.waterheater_city_schedule
+            - event: waterheater
+              event_data:
+                city: schedule_on
+
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_off
+          - condition: state
+            entity_id: switch.waterheater_city_schedule
+            state: 'on'
+          sequence:
+            - action: switch.turn_off
+              target:
+                entity_id:
+                  - switch.waterheater_city_schedule
+            - event: waterheater
+              event_data:
+                city: schedule_off
+
+  - alias: waterheater_city_reheat
+    id: waterheater_city_reheat
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.waterheater_city
+        below: 19.5
+        id: trigger_on
+      - trigger: numeric_state
+        entity_id: sensor.waterheater_city
+        above: 35.5
+        id: trigger_off
+      - trigger: event
+        event_type: waterheater
+        event_data:
+          city: schedule_on
+        id: check_on
+      - trigger: event
+        event_type: waterheater
+        event_data:
+          city: trigger_off
+        id: check_off
+
+    conditions:
+      - condition: state
+        entity_id: switch.waterheater_city_schedule
+        state: 'on'
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_on
+          - condition: time
+            after: '08:00:00'
+            before: '20:30:00'
+          - condition: state
+            entity_id: switch.waterheater_city
+            state: 'off'
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.waterheater_city
+
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_off
+          - condition: time
+            after: '08:00:00'
+          - condition: state
+            entity_id: switch.waterheater_city
+            state: 'on'
+          sequence:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.waterheater_city
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - check_on
+          - condition: time
+            after: '13:00:00'
+            before: '19:30:00'
+          - condition: numeric_state
+            entity_id: sensor.waterheater_city
+            below: 33
+          - condition: state
+            entity_id: switch.waterheater_city
+            state: 'off'
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.waterheater_city
+
+        - conditions:
+          - condition: trigger
+            id:
+              - check_off
+          - condition: state
+            entity_id: switch.waterheater_city
+            state: 'on'
+          sequence:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.waterheater_city
+
+  - alias: av_switch_city_1
+    id: av_switch_city_1
+    triggers:
+      - trigger: zone
+        entity_id: device_tracker.root
+        zone: zone.city
+        event: enter
+        id: trigger_on
+      - trigger: numeric_state
+        entity_id: sensor.city_root_distance
+        above: 45
+        id: trigger_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_on
+          - condition: state
+            entity_id: switch.switch_city_av
+            state: 'off'
+          sequence:
+            - action: switch.turn_on
+              data:
+                entity_id:
+                  - switch.switch_city_av
+
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_off
+          - condition: state
+            entity_id: switch.switch_city_av
+            state: 'on'
+          sequence:
+            - action: switch.turn_off
+              data:
+                entity_id:
+                  - switch.switch_city_av
+
+  - alias: cliamate_city1_swing_set
+    id: cliamate_city1_swing_set
+    triggers:
+      - trigger: state
+        entity_id:
+          - input_select.cliamate_city1_swingv
+        id: trigger_v
+      - trigger: state
+        entity_id:
+          - input_select.cliamate_city1_swingh
+        id: trigger_h
+
+    mode: parallel
+    max: 2
+    max_exceeded: warning
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_v
+          sequence:
+            - action: tasmota_irhvac.set_swingv
+              data:
+                entity_id: climate.city_1
+                swingv: >-
+                  {{
+                      states(trigger.entity_id)
+                    }}
+
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_h
+          sequence:
+            - action: tasmota_irhvac.set_swingh
+              data:
+                entity_id: climate.city_1
+                swingh: >-
+                  {{
+                      states(trigger.entity_id)
+                    }}
+
+climate:
+  - platform: generic_thermostat
+    name: city_2
+    heater: switch.city_1
+    target_sensor: sensor.city_temp_in_2
+    min_temp: 18
+    max_temp: 22
+    ac_mode: false
+    # target_temp: 20.0
+    cold_tolerance: 0.1
+    hot_tolerance: 0.1
+    initial_hvac_mode: 'off'
+    precision: 0.1
+
+input_select:
+  cliamate_city1_swingv:
+    name: vertical
+    icon: mdi:pan-vertical
+    options:
+      - middle
+      - auto
+      - highest
+      - high
+      - low
+      - lowest
+
+  cliamate_city1_swingh:
+    name: horizontal
+    icon: mdi:pan-horizontal
+    options:
+      - middle
+      - auto
+      - left max
+      - left
+      - right
+      - right max

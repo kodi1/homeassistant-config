@@ -1,0 +1,264 @@
+homeassistant:
+  customize:
+    light.office:
+      icon: mdi:track-light
+    automation.office_light:
+      friendly_name: office
+      icon: mdi:lightbulb-auto
+    automation.other_office_light:
+      friendly_name: office
+      icon: mdi:lightbulb-auto
+    input_boolean.office_enter_dummy:
+      friendly_name: office enter
+      icon: mdi:lightbulb-on-50
+
+automation:
+  - alias: office_light
+    id: office_light
+    initial_state: false
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.office_motion
+        to: 'on'
+        id: light_on
+      - trigger: state
+        entity_id: binary_sensor.office_occupancy
+        to: 'off'
+        for:
+          seconds: 60
+        id: light_off
+      - trigger: state
+        entity_id: binary_sensor.living_motion
+        to: 'on'
+        id: light_off
+      - trigger: state
+        entity_id: binary_sensor.bed_motion
+        to: 'on'
+        id: light_off
+      - trigger: event
+        event_type: lights_check
+        event_data:
+          light: turn_off
+        id: light_off
+
+    mode: restart
+    actions:
+      - variables:
+          cfg: >-
+            {% from 'tools.jinja' import light_cfg %}
+            {{ light_cfg(is_state('binary_sensor.night_mode', 'off')) | from_json }}
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: light.office
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.day
+            state: 'off'
+          sequence:
+            - if:
+                - condition: state
+                  entity_id:
+                    - input_boolean.office_enter_dummy
+                  state: 'off'
+              then:
+                - action: script.lights_on
+                  data:
+                    ctrl_light: light.office
+                    ctrl_all: >-
+                      {{ is_state('binary_sensor.night_mode', 'off') }}
+                    brightness_pct: >-
+                      {{ cfg.brightness }}
+                    transition: >-
+                      {{ cfg.transition }}
+                    color_temp: >-
+                      {{ cfg.temp }}
+              else:
+                - action: script.lights_on
+                  data:
+                    ctrl_light: light.office_desk
+                    ctrl_all: false
+                    brightness_pct: 70
+                    transition: 5
+                    color_temp: 4000
+                - action: input_boolean.turn_off
+                  entity_id:
+                    - input_boolean.office_enter_dummy
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+          - condition: state
+            entity_id: light.office
+            state: 'on'
+          - condition: state
+            entity_id: binary_sensor.office_occupancy
+            state: 'off'
+          sequence:
+            - action: script.lights_off
+              data:
+                ctrl_light: light.office
+                transition: >-
+                  {{ cfg.transition }}
+
+  - alias: other_office_light
+    id: other_office_light
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.office_motion
+          - binary_sensor.night_mode_ctrl
+        to: 'on'
+        id: light_on
+      - trigger: state
+        entity_id: binary_sensor.office_occupancy
+        to: 'off'
+        for:
+          seconds: 120
+        id: light_off
+      - trigger: state
+        entity_id: binary_sensor.night_mode_ctrl
+        to: 'off'
+        id: light_ctrl_off
+      - trigger: event
+        event_type: lights_check
+        event_data:
+          light: turn_off
+        id: light_ctrl_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: binary_sensor.office_occupancy
+            state: 'on'
+          - condition: state
+            entity_id: binary_sensor.night_mode_ctrl
+            state: 'on'
+          - condition: state
+            entity_id: light.shutter_office
+            state: 'off'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.shutter_office
+            - condition: state
+              entity_id: input_boolean.office_enter_dummy
+              state: 'on'
+            - action: input_boolean.turn_off
+              entity_id:
+                - input_boolean.office_enter_dummy
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+          - condition: state
+            entity_id: binary_sensor.office_occupancy
+            state: 'off'
+          - condition: state
+            entity_id: light.shutter_office
+            state: 'on'
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id:
+                  - light.shutter_office
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_ctrl_off
+          - condition: state
+            entity_id: light.shutter_office
+            state: 'on'
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id:
+                  - light.shutter_office
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: binary_sensor.office_occupancy
+            state: 'on'
+          - condition: state
+            entity_id: input_boolean.in_bed_dummy_switch
+            state: 'off'
+          - condition: state
+            entity_id: light.office_wardrobe
+            state: 'off'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id:
+                  - light.office_wardrobe
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+          - condition: state
+            entity_id: binary_sensor.office_occupancy
+            state: 'off'
+          - condition: state
+            entity_id: light.office_wardrobe
+            state: 'on'
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id:
+                  - light.office_wardrobe
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_ctrl_off
+          - condition: state
+            entity_id: light.office_wardrobe
+            state: 'on'
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id:
+                  - light.office_wardrobe
+
+input_boolean:
+  office_enter_dummy:
+    initial: off
+
+light:
+  - platform: group
+    name: office
+    entities:
+      - light.office_desk
+      - light.office_window
+
+  - platform: group
+    name: office desk
+    entities:
+      - light.office_5
+      - light.office_6
+      - light.office_7
+      - light.office_8
+
+  - platform: group
+    name: office window
+    entities:
+      - light.office_1
+      - light.office_2
+      - light.office_3
+      - light.office_4
