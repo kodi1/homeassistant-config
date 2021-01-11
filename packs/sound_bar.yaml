@@ -1,0 +1,337 @@
+homeassistant:
+  customize:
+    script.sound_bar_on:
+      icon: mdi:speaker
+    script.sound_bar_off:
+      icon: mdi:speaker-off
+    media_player.ht_mt500_501_b34d6a:
+      friendly_name: Sound Bar
+    binary_sensor.sound_bar_active:
+      friendly_name: Sound bar
+
+template:
+  - trigger:
+    - trigger: state
+      entity_id: media_player.ht_mt500_501_b34d6a
+    - trigger: state
+      entity_id: media_player.livingtv
+    - trigger: state
+      entity_id: switch.tv_cec
+    - trigger: state
+      entity_id: binary_sensor.sound_bar_active
+    binary_sensor:
+      - name: sound_bar_active
+        state: >-
+          {{
+              is_state('media_player.ht_mt500_501_b34d6a', 'playing') or
+                is_state('switch.tv_cec', 'on') or
+                is_state('media_player.livingtv', 'playing')
+            }}
+        icon: >-
+          {%- if
+                is_state('media_player.ht_mt500_501_b34d6a', 'playing') or
+                  is_state('switch.tv_cec', 'on') or
+                  is_state('media_player.livingtv', 'playing') or
+                  is_state('binary_sensor.sound_bar_active', 'off')
+            -%}
+            mdi:cast-audio
+          {%- else -%}
+            mdi:power
+          {%- endif -%}
+        device_class: sound
+        delay_off:
+          seconds: 90
+
+automation:
+  - alias: sound_bar_music_on
+    id: sound_bar_music_on
+    triggers:
+      - trigger: state
+        entity_id: media_player.ht_mt500_501_b34d6a
+        from: 'off'
+        for:
+          seconds: 3
+      - trigger: state
+        entity_id: input_select.select_sound_bar
+    conditions:
+      - condition: state
+        entity_id: binary_sensor.kodi_screen_saver
+        state: 'on'
+    actions:
+      - action: timer.start
+        entity_id: timer.sound_bar
+        data_template:
+          duration: "00:{{states('input_number.sound_bar_music_timer') | int}}:00"
+      - action: media_player.play_media
+        data_template:
+          entity_id: media_player.ht_mt500_501_b34d6a
+          media_content_type: MUSIC
+          media_content_id: >-
+            {%-
+                set play=
+                {
+                "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
+                "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
+                "State Of Trance": "http://de-hz-fal-stream07.rautemusik.fm/trance",
+                "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
+                "Ocean Radio": "http://philae.shoutca.st:8446/stream",
+                "Costa Del Mar": "http://sc-costadelmar.1.fm:10156",
+                "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
+                "Lounge FM": "http://cast.loungefm.com.ua/chillout128",
+                "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
+                "Eilo Ambient": "http://eilo.org:8000/ambient",
+                "Milano Lounge": "http://178.32.62.154:9739/stream",
+                "Lounge": "http://live.radioart.com:80/fLounge.mp3",
+                "Smooth Lounge": "http://live.radioart.com:80/fSmooth_lounge.mp3",
+                "Vocal Lounge": "http://live.radioart.com:80/fVocal_lounge.mp3",
+                "Sleep": "http://live.radioart.com:80/fSleep.mp3",
+                "New Age": "http://live.radioart.com:80/fNew_age.mp3",
+                "Ambient": "http://live.radioart.com:80/fAmbient.mp3",
+                "Ambient Sleep": "https://radio.stereoscenic.com/asp-s",
+                "Calm Radio": "http://streams.calmradio.com/api/39/128/stream",
+                "Ambi Nature Radio": "http://94.23.252.14:8067/stream",
+                "Chroma Ambient": "http://148.251.184.14:8004/;539699463556254stream.nsv"
+                }
+            -%}
+            {{ play[states('input_select.select_sound_bar')] }}
+
+  - alias: sound_bar_music_off
+    id: sound_bar_music_off
+    triggers:
+      - trigger: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.sound_bar
+    actions:
+      - action: media_player.turn_off
+        entity_id: media_player.ht_mt500_501_b34d6a
+
+  - alias: sound_bar_idle
+    id: sound_bar_idle
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.sound_bar_active
+        to: 'off'
+    actions:
+      - action: script.sound_bar_off
+
+  - alias: sound_bar_input_sleep_on
+    id: sound_bar_input_sleep_on
+    triggers:
+      - trigger: state
+        entity_id: input_boolean.enable_sleep
+    conditions:
+      - condition: state
+        entity_id: media_player.ht_mt500_501_b34d6a
+        state: 'playing'
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: input_boolean.enable_sleep
+            state: 'off'
+          sequence:
+            - action: timer.cancel
+              entity_id: timer.sound_bar
+
+        - conditions:
+          - condition: state
+            entity_id: input_boolean.enable_sleep
+            state: 'on'
+          sequence:
+            - action: timer.start
+              entity_id: timer.sound_bar
+              data_template:
+                duration: '00:05:00'
+            - choose:
+              - conditions:
+                - condition: or
+                  conditions:
+                    - condition: state
+                      entity_id: input_boolean.enable_sleep
+                      state: 'off'
+                    - condition: state
+                      entity_id: device_tracker.n0ll
+                      state: home
+                sequence:
+                  - action: timer.pause
+                    entity_id: timer.sound_bar
+
+  - alias: sound_bar_clear_timer
+    id: sound_bar_clear_timer
+    triggers:
+      - trigger: state
+        entity_id: media_player.ht_mt500_501_b34d6a
+        to: 'off'
+        for:
+          seconds: 5
+    conditions:
+      - condition: template
+        value_template: "{{ not is_state('timer.sound_bar', 'idle') }}"
+    actions:
+      - action: timer.cancel
+        entity_id: timer.sound_bar
+
+input_select:
+  select_sound_bar:
+    name: sound bar radio
+    options:
+      - 1Mix Radio
+      - Nova Bg
+      - State Of Trance
+      - 1FM Amsterdam
+      - Ocean Radio
+      - Costa Del Mar
+      - 1FM Lounge Radio
+      - Lounge FM
+      - Absolute Chillout
+      - Eilo Ambient
+      - Milano Lounge
+      - Lounge
+      - Smooth Lounge
+      - Vocal Lounge
+      - Sleep
+      - New Age
+      - Ambient
+      - Ambient Sleep
+      - Calm Radio
+      - Ambi Nature Radio
+      - Chroma Ambient
+    icon: mdi:radio
+
+script:
+  sound_bar_off:
+    sequence:
+      - action: shell_command.sound_bar_off
+
+  sound_bar_on:
+    sequence:
+      - action: shell_command.sound_bar_on
+
+  radio_on:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: media_player.ht_mt500_501_b34d6a
+            state: 'off'
+          - condition: or
+            conditions:
+            - condition: time
+              after: '18:30:00'
+              before: '00:05:00'
+              weekday:
+                - mon
+                - tue
+                - wed
+                - thu
+                - fri
+            - condition: time
+              after: '10:30:00'
+              before: '00:35:00'
+              weekday:
+                - sat
+                - sun
+      - action: media_player.turn_on
+        entity_id: media_player.ht_mt500_501_b34d6a
+      - choose:
+        - conditions:
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: input_boolean.enable_sleep
+                state: 'off'
+              - condition: state
+                entity_id: device_tracker.n0ll
+                state: home
+          sequence:
+            - action: timer.pause
+              entity_id: timer.sound_bar
+      - wait_template: >-
+          {{
+              is_state('media_player.ht_mt500_501_b34d6a', 'playing')
+            }}
+        timeout:
+          seconds: 30
+      - action: songpal.set_sound_setting
+        data:
+          entity_id: media_player.soundbar
+          name: subwooferLevel
+          value: 8
+      - action: songpal.set_sound_setting
+        data:
+          entity_id: media_player.soundbar
+          name: voice
+          value: type1
+      - action: media_player.volume_set
+        data:
+          entity_id: media_player.ht_mt500_501_b34d6a
+          volume_level: 0.16
+
+  sound_bar_go_sleep:
+    mode: restart
+    sequence:
+      - choose:
+        - conditions:
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: input_boolean.enable_sleep
+                state: 'on'
+              - condition: time
+                after: '13:00:00'
+                before: '23:00:00'
+          sequence:
+            - action: timer.start
+              entity_id: timer.sound_bar
+              data:
+                duration: '00:45:00'
+
+  start_up_sound_bar:
+    sequence:
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: media_player.ht_mt500_501_b34d6a
+            state: 'playing'
+          sequence:
+            - action: timer.start
+              entity_id: timer.sound_bar
+
+        - conditions:
+          - condition: state
+            entity_id: device_tracker.n0ll
+            state: 'home'
+          sequence:
+            - action: timer.pause
+              entity_id: timer.sound_bar
+
+shell_command:
+  sound_bar_off: '/config/cmds/cec_cmd "tx 15:44:6c"'
+  sound_bar_on: '/config/cmds/cec_cmd "tx 15:44:6d"'
+
+songpal:
+  - name: soundbar
+    endpoint: !secret songpal_soundbar
+
+input_boolean:
+  enable_sleep:
+    name: auto seep
+    icon: mdi:sleep
+
+timer:
+  sound_bar:
+    name: 'sound time'
+    icon: mdi:timer-sand
+    duration: '00:01:00'
+
+input_number:
+  sound_bar_music_timer:
+    name: 'music time'
+    unit_of_measurement: 'min'
+    min: 5
+    max: 60
+    step: 5
+    icon: mdi:av-timer
