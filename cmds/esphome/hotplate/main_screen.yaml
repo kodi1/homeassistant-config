@@ -1,0 +1,104 @@
+      on_swipe_right:
+        - lvgl.page.show: boot
+        - switch.turn_off: enable_fuzzy_control
+      widgets:
+        # Chart Container (Must be named 'temp_chart' to match your C++ code)
+        - obj:
+            id: temp_chart
+            x: 80
+            y: 0
+            # INCREASED HEIGHT to 270 to occupy the space previously used by the slider
+            width: 400
+            height: 270
+            bg_color: gray900
+
+        - label:
+            id: target_temp_label
+            x: 0
+            y: 0
+            width: 230
+            height: 30
+            text_font: $font_smaller
+            text_color: gray800
+            text: "T: -" # Initial text
+
+        - label:
+            id: current_temp_label
+            x: 0
+            y: 15
+            width: 230
+            height: 50
+            text_font: $font_smaller
+            text_color: gray800
+            text: "C: -" # Initial text
+
+        - label:
+            id: err_predicted_label
+            x: 0
+            y: 30
+            width: 230
+            height: 30
+            text_font: $font_smaller
+            text_color: gray800
+            text: "E: -" # Initial text
+
+        - label:
+            id: out_label
+            x: 0
+            y: 45
+            width: 230
+            height: 30
+            text_font: $font_smaller
+            text_color: gray800
+            text: "0: -" # Initial text
+
+        # --- Temperature Increase Button (NEW) ---
+        - button:
+            id: btn_temp_up
+            x: 0
+            y: 100 # Positioned above the Start/Stop button
+            width: 80
+            height: 40
+            bg_color: orangered
+            on_press:
+              then:
+                - number.increment: temp_target
+
+            widgets:
+              - label:
+                  align: center
+                  text: "+"
+
+        # --- Temperature Decrease Button (NEW) ---
+        - button:
+            id: btn_temp_down
+            x: 0
+            y: 145 # Positioned below the Up button
+            width: 80
+            height: 40
+            bg_color: misty_blue
+            on_press:
+              then:
+                - number.decrement: temp_target
+
+            widgets:
+              - label:
+                  align: center
+                  text: "-"
+
+        # --- Start/Stop Button ---
+        - button:
+            id: start_stop_button
+            x: 0
+            y: 190 # Keeps original Y position
+            width: 80
+            height: 40
+            widgets:
+              - label:
+                  align: center
+                  text: "Start"
+                  text_font: $font_small
+            on_long_press:
+              then:
+                # Conditional logic to toggle between HEAT and OFF modes
+                - switch.toggle: enable_fuzzy_control

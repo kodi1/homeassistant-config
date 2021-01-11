@@ -1,0 +1,267 @@
+title: home
+icon: mdi:city-variant
+path: home
+
+badges:
+  - device_tracker.root
+  - sensor.change_pressure
+
+cards:
+  - type: vertical-stack
+    cards:
+      - type: custom:weather-chart-card
+        entity: weather.local
+        forecast:
+          style: style2
+
+      - type: entities
+        show_header_toggle: false
+        entities:
+          - sensor.temp_out
+          - sensor.hum_out
+          - sensor.sea_level_pressure
+          - type: divider
+          - sensor.local_apparent_temperature
+          - sensor.local_cloud_coverage
+          - sensor.local_dew_point
+          - sensor.local_precipitation_probability
+          - sensor.local_precipitation
+          - sensor.local_ozone
+          - type: divider
+          - sensor.temp_living
+          - sensor.hum_living
+          - sensor.press_living
+          - type: divider
+          - sensor.office_temp
+          - sensor.office_hum
+          - type: divider
+          - sensor.bed_temp
+          - sensor.bed_hum
+          - type: divider
+          - sensor.bath_temp
+          - sensor.bath_hum
+          - type: divider
+          - sensor.hall_temp
+          - sensor.hall_hum
+          - type: divider
+          - sensor.wash_temp
+          - sensor.wash_hum
+
+  - type: vertical-stack
+    cards:
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - cover.shutters
+          - type: button
+            icon: mdi:window-shutter-settings
+            name: position
+            action_name: set
+            tap_action:
+              action: call-service
+              service: script.turn_on
+              data:
+                entity_id: script.shutters_position_default
+              confirmation:
+                text: you want to set shutters default ?
+
+      - type: conditional
+        conditions:
+          - entity: switch.living_tv
+            state: 'on'
+        card:
+          type: media-control
+          entity: media_player.kodi_tv
+
+      - type: conditional
+        conditions:
+          - entity: switch.living_tv
+            state: 'on'
+        card:
+          type: media-control
+          entity: media_player.ht_mt500_501_b34d6a
+
+      - type: conditional
+        conditions:
+          - entity: switch.living_tv
+            state: 'on'
+        card:
+          type: entities
+          show_header_toggle: false
+          entities:
+            - input_select.select_sound_bar
+            - input_number.sound_bar_music_timer
+            - timer.sound_bar
+            - input_boolean.enable_sleep
+            - type: divider
+            - automation.sound_bar_music
+
+  - type: custom:upcoming-media-card
+    entity: sensor.hts_recording_sensor
+    image_style: fanart
+    date: ddmm
+    clock: 24
+    hide_empty: true
+
+  - type: conditional
+    conditions:
+      - entity: alert.low_battery
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.low_battery
+
+  - type: conditional
+    conditions:
+      - entity: alert.home_motion
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.home_motion
+
+  - type: conditional
+    conditions:
+      - entity: alert.city_water_heater
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.city_water_heater
+
+  - type: conditional
+    conditions:
+      - entity: alert.village_water_heater
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.village_water_heater
+
+  - type: conditional
+    conditions:
+      - entity: alert.cpu_overheat
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.cpu_overheat
+
+  - type: conditional
+    conditions:
+      - entity: alert.tasmota_update
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.tasmota_update
+        - input_select.tasmota_ota_url
+        - script.tasmota_ota_url_set
+        - type: divider
+        - script.tasmota_ota
+        - type: divider
+        - script.tasmota_status
+
+  - type: conditional
+    conditions:
+      - entity: alert.wled_update
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.wled_update
+
+  - type: conditional
+    conditions:
+      - entity: alert.water_on
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.water_on
+
+  # - type: conditional
+  #   conditions:
+  #     - entity: alert.work_acc_update
+  #       state_not: 'idle'
+  #   card:
+  #     type: entities
+  #     show_header_toggle: false
+  #     entities:
+  #       - alert.work_acc_update
+
+  - type: conditional
+    conditions:
+      - entity: alert.clima_max_restore_switch
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.clima_max_restore_switch
+
+  - type: conditional
+    conditions:
+      - entity: alert.pump_temp_on_off
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.pump_temp_on_off
+        - sensor.outdoor_temperature
+
+  - type: conditional
+    conditions:
+      - entity: input_boolean.in_call
+        state: 'on'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - binary_sensor.in_call
+        - input_boolean.in_call
+        - automation.in_call
+        - input_number.sound_bar_save_volume
+        - script.in_call_on
+        - script.in_call_off
+
+  - type: conditional
+    conditions:
+      - entity: binary_sensor.w_alert
+        state: 'on'
+    card:
+      type: markdown
+      content: |
+        ## {{ state_attr('binary_sensor.w_alert', 'category') }}: **{{ state_attr('binary_sensor.w_alert', 'event') }}**
+        **Severity:** {{ state_attr('binary_sensor.w_alert', 'severity') }}
+        **Description:** {{ state_attr('binary_sensor.w_alert', 'description') }}
+        **Code:** {{ state_attr('binary_sensor.w_alert', 'awareness_type').split(';')[1] }} -{{ state_attr('binary_sensor.w_alert', 'awareness_level').split(';')[1] }}
+        **Time:** {{ state_attr('binary_sensor.w_alert', 'onset') }} - {{ state_attr('binary_sensor.w_alert', 'expires') }}
+        {{ state_attr('binary_sensor.w_alert', 'web') }}
+
+  - type: conditional
+    conditions:
+      - entity: switch.xiaomi_airfryer_xiaomi_smart_air_fryer_6_5l
+        state_not: 'unavailable'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - sensor.xiaomi_airfryer_preheat_phase
+        - sensor.xiaomi_airfryer_recipe_id
+        - sensor.xiaomi_airfryer_remaining
+        - sensor.xiaomi_airfryer_status
+        - sensor.xiaomi_airfryer_turn_pot
+        - type: divider
+        - switch.xiaomi_airfryer_xiaomi_smart_air_fryer_6_5l

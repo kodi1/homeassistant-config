@@ -1,0 +1,479 @@
+homeassistant:
+  customize:
+    automation.change_pressure:
+      friendly_name: pressure
+      icon: mdi:chart-line-variant
+    automation.weather_alert:
+      friendly_name: weather
+      icon: mdi:weather-cloudy-alert
+    automation.temp_vent_notify:
+      friendly_name: temp vent
+      icon: mdi:tailwind
+    binary_sensor.w_alert:
+      icon: mdi:weather-partly-snowy-rainy
+    binary_sensor.temp_ventilaton:
+      friendly_name: vent
+    sensor.temp_living:
+      friendly_name: temp living
+    sensor.hum_living:
+      friendly_name: hum living
+    sensor.press_living:
+      friendly_name: pres living
+    sensor.sea_level_pressure:
+      friendly_name: sea pressure
+    sensor.change_pressure:
+      friendly_name: change
+    sensor.local_weather:
+      friendly_name: weather
+      icon: mdi:weather-partly-snowy-rainy
+    sensor.local_forecast:
+      friendly_name: forecast
+      icon: mdi:weather-cloudy-clock
+    sensor.local_apparent_temperature:
+      friendly_name: feels
+      icon: mdi:thermometer-low
+    sensor.local_cloud_coverage:
+      friendly_name: cloud
+      icon: mdi:weather-cloudy
+    sensor.local_precipitation:
+      friendly_name: precipitation
+      icon: mdi:weather-rainy
+    sensor.local_dew_point:
+      friendly_name: dew point
+      icon: mdi:water-thermometer
+    sensor.local_forecast_wind_speed:
+      friendly_name: wind forecast
+      icon: mdi:weather-dust
+    sensor.local_wind_speed:
+      friendly_name: wind
+      icon: mdi:weather-windy
+    sensor.local_precipitation_probability:
+      friendly_name: probability
+      icon: mdi:weather-pouring
+    sensor.local_ozone:
+      friendly_name: ozone
+    sensor.car_fines:
+      icon: mdi:car
+      friendly_name: fine
+
+binary_sensor:
+  - platform: meteoalarm
+    country: !secret meteo_country
+    province: !secret meteo_province
+    name: w_alert
+
+command_line:
+  - sensor:
+      name: car_fines
+      command: !secret checkme
+      scan_interval: 86400
+      json_attributes:
+        - last_update
+        - group1
+        - group2
+      value_template: >-
+        {{
+            value_json.nr | int(0)
+          }}
+
+sensor:
+  - platform: derivative
+    name: pressure_derivative
+    source: sensor.press_living
+    round: 2
+    unit_time: h
+    time_window: 03:00:00
+
+template:
+  - sensor:
+    - name: sea_level_pressure
+      icon: mdi:gauge
+      unit_of_measurement: 'hPa'
+      state: >-
+          {%- if states('sensor.press_living') != 'unavailable' and
+                  states('sensor.temp_out') != 'unavailable' %}
+              {% set p1 = states('sensor.press_living') | float(0) %}
+              {% set t = states('sensor.temp_out') | float(0) %}
+              {% set h = 655 | float(0) %}
+              {{ (p1 *  ( (1 - (0.0065 * h) / (t + (0.0065 * h) + 273.15)) **  -5.257)) | round(2) }}
+          {% else %}
+              {{ states('sensor.sea_level_pressure') }}
+          {%- endif %}
+
+    - name: change_pressure
+      icon: >-
+        {%if states('sensor.pressure_derivative') | float(0) > 0.33 %}
+          {{'mdi:trending-up'}}
+        {% elif states('sensor.pressure_derivative') | float(0) < -0.33 %}
+          {{'mdi:trending-down'}}
+        {% else %}
+          {{'mdi:trending-neutral'}}
+        {% endif %}
+      state: >-
+        {{ states('sensor.pressure_derivative') }}
+      unit_of_measurement: 'hPa/h'
+
+  - trigger:
+    - trigger: state
+      entity_id: weather.local
+    - trigger: homeassistant
+      event: start
+    action:
+      - action: weather.get_forecasts
+        target:
+          entity_id: weather.local
+        data:
+          type: daily
+        response_variable: daily_forecast
+      - action: weather.get_forecasts
+        target:
+          entity_id: weather.local
+        data:
+          type: hourly
+        response_variable: hourly_forecast
+    sensor:
+      - name: dummy_local
+        unique_id: dummy_local
+        state: >-
+            {{
+                states('weather.local')
+              }}
+        attributes:
+          temperature: >-
+            {{
+                state_attr('weather.local', 'temperature')
+              }}
+          temperature_unit: >-
+            {{
+                state_attr('weather.local', 'temperature_unit')
+              }}
+          humidity: >-
+            {{
+                state_attr('weather.local', 'humidity')
+              }}
+          pressure: >-
+            {{
+                state_attr('weather.local', 'pressure')
+              }}
+          pressure_unit: >-
+            {{
+                state_attr('weather.local', 'pressure_unit')
+              }}
+          wind_bearing: >-
+            {{
+                state_attr('weather.local', 'wind_bearing')
+              }}
+          wind_speed: >-
+            {{
+                state_attr('weather.local', 'wind_speed')
+              }}
+          wind_speed_unit: >-
+            {{
+                state_attr('weather.local', 'wind_speed_unit')
+              }}
+          visibility: >-
+            {{
+                state_attr('weather.local', 'visibility')
+              }}
+          visibility_unit: >-
+            {{
+                state_attr('weather.local', 'visibility_unit')
+              }}
+          precipitation_unit: >-
+            {{
+                state_attr('weather.local', 'precipitation_unit')
+              }}
+          ozone: >-
+            {{
+                state_attr('weather.local', 'ozone')
+              }}
+          forecast: >-
+            {{
+                daily_forecast['weather.local']['forecast']
+              }}
+          hourly_forecast: >-
+            {{
+                hourly_forecast['weather.local']['forecast']
+              }}
+
+      - name: local_temperature
+        unique_id: local_temperature
+        device_class: temperature
+        state: >-
+            {{
+               state_attr('weather.local', 'temperature')
+              }}
+        unit_of_measurement: °C
+      - name: local_ozone
+        unique_id: local_ozone
+        device_class: ozone
+        state: >-
+            {{
+               state_attr('weather.local', 'ozone')
+              }}
+        unit_of_measurement: µg/m³
+      - name: local_apparent_temperature
+        unique_id: local_apparent_temperature
+        device_class: temperature
+        state: >-
+            {{
+                hourly_forecast['weather.local']['forecast'][2]['apparent_temperature']
+              }}
+        unit_of_measurement: °C
+      - name: local_cloud_coverage
+        unique_id: local_cloud_coverage
+        device_class: wind_speed
+        state: >-
+            {{
+                hourly_forecast['weather.local']['forecast'][2]['cloud_coverage']
+              }}
+        unit_of_measurement: '%'
+      - name: local_dew_point
+        unique_id: local_dew_point
+        device_class: temperature
+        state: >-
+            {{
+                hourly_forecast['weather.local']['forecast'][2]['dew_point']
+              }}
+        unit_of_measurement: °C
+      - name: local_precipitation
+        unique_id: local_precipitation
+        device_class: precipitation
+        state: >-
+            {{
+                hourly_forecast['weather.local']['forecast'][2]['precipitation']
+              }}
+        unit_of_measurement: mm
+      - name: local_wind_speed
+        unique_id: local_wind_speed
+        device_class: wind_speed
+        state: >-
+            {{
+                state_attr('weather.local', 'wind_speed')
+              }}
+        unit_of_measurement: km/h
+      - name: local_forecast_wind_speed
+        unique_id: local_forecast_wind_speed
+        device_class: wind_speed
+        state: >-
+            {{
+                hourly_forecast['weather.local']['forecast'][2]['wind_speed']
+              }}
+        unit_of_measurement: km/h
+      - name: local_precipitation_probability
+        unique_id: local_precipitation_probability
+        state: >-
+            {{
+                hourly_forecast['weather.local']['forecast'][2]['precipitation_probability']
+              }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: state
+      entity_id: sensor.temp_out
+    conditions:
+      condition: not
+      conditions:
+        - condition: state
+          entity_id:
+            - sensor.temp_out
+            - sensor.temp_living
+            - select.operation_mode
+          state:
+            - unknown
+            - unavailable
+          match: any
+    binary_sensor:
+      - name: temp_ventilaton
+        unique_id: temp_ventilaton
+        icon: mdi:home-thermometer-outline
+        device_class: window
+        state: >-
+          {%-
+                set val = {
+                  'auto': false,
+                  'heating': float(states('sensor.temp_out')) - float(states('sensor.temp_living')) > 0.8,
+                  'cooling': float(states('sensor.temp_living')) - float(states('sensor.temp_out')) > 0.5,
+                }
+            -%}
+          {{ val[states('select.operation_mode')] }}
+
+mqtt:
+  sensor:
+    - name: 'hum bed'
+      device_class: humidity
+      state_topic: bedroom_led/env/humidity
+      expire_after: 660
+      unit_of_measurement: '%'
+
+    - name: 'temp bed'
+      device_class: temperature
+      state_topic: bedroom_led/env/temperature
+      unit_of_measurement: °C
+      expire_after: 660
+
+    - name: 'hum living'
+      state_topic: bme280_171f93
+      device_class: humidity
+      value_template: '{{ value_json.humidity | round(2) }}'
+      unit_of_measurement: '%'
+      expire_after: 660
+
+    - name: ' temp living'
+      state_topic: bme280_171f93
+      device_class: temperature
+      value_template: '{{ value_json.temperature | round(2) }}'
+      unit_of_measurement: °C
+      expire_after: 660
+
+    - name: 'press living'
+      state_topic: bme280_171f93
+      device_class: pressure
+      value_template: '{{ value_json.pressure | round(2) }}'
+      unit_of_measurement: hPa
+      expire_after: 660
+
+    - name: 'batt living'
+      state_topic: bme280_171f93
+      device_class: battery
+      value_template: '{{ value_json.batt_p | round(0) }}'
+      json_attributes_topic: bme280_171f93
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'mV': value_json.batt_v
+          }
+          -%}
+        {{ attrs | to_json }}
+      unit_of_measurement: '%'
+      expire_after: 1260
+
+    - name: 'wifi rssi'
+      state_topic: tele/watermeter/STATE
+      value_template: '{{ value_json.Wifi.Signal }}'
+      json_attributes_topic: tele/watermeter/STATE
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'channel': value_json.Wifi.Channel,
+          'up time': value_json.Uptime,
+          'Vcc': value_json.Vcc,
+          'LoadAvg': value_json.LoadAvg
+          }
+          -%}
+        {{ attrs | to_json }}
+      device_class: 'signal_strength'
+      unit_of_measurement: 'dBm'
+      expire_after: 660
+
+input_number:
+  pressure_speed:
+    name: 'hPa/h alert'
+    unit_of_measurement: hPa/h
+    min: 0.75
+    max: 1.25
+    step: 0.05
+    icon: mdi:altimeter
+
+automation:
+  - alias: change_pressure
+    id: change_pressure
+    triggers:
+      - trigger: state
+        entity_id: sensor.change_pressure
+    conditions:
+      condition: and
+      conditions:
+        - condition: template
+          value_template: >-
+            {{ states('sensor.change_pressure') | float(0) | abs > states('input_number.pressure_speed') | float(0) }}
+        - condition: template
+          value_template: >-
+            {%- if state_attr('automation.change_pressure', 'last_triggered') != None -%}
+              {{
+                now() - state_attr('automation.change_pressure', 'last_triggered') >
+                  timedelta(hours=1)
+                }}
+            {%- else -%}
+              True
+            {%- endif -%}
+    actions:
+      - action: script.all_notify
+        data_template:
+          icon_notify: >-
+            {{state_attr('sensor.change_pressure', 'icon').split(':')[1]}}
+          tit: pressure change
+          msg: >-
+            {{states('sensor.change_pressure')}}
+
+  - alias: weather_alert
+    id: weather_alert
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.w_alert
+    conditions:
+      - condition: template
+        value_template: '{{trigger.from_state.state != trigger.to_state.state}}'
+    actions:
+      - action: script.all_notify
+        data_template:
+          icon_notify: weather-cloudy-alert
+          tit: 'weather'
+          msg: >-
+            {%- if is_state('binary_sensor.w_alert', 'on') -%}
+              {{ state_attr('binary_sensor.w_alert', 'awareness_type').split(';')[1] }} -{{ state_attr('binary_sensor.w_alert', 'awareness_level').split(';')[1] }}
+              {{ state_attr('binary_sensor.w_alert', 'expires') }}
+            {% else %}
+              alert expired
+            {% endif %}
+
+  - alias: temp_vent_notify
+    id: temp_vent_notify
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.temp_ventilaton
+    actions:
+      - variables:
+          tit: >-
+            {{ states('sensor.temp_out', with_unit=True) }} out
+          msg: >-
+            {%-
+                  set val = {
+                    'on': 'open window',
+                    'off': 'close window',
+                  }
+              -%}
+            {{ val[states('binary_sensor.temp_ventilaton')] }}
+      - action: logbook.log
+        data:
+          name: >-
+            {{ tit }}
+          message: >-
+            {{ msg }}
+      - action: persistent_notification.create
+        data_template:
+          title: >-
+            {{ tit }}
+          message: >-
+            {{ msg }}
+      - if:
+        - condition: state
+          entity_id: media_player.livingtv
+          state: playing
+        then:
+          - action: notify.kodi
+            data:
+              data:
+                icon: 'info'
+                displaytime: 15000
+              title:  >-
+                {{ tit }}
+              message: >-
+                {{ msg }}
+        else:
+          - action: notify.gmail
+            data_template:
+              title: >-
+                {{ tit }}
+              message: >-
+                {{ msg }}

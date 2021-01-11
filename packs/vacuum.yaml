@@ -1,0 +1,520 @@
+homeassistant:
+  customize:
+    alert.vacuum_clean:
+      icon: mdi:spray-bottle
+    automation.auto_clean:
+      icon: mdi:robot-vacuum
+      friendly_name: auto clean
+    automation.reset_bin_counter:
+      icon: mdi:refresh-auto
+      friendly_name: reset
+    binary_sensor.rockrobo_dustbin:
+      friendly_name: dustbin
+
+automation:
+  - alias: auto_clean
+    id: auto_clean
+    triggers:
+      - trigger: time
+        at: 08:00:00
+        id: time_check
+      - trigger: state
+        entity_id: device_tracker.root
+        from: home
+        to: not_home
+        for:
+          minutes: 5
+        id: clean_notify
+      - trigger: state
+        entity_id: device_tracker.root
+        from: home
+        to: not_home
+        for:
+          minutes: 15
+        id: clean_run
+
+    conditions:
+      - condition: time
+        weekday:
+          # - mon
+          # - tue
+          - wed
+          # - thu
+          # - fri
+          - sat
+          # - sun
+      - condition: template
+        value_template: >-
+          {%- if state_attr('script.all_clean', 'last_triggered') -%}
+            {{
+                now() - state_attr('script.all_clean', 'last_triggered') > timedelta(hours=24)
+              }}
+          {%- else -%}
+            true
+          {%- endif -%}
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - time_check
+          - condition: state
+            entity_id: device_tracker.root
+            state: home
+          sequence:
+            - action: notify.gmail
+              data:
+                title: rockrobo
+                message: check wash door
+            - if:
+              - condition: state
+                entity_id: binary_sensor.clean_vacuum
+                state: 'on'
+              then:
+                - delay:
+                    seconds: 5
+                - action: notify.gmail
+                  data:
+                    title: rockrobo
+                    message: bin full not clean
+
+        - conditions:
+          - condition: trigger
+            id:
+              - clean_notify
+          - condition: state
+            entity_id: binary_sensor.wash_door
+            state: 'on'
+          sequence:
+            - action: notify.gmail
+              data:
+                title: rockrobo
+                message: clean in 10 min
+
+        - conditions:
+          - condition: trigger
+            id:
+              - clean_run
+          - condition: state
+            entity_id: binary_sensor.clean_vacuum
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.wash_door
+            state: 'on'
+          sequence:
+            - action: script.turn_on
+              data:
+                entity_id:
+                  - script.all_clean
+        default:
+          - action: logbook.log
+            data:
+              name: auto_clean
+              message: 'check automation using default - Id: {{trigger.id}}'
+
+  - alias: reset_bin_counter
+    id: reset_bin_counter
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.rockrobo_dustbin
+        from: 'off'
+        to: 'on'
+    mode: restart
+    actions:
+      - action: counter.reset
+        entity_id: counter.clean_counter
+
+template:
+  - binary_sensor:
+    - name: clean_vacuum
+      icon: mdi:delete-sweep
+      device_class: problem
+      delay_on:
+        seconds: 5
+      delay_off:
+        seconds: 10
+      state: >-
+        {%- if is_state('vacuum.valetudo_rockrobo', 'docked') -%}
+          {{
+              states('counter.clean_counter') | int(0)  > 4 or
+                states('sensor.valetudo_rockrobo_main_brush') | int(0)  < 360 or
+                states('sensor.valetudo_rockrobo_main_filter') | int(0) < 360  or
+                states('sensor.valetudo_rockrobo_right_brush') | int(0) < 360 or
+                states('sensor.valetudo_rockrobo_sensor_cleaning') | int(0)  < 60
+            }}
+        {%- else -%}
+          false
+        {%- endif -%}
+
+  - trigger:
+    - trigger: mqtt
+      topic: valetudo/rockrobo/AttachmentStateAttribute/dustbin
+
+    binary_sensor:
+      - name: rockrobo_dustbin
+        unique_id: rockrobo_dustbin
+        icon: mdi:trash-can-outline
+        state: >-
+          {{
+              trigger.payload
+            }}
+
+counter:
+  clean_counter:
+    icon: mdi:delete-alert
+
+alert:
+  vacuum_clean:
+    name: vacuum
+    entity_id: binary_sensor.clean_vacuum
+    state: 'on'
+    repeat:
+      - 60
+      - 90
+      - 120
+      - 240
+    can_acknowledge: true
+    title: roborock
+    message: cleanup
+    done_message: done
+    notifiers:
+      - gmail
+
+script:
+  bed_clean:
+    alias: bed
+    icon: mdi:bed-king
+    mode: restart
+    sequence:
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: binary_sensor.wash_door
+            state: 'on'
+          sequence:
+            - action: mqtt.publish
+              data:
+                topic: valetudo/rockrobo/MapSegmentationCapability/clean/set
+                payload: '{"segment_ids": ["18"], "iterations": 1, "customOrder": true}'
+        default:
+          - action: script.all_notify
+            data:
+              icon_notify: door-closed
+              tit: wash door
+              msg: closed
+
+  living_clean:
+    alias: living
+    icon: mdi:sofa
+    mode: restart
+    sequence:
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: binary_sensor.wash_door
+            state: 'on'
+          sequence:
+            - action: mqtt.publish
+              data:
+                topic: valetudo/rockrobo/MapSegmentationCapability/clean/set
+                payload: '{"segment_ids": ["16"], "iterations": 1, "customOrder": true}'
+        default:
+          - action: script.all_notify
+            data:
+              icon_notify: door-closed
+              tit: wash door
+              msg: closed
+
+  hall_clean:
+    alias: hall
+    icon: mdi:foot-print
+    mode: restart
+    sequence:
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: binary_sensor.wash_door
+            state: 'on'
+          sequence:
+            - action: mqtt.publish
+              data:
+                topic: valetudo/rockrobo/MapSegmentationCapability/clean/set
+                payload: '{"segment_ids": ["19"], "iterations": 1, "customOrder": true}'
+        default:
+          - action: script.all_notify
+            data:
+              icon_notify: door-closed
+              tit: wash door
+              msg: closed
+
+  bath_clean:
+      alias: bath
+      icon: mdi:shower-head
+      mode: restart
+      sequence:
+        - choose:
+          - conditions:
+            - condition: state
+              entity_id: binary_sensor.wash_door
+              state: 'on'
+            sequence:
+              - action: mqtt.publish
+                data:
+                  topic: valetudo/rockrobo/MapSegmentationCapability/clean/set
+                  payload: '{"segment_ids": ["20"], "iterations": 1, "customOrder": true}'
+          default:
+            - action: script.all_notify
+              data:
+                icon_notify: door-closed
+                tit: wash door
+                msg: closed
+
+  office_clean:
+    alias: office
+    icon: mdi:chair-rolling
+    mode: restart
+    sequence:
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: binary_sensor.wash_door
+            state: 'on'
+          sequence:
+            - action: mqtt.publish
+              data:
+                topic: valetudo/rockrobo/MapSegmentationCapability/clean/set
+                payload: '{"segment_ids": ["17"], "iterations": 1, "customOrder": true}'
+        default:
+          - action: script.all_notify
+            data:
+              icon_notify: door-closed
+              tit: wash door
+              msg: closed
+
+  all_clean:
+    alias: all
+    icon: mdi:floor-plan
+    mode: restart
+    sequence:
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: binary_sensor.wash_door
+            state: 'on'
+          sequence:
+            - action: scene.create
+              data:
+                scene_id: cleaning_vaccum
+                snapshot_entities:
+                  - automation.home_motion_detect
+            - action: automation.turn_off
+              data:
+                entity_id: automation.home_motion_detect
+            - action: script.all_notify
+              data:
+                icon_notify: robot-vacuum
+                tit: clean
+                msg: start
+            - action: mqtt.publish
+              data:
+                topic: valetudo/rockrobo/MapSegmentationCapability/clean/set
+                payload: '{"segment_ids": ["20", "18", "17", "16", "19"], "iterations": 1, "customOrder": true}'
+            - wait_template: >-
+                {{
+                    is_state('vacuum.valetudo_rockrobo', 'cleaning')
+                  }}
+            - wait_template: >-
+                {{
+                    is_state('vacuum.valetudo_rockrobo', 'docked')
+                  }}
+            - action: counter.increment
+              data:
+                entity_id: counter.clean_counter
+            - action: script.all_notify
+              data:
+                icon_notify: robot-vacuum
+                tit: clean
+                msg: end
+            - condition: and
+              conditions:
+                - condition: state
+                  entity_id: device_tracker.root
+                  state: not_home
+            - action: scene.turn_on
+              data:
+                entity_id: scene.cleaning_vaccum
+        default:
+          - action: script.all_notify
+            data:
+              icon_notify: door-closed
+              tit: wash door
+              msg: closed
+
+  kitchen_clean:
+      mode: restart
+      sequence:
+        - choose:
+          - conditions:
+            - condition: state
+              entity_id: binary_sensor.wash_door
+              state: 'on'
+            sequence:
+              - action: mqtt.publish
+                data:
+                  topic: valetudo/rockrobo/ZoneCleaningCapability/start/set
+                  payload: >-
+                    {
+                      "action": "clean",
+                      "zones": [
+                        {
+                          "points": {
+                            "pA": {
+                              "x": 2525,
+                              "y": 2315
+                            },
+                            "pB": {
+                              "x": 2685,
+                              "y": 2315
+                            },
+                            "pC": {
+                              "x": 2685,
+                              "y": 2470
+                            },
+                            "pD": {
+                              "x": 2525,
+                              "y": 2470
+                            }
+                          }
+                        }
+                      ],
+                      "iterations": 1
+                    }
+          default:
+            - action: script.all_notify
+              data:
+                icon_notify: door-closed
+                tit: wash door
+                msg: closed
+
+  table_clean:
+      mode: restart
+      sequence:
+        - choose:
+          - conditions:
+            - condition: state
+              entity_id: binary_sensor.wash_door
+              state: 'on'
+            sequence:
+              - action: mqtt.publish
+                data:
+                  topic: valetudo/rockrobo/ZoneCleaningCapability/start/set
+                  payload: >-
+                    {
+                      "action": "clean",
+                      "zones": [
+                        {
+                          "points": {
+                            "pA": {
+                              "x": 3030,
+                              "y": 2385
+                            },
+                            "pB": {
+                              "x": 3255,
+                              "y": 2385
+                            },
+                            "pC": {
+                              "x": 3255,
+                              "y": 2505
+                            },
+                            "pD": {
+                              "x": 3030,
+                              "y": 2505
+                            }
+                          }
+                        }
+                      ],
+                      "iterations": 1
+                    }
+
+          default:
+            - action: script.all_notify
+              data:
+                icon_notify: door-closed
+                tit: wash door
+                msg: closed
+
+  table_kitchen_clean:
+      mode: restart
+      sequence:
+        - choose:
+          - conditions:
+            - condition: state
+              entity_id: binary_sensor.wash_door
+              state: 'on'
+            sequence:
+              - action: mqtt.publish
+                data:
+                  topic: valetudo/rockrobo/ZoneCleaningCapability/start/set
+                  payload: >-
+                    {
+                      "action": "clean",
+                      "zones": [
+                        {
+                          "points": {
+                            "pA": {
+                              "x": 3030,
+                              "y": 2385
+                            },
+                            "pB": {
+                              "x": 3255,
+                              "y": 2385
+                            },
+                            "pC": {
+                              "x": 3255,
+                              "y": 2505
+                            },
+                            "pD": {
+                              "x": 3030,
+                              "y": 2505
+                            }
+                          }
+                        },
+                        {
+                          "points": {
+                            "pA": {
+                              "x": 2525,
+                              "y": 2315
+                            },
+                            "pB": {
+                              "x": 2685,
+                              "y": 2315
+                            },
+                            "pC": {
+                              "x": 2685,
+                              "y": 2470
+                            },
+                            "pD": {
+                              "x": 2525,
+                              "y": 2470
+                            }
+                          }
+                        }
+                      ],
+                      "iterations": 1
+                    }
+          default:
+            - action: script.all_notify
+              data:
+                icon_notify: door-closed
+                tit: wash door
+                msg: closed
+
+  roborock_reboot:
+    alias: reboot
+    icon: mdi:restart-alert
+    sequence:
+      - action: shell_command.roborock_reboot
+
+shell_command:
+  roborock_reboot: /config/cmds/roborock_cmd "nohup bash -c 'sleep 5; /sbin/reboot' > /dev/null&"

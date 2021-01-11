@@ -1,0 +1,617 @@
+homeassistant:
+  customize:
+    light.bath:
+      icon: mdi:wall-sconce-flat
+    automation.bath_light:
+      icon: mdi:lightbulb-auto
+      friendly_name: bath
+    automation.bath_fan:
+      icon: mdi:fan-auto
+      friendly_name: bath
+    automation.bath_heating:
+      icon: mdi:radiator
+      friendly_name: bath
+    automation.in_shower:
+      icon: mdi:shower-head
+      friendly_name: shower
+    binary_sensor.bath_motion:
+      friendly_name: bath
+    binary_sensor.showering:
+      friendly_name: shower
+    binary_sensor.bath_fan:
+      friendly_name: fan
+    sensor.bath_hum_change:
+      friendly_name: hum change
+      icon: mdi:chart-line-variant
+
+sensor:
+  - platform: statistics
+    name: bath hum change
+    entity_id: sensor.hum_diff
+    state_characteristic: change
+    sampling_size: 60
+    max_age:
+      minutes: 60
+
+template:
+  - sensor:
+    - name: hum_diff
+      state: >-
+        {{
+            (
+              float(states('sensor.bath_hum'), 0) -
+                float(states('sensor.hall_hum'), 0)
+              ) | round(1)
+          }}
+      icon: >-
+        {%- if float(states('sensor.bath_hum_change'), 0) > 5.0 -%}
+          mdi:trending-up
+        {%- elif float(states('sensor.bath_hum_change'), 0) < -5.0 -%}
+          mdi:trending-down
+        {%- else -%}
+          mdi:trending-neutral
+        {%- endif -%}
+      unit_of_measurement: '%'
+      availability: >-
+        {{
+            not (
+              states('sensor.bath_hum') in ['unknown', 'unavailable'] or
+                states('sensor.hall_hum') in ['unknown', 'unavailable']
+              )
+          }}
+
+  - binary_sensor:
+    - name: bath_fan
+      state: >-
+        {{
+            (is_state('binary_sensor.bath_fan', 'on') and
+              int(states('counter.bath_motion'), 0) > 0) or
+              int(states('counter.bath_motion'), 0) > 4
+          }}
+      icon: >-
+        {%- if int(states('counter.bath_motion'), 0) > 5 -%}
+          mdi:fan-chevron-up
+        {%- elif int(states('counter.bath_motion'), 0) > 4 -%}
+          mdi:fan
+        {%- else -%}
+          mdi:fan-off
+        {%- endif -%}
+      delay_off:
+        seconds: 30
+
+  - trigger:
+    - trigger: state
+      entity_id:
+        - sensor.bath_hum_change
+    binary_sensor:
+      - name: showering
+        icon: mdi:shower-head
+        auto_off:
+          minutes: 30
+        delay_off:
+          seconds: 30
+        device_class: moisture
+        # state: >-
+        #   {{
+        #       float(states('sensor.bath_hum_change'), 0) > 4.0 or
+        #         (
+        #             float(states('sensor.bath_hum_change'), 0) > 1.5 and
+        #               is_state('binary_sensor.showering', 'on')
+        #           )
+        #     }}
+        state: >-
+          {{
+              float(states('sensor.bath_hum_change'), 0) > 5.5 or
+                (
+                    float(states('sensor.bath_hum_change'), 0) > 2.5 and
+                      is_state('binary_sensor.showering', 'on')
+                  )
+            }}
+        availability: >-
+          {{
+              not (
+                states('sensor.bath_hum_change') in ['unknown', 'unavailable']
+                )
+            }}
+
+  - trigger:
+    - trigger: state
+      entity_id:
+        - binary_sensor.bath_motion_1
+        - binary_sensor.bath_motion_2
+    binary_sensor:
+      - name: bath_motion
+        state: >-
+          {{
+              is_state('binary_sensor.bath_motion_1', 'on') or
+                is_state('binary_sensor.bath_motion_2', 'on')
+            }}
+        device_class: motion
+        attributes:
+          triggers: >-
+            {{ trigger.to_state.name }}
+
+  - trigger:
+    - trigger: state
+      entity_id:
+        - binary_sensor.bath_occupancy_1
+        - binary_sensor.bath_occupancy_2
+    binary_sensor:
+      - name: bath_occupancy
+        state: >-
+          {{
+              is_state('binary_sensor.bath_occupancy_1', 'on') or
+                is_state('binary_sensor.bath_occupancy_2', 'on')
+            }}
+        device_class: occupancy
+
+automation:
+  - id: bath_heating
+    alias: bath_heating
+    triggers:
+      - trigger: state
+        entity_id: switch.climate_control
+        for:
+          minutes: 3
+        id: on_off
+      - trigger: state
+        entity_id: input_boolean.in_bed_dummy_switch
+        to: 'on'
+        for:
+          minutes: 3
+        id: bed_off
+      - trigger: time
+        at: '06:30:00'
+        id: time_on
+      - trigger: time
+        at: '00:15:00'
+        id: time_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - time_on
+          - condition: state
+            entity_id: device_tracker.root
+            state: home
+          - condition: state
+            entity_id: climate.bath_tvr
+            state:
+              - heat
+          sequence:
+            - action: climate.set_hvac_mode
+              data:
+                entity_id: climate.bath_tvr
+                hvac_mode: heat
+            - delay:
+                seconds: 3
+            - action: climate.set_preset_mode
+              data:
+                entity_id: climate.bath_tvr
+                preset_mode: manual
+            - delay:
+                seconds: 3
+            - action: climate.set_temperature
+              data:
+                entity_id: climate.bath_tvr
+                temperature: 22.5
+            - delay:
+                seconds: 3
+            - action: switch.turn_on
+              data:
+                entity_id: switch.bath_tvr_boost
+
+        - conditions:
+          - condition: trigger
+            id:
+              - time_off
+              - bed_off
+          - condition: state
+            entity_id: climate.bath_tvr
+            state:
+              - heat
+          sequence:
+            - action: climate.set_temperature
+              data:
+                entity_id: climate.bath_tvr
+                temperature: 19.5
+
+        - conditions:
+          - condition: trigger
+            id:
+              - on_off
+          - condition: state
+            entity_id: switch.climate_control
+            state: 'on'
+          - condition: state
+            entity_id: select.operation_mode
+            state: heating
+          - condition: state
+            entity_id: climate.bath_tvr
+            state:
+              - 'off'
+          sequence:
+            - action: climate.set_hvac_mode
+              data:
+                entity_id: climate.bath_tvr
+                hvac_mode: heat
+            - delay:
+                seconds: 3
+            - action: climate.set_preset_mode
+              data:
+                entity_id: climate.bath_tvr
+                preset_mode: manual
+            - delay:
+                seconds: 3
+            - action: climate.set_temperature
+              data:
+                entity_id: climate.bath_tvr
+                temperature: 20.5
+
+        - conditions:
+          - condition: trigger
+            id:
+              - on_off
+          - condition: or
+            conditions:
+              - condition: and
+                conditions:
+                  - condition: state
+                    entity_id: switch.climate_control
+                    state: 'off'
+                  - condition: state
+                    entity_id: select.operation_mode
+                    state: heating
+              - condition: and
+                conditions:
+                  - condition: state
+                    entity_id: switch.climate_control
+                    state: 'on'
+                  - condition: state
+                    entity_id: select.operation_mode
+                    state: cooling
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: climate.bath_tvr
+                state:
+                  - heat
+              - condition: numeric_state
+                entity_id: climate.bath_tvr
+                attribute: temperature
+                above: 10.5
+          sequence:
+            - action: climate.set_hvac_mode
+              data:
+                entity_id: climate.bath_tvr
+                hvac_mode: heat
+            - delay:
+                seconds: 3
+            - action: climate.set_preset_mode
+              data:
+                entity_id: climate.bath_tvr
+                preset_mode: manual
+            - delay:
+                seconds: 3
+            - action: climate.set_temperature
+              data:
+                entity_id: climate.bath_tvr
+                temperature: 10.5
+            - delay:
+                seconds: 3
+            - action: climate.set_hvac_mode
+              data:
+                entity_id: climate.bath_tvr
+                hvac_mode: 'off'
+
+        default:
+          - action: logbook.log
+            data:
+              name: bath_heating
+            data_template:
+              message: >-
+                check automation using default - Id: {{trigger.id}} Idx: {{ trigger.idx }}
+
+  - id: bath_light
+    alias: bath_light
+    initial_state: false
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.bath_motion
+        to: 'on'
+        id: light_on
+      - trigger: state
+        entity_id: binary_sensor.bath_occupancy
+        to: 'off'
+        for:
+          seconds: >-
+            {%- if int(states('counter.bath_motion'), 30) > 14 -%}
+              120
+            {%- elif int(states('counter.bath_motion'), 30) > 10 -%}
+              90
+            {%- elif int(states('counter.bath_motion'), 30) > 6 -%}
+              60
+            {%- elif int(states('counter.bath_motion'), 30) > 3 -%}
+              45
+            {%- else -%}
+              30
+            {%- endif -%}
+        id: light_off
+      - trigger: state
+        entity_id: binary_sensor.bed_motion
+        to: 'on'
+        id: light_off
+      - trigger: state
+        entity_id: binary_sensor.living_motion
+        to: 'on'
+        id: light_off
+      - trigger: event
+        event_type: lights_check
+        event_data:
+          light: turn_off
+        id: light_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: light.bath
+            state: 'off'
+          sequence:
+            - action: script.lights_on
+              data:
+                ctrl_light: light.bath
+                ctrl_all: >-
+                  {{ is_state('binary_sensor.night_mode', 'off') }}
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+          - condition: state
+            entity_id: light.bath
+            state: 'on'
+          - condition: state
+            entity_id: binary_sensor.bath_occupancy
+            state: 'off'
+          sequence:
+            - action: script.lights_off
+              data:
+                ctrl_light: light.bath
+
+  - id: bath_fan
+    alias: bath_fan
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.bath_fan
+        to: 'on'
+        id: fan_on
+      - trigger: state
+        entity_id: binary_sensor.bath_fan
+        to: 'off'
+        id: fan_off
+      - trigger: state
+        entity_id: binary_sensor.showering
+        id: shower
+        to:
+      - trigger: state
+        entity_id: input_boolean.fan_bath_time
+        to: 'on'
+        id: manual_on
+      - trigger: state
+        entity_id: input_boolean.fan_bath_time
+        to: 'on'
+        for:
+          minutes: >-
+            {{
+                int(states('input_number.fan_bath_time'), 1)
+              }}
+        id: manual_off
+      - trigger: event
+        event_type: up_down_my
+        event_data:
+          data: start
+        id: manual_off
+      - trigger: state
+        entity_id: binary_sensor.bath_motion
+        to: 'on'
+        id: motion
+      - trigger: state
+        entity_id: binary_sensor.bath_occupancy
+        to: 'off'
+        for:
+          seconds: >-
+            {%- if int(states('counter.bath_motion'), 30) > 12 -%}
+              90
+            {%- elif int(states('counter.bath_motion'), 30) > 8 -%}
+              70
+            {%- elif int(states('counter.bath_motion'), 30) > 4 -%}
+              50
+            {%- else -%}
+              30
+            {%- endif -%}
+        id: no_motion
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: or
+            conditions:
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id:
+                      - shower
+                  - condition: state
+                    entity_id: binary_sensor.showering
+                    state: 'on'
+              - condition: trigger
+                id:
+                  - fan_on
+                  - manual_on
+          - condition: state
+            entity_id: switch.bath_fan
+            state: 'off'
+          sequence:
+            - action: switch.turn_on
+              data:
+                entity_id:
+                  - switch.bath_fan
+
+        - conditions:
+          - condition: trigger
+            id:
+              - shower
+              - manual_off
+              - fan_off
+          - condition: or
+            conditions:
+              - condition: trigger
+                id:
+                  - manual_off
+              - condition: state
+                entity_id: input_boolean.fan_bath_time
+                state: 'off'
+          - condition: state
+            entity_id: binary_sensor.bath_fan
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.showering
+            state: 'off'
+          - condition: state
+            entity_id: switch.bath_fan
+            state: 'on'
+          sequence:
+            - action: switch.turn_off
+              data:
+                entity_id:
+                  - switch.bath_fan
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - shower
+              - manual_off
+          - condition: state
+            entity_id: input_boolean.fan_bath_time
+            state: 'on'
+          sequence:
+            - action: input_boolean.turn_off
+              data:
+                entity_id:
+                  - input_boolean.fan_bath_time
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - motion
+          sequence:
+            - action: counter.increment
+              data:
+                entity_id:
+                  - counter.bath_motion
+
+        - conditions:
+          - condition: trigger
+            id:
+              - no_motion
+          sequence:
+            - action: counter.reset
+              data:
+                entity_id:
+                  - counter.bath_motion
+
+  - id: in_shower
+    alias: in_shower
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.bath_motion_1
+        to: 'on'
+        id: resume
+      - trigger: state
+        entity_id: binary_sensor.bath_motion_2
+        to: 'on'
+        id: pause
+
+    conditions:
+      - condition: state
+        entity_id: binary_sensor.showering
+        state: 'on'
+
+    mode: single
+    max_exceeded: silent
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - pause
+          - condition: state
+            entity_id:
+              - automation.water_city_1
+              - automation.bath_light
+            state: 'on'
+          sequence:
+            - action: automation.turn_off
+              data:
+                entity_id:
+                  - automation.water_city_1
+                  - automation.bath_light
+
+        - conditions:
+          - condition: trigger
+            id:
+              - resume
+          - condition: state
+            entity_id:
+              - automation.water_city_1
+              - automation.bath_light
+            state: 'off'
+          sequence:
+            - action: automation.turn_on
+              data:
+                entity_id:
+                  - automation.water_city_1
+                  - automation.bath_light
+
+light:
+  - platform: group
+    name: bath
+    entities:
+      - light.bath_1
+      - light.bath_2
+      - light.bath_mirror
+
+input_boolean:
+  fan_bath_time:
+     initial: false
+     icon: mdi:fan-plus
+     name: bath
+  water_manual_ctrl:
+     initial: false
+     icon: mdi:hand-water
+     name: force
+
+input_number:
+  fan_bath_time:
+    name: bath time
+    icon: mdi:timer-outline
+    min: 2
+    max: 20
+    step: 2
+
+counter:
+  bath_motion:
+    name: motion
+    icon: mdi:motion-sensor
+    restore: false

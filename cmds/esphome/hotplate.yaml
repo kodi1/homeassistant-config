@@ -1,0 +1,217 @@
+substitutions:
+  gpio_out: GPIO17
+  gpio_cs: GPIO16
+  gpio_do: GPIO15
+  gpio_di: GPIO7
+  gpio_clk: GPIO6
+
+  # Screen Size
+  screen_height: 272px
+  screen_width: 480px
+  byte_order: big_endian
+
+  min_temp: '40'
+  max_temp: '220'
+  max_power: '400'
+
+  font_larger: nunito_36
+  font_large: nunito_24
+  font_middle: nunito_20
+  font_small: nunito_18
+  font_smaller: nunito_14
+
+esphome:
+  name: hotplate
+  comment: "hotplate Guition jc4827w543C 272px X 480px Smart Screen"
+  platformio_options:
+    build_flags:
+       - -D LV_USE_CHART=1
+  includes:
+    - <sstream>
+    - <iomanip>
+    - <lvgl.h>
+    - <limits.h>
+    - <stdint.h>
+    - "hotplate/hotplate.h"
+
+  on_boot:
+    - priority: 300
+      then:
+        <<: !include hotplate/fuzzy_setup.yaml
+    - priority: 0
+      then:
+        - lvgl.page.show: boot
+        - lambda: |-
+            init_chart(temp_chart);
+        - delay: 3s
+        - light.turn_on:
+            id: display_backlight
+            brightness: 50%
+
+external_components:
+  - source: github://kodi1/esphome_fuzzy
+    components: [fuzzy_logic]
+
+logger:
+  level: VERBOSE
+  initial_level: WARN
+  logs:
+    hotplate: DEBUG
+    fuzzy_logic: DEBUG
+    fuzzy: DEBUG
+
+globals:
+  - id: max_power
+    type: float
+    initial_value: $max_power
+    restore_value: false
+  - id: last_temp_value
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+  - id: predicted_err_value
+    type: float
+    restore_value: false
+    initial_value: '0.0'
+
+fuzzy_logic:
+  id: fuzzy_controller
+
+number:
+  - platform: template
+    id: temp_delay
+    optimistic: true
+    min_value: 1
+    max_value: 60
+    step: 1
+    initial_value: 10
+    restore_value: false
+
+  - platform: template
+    id: temp_target
+    optimistic: true
+    min_value: 30
+    max_value: 220
+    step: 1
+    initial_value: 10
+    restore_value: false
+
+time:
+  - platform: sntp
+
+interval:
+  - interval: 1s
+    then:
+      <<: !include hotplate/ui_update.yaml
+
+spi:
+  - id: sens
+    clk_pin: $gpio_clk
+    mosi_pin: $gpio_do
+    miso_pin: $gpio_di
+    interface: any
+
+output:
+  - platform: sigma_delta_output
+    update_interval: 200ms
+    id: sd_heater_output
+    pin: $gpio_out
+    min_power: 0
+    max_power: 0.01
+
+  - platform: template
+    id: heater_output
+    type: float
+    write_action:
+      - lambda: |-
+          if (id(manual_override).state) {
+            float power = id(test_power).state;
+            id(sd_heater_output).set_level(power);
+          } else {
+              if (id(enable_fuzzy_control).state) {
+                id(sd_heater_output).set_level(state);
+              } else {
+                id(sd_heater_output).set_level(0.0);
+              }
+          }
+
+switch:
+  - platform: shutdown
+    id: esphome_shutdown
+
+  - platform: restart
+    id: esphome_restart
+
+  - platform: template
+    id: enable_fuzzy_control
+    turn_on_action:
+      - lambda: |-
+          float temp = id(temp_target).state;
+          float power_max;
+
+          if (temp <= 40.0) {
+            power_max = 0.17;
+          } else if (temp <= 100.0) {
+            power_max = 0.17 + (temp - 40.0) * (0.35 - 0.17) / (100.0 - 40.0);
+          } else if (temp <= 125.0) {
+            power_max = .35 + (temp - 100.0) * (0.37 - 0.35) / (125.0 - 100.0);
+          } else if (temp <= 150.0) {
+            power_max = .37 + (temp - 125.0) * (0.40 - 0.37) / (150.0 - 125.0);
+          } else if (temp <= 175.0) {
+            power_max = 0.40 + (temp - 150.0) * (0.50- 0.40) / (175.0 - 150.0);
+          } else {
+            power_max = 0.50;
+          }
+
+          id(sd_heater_output).set_max_power(power_max);
+ 
+          ESP_LOGD("hotplate", "Fuzzy On max power %0.3f", power_max);
+      - switch.template.publish:
+          id: enable_fuzzy_control
+          state: ON
+    turn_off_action:
+      - lambda: |-
+          float power_max = 0.01;
+          id(sd_heater_output).set_max_power(power_max);
+          ESP_LOGD("hotplate", "Fuzzy Off max power %0.3f", power_max);
+      - switch.template.publish:
+          id: enable_fuzzy_control
+          state: OFF
+    restore_mode: ALWAYS_OFF
+
+packages:
+  hardware: !include hotplate/guition-esp32-jc4827w543.yaml
+  wifi: !include common/wifi.yaml
+  fonts: !include common/fonts.yaml
+  ota: !include hotplate/ota.yaml
+  colors: !include hotplate/color.yaml
+  sensors: !include hotplate/sensors.yaml
+  debug: !include hotplate/debug.yaml
+  # climate: !include hotplate/climate.yaml
+
+image:
+  rgb565:
+    alpha_channel:
+      - file: common/esphome.png
+        id: esphome_img
+        resize: 290x86
+
+lvgl:
+  pages:
+    # Retain the boot page (with the image)
+    - id: boot
+      bg_color: black
+      bg_opa: cover
+      <<: !include hotplate/boot_screen.yaml
+
+    # Main Control Page
+    - id: work
+      bg_color: black
+      bg_opa: cover
+      <<: !include hotplate/main_screen.yaml
+
+    # Util Page
+    - id: util
+      bg_color: black
+      bg_opa: cover
+      <<: !include hotplate/util_screen.yaml

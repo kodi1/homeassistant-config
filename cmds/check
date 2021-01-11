@@ -1,0 +1,44 @@
+import sys
+import requests
+import json as j
+from datetime import datetime
+import urllib3
+
+headers = {
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36'
+}
+
+
+base = 'https://e-uslugi.mvr.bg'
+
+def check(ident, licence):
+    urllib3.disable_warnings()
+    s = requests.Session()
+    s.verify = False
+    req = requests.Request('GET', base, headers=headers)
+    r = s.send(req.prepare())
+    data = {
+        'mode': 1,
+        'obligatedPersonType': 1,
+        'additinalDataForObligatedPersonType': 1,
+        'obligedPersonIdent': ident,
+        'drivingLicenceNumber': licence,
+    }
+    req = requests.Request('GET', '%s/api/Obligations/AND' % base, params=data, headers=headers)
+    r = s.send(req.prepare())
+    d = j.loads(r.text)
+    s.close()
+
+    r = {
+        'nr': len(d['obligationsData'][0]['obligations']) + len(d['obligationsData'][1]['obligations']),
+        'last_update': datetime.now().isoformat(),
+        'group1': d['obligationsData'][0]['obligations'],
+        'group2': d['obligationsData'][1]['obligations'],
+    }
+    print(j.dumps(r))
+
+if '__main__' == __name__:
+  if len(sys.argv) != 3:
+    print ('Usage %s <ident> <licence> ' % sys.argv[0])
+    sys.exit(1)
+  check(sys.argv[1], sys.argv[2])

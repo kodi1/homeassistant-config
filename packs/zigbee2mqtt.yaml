@@ -1,0 +1,3143 @@
+homeassistant:
+  customize:
+    binary_sensor.shutters_vibration:
+      friendly_name: shutters
+    binary_sensor.wind_vibration:
+      friendly_name: wind
+    binary_sensor.wash_door:
+      friendly_name: wash
+    light.kitchen_led:
+      friendly_name: kitchen
+    switch.water_valve:
+      friendly_name: water
+    switch.wash_fan:
+      friendly_name: wash
+    switch.bath_fan:
+      friendly_name: bath
+    switch.living_tv:
+      friendly_name: av_switch
+    switch.bed_switch_1:
+      friendly_name: speaker
+    switch.bed_switch_2:
+      friendly_name: charger
+    binary_sensor.door:
+      friendly_name: door
+    light.office_wardrobe:
+      friendly_name: office
+    light.bed_wardrobe:
+      friendly_name: bed
+    sensor.living_window_lux:
+      friendly_name: light out
+    binary_sensor.living_sofa_vibration:
+      friendly_name: sofa
+    binary_sensor.zigbee_bridge:
+      friendly_name: zigbee
+    binary_sensor.office_motion:
+      friendly_name: office
+    automation.zigbee2mqtt_start:
+      friendly_name: zigbee
+      icon: mdi:refresh-circle
+    binary_sensor.bed_in:
+      friendly_name: bed
+    sensor.temp_out:
+      friendly_name: temp out
+    sensor.hum_out:
+      friendly_name: hum out
+
+template:
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/bridge/state
+    binary_sensor:
+      - name: zigbee_bridge
+        device_class: connectivity
+        state: >-
+          {{
+              trigger.payload_json.state == 'online'
+            }}
+        icon: >-
+          {{
+              'mdi:access-point-network'
+            }}
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/bed-in
+
+    binary_sensor:
+      - name: bed_in
+        device_class: occupancy
+        delay_off:
+            seconds: 60
+        state: >-
+          {{
+              trigger.payload_json.contact
+            }}
+        icon: >-
+          {{
+              'mdi:bed-king'
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+    sensor:
+      - name: bed_in_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/bed-motion
+
+    binary_sensor:
+      - name: bed_motion
+        device_class: motion
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+      - name: bed_occupancy
+        device_class: occupancy
+        delay_off:
+          seconds: 35
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+    sensor:
+      - name: bed_motion_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/living-motion
+
+    binary_sensor:
+      - name: living_motion
+        device_class: motion
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+      - name: living_occupancy
+        device_class: occupancy
+        delay_off:
+          seconds: 35
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+    sensor:
+      - name: living_lux
+        device_class: illuminance
+        state: >-
+          {{
+              trigger.payload_json.illuminance
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+      - name: living_motion_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/office-motion
+
+    binary_sensor:
+      - name: office_motion
+        device_class: motion
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+      - name: office_occupancy
+        device_class: occupancy
+        delay_off:
+          seconds: 35
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+    sensor:
+      - name: office_lux
+        device_class: illuminance
+        state: >-
+          {{
+              trigger.payload_json.illuminance
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+      - name: office_motion_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/bath-temp
+
+    sensor:
+      - name: bath_temp
+        device_class: temperature
+        state: >-
+          {{
+              trigger.payload_json.temperature
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: °C
+      - name: bath_hum
+        device_class: humidity
+        state: >-
+          {{
+              trigger.payload_json.humidity
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+      - name: bath_temp_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/office-temp
+
+    sensor:
+      - name: office_temp
+        device_class: temperature
+        state: >-
+          {{
+              trigger.payload_json.temperature
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: °C
+      - name: office_hum
+        device_class: humidity
+        state: >-
+          {{
+              trigger.payload_json.humidity
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+      - name: office_temp_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/hall-temp
+
+    sensor:
+      - name: hall_temp
+        device_class: temperature
+        state: >-
+          {{
+              trigger.payload_json.temperature
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: °C
+      - name: hall_hum
+        device_class: humidity
+        state: >-
+          {{
+              trigger.payload_json.humidity
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+      - name: hall_temp_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/bed-temp
+
+    sensor:
+      - name: bed_temp
+        device_class: temperature
+        state: >-
+          {{
+              trigger.payload_json.temperature
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: °C
+      - name: bed_hum
+        device_class: humidity
+        state: >-
+          {{
+              trigger.payload_json.humidity
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+      - name: bed_temp_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/wash-temp
+
+    sensor:
+      - name: wash_temp
+        device_class: temperature
+        state: >-
+          {{
+              trigger.payload_json.temperature
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: °C
+      - name: wash_hum
+        device_class: humidity
+        state: >-
+          {{
+              trigger.payload_json.humidity
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+      - name: wash_temp_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/bath-motion-1
+
+    binary_sensor:
+      - name: bath_motion_1
+        device_class: motion
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+      - name: bath_occupancy_1
+        device_class: occupancy
+        delay_off:
+          seconds: 35
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+    sensor:
+      - name: bath_motion_1_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/bath-motion-2
+
+    binary_sensor:
+      - name: bath_motion_2
+        device_class: motion
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+      - name: bath_occupancy_2
+        device_class: occupancy
+        delay_off:
+          seconds: 35
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+    sensor:
+      - name: bath_motion_2_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/kitchen-motion
+
+    binary_sensor:
+      - name: kitchen_motion
+        device_class: motion
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+      - name: kitchen_occupancy
+        device_class: occupancy
+        delay_off:
+          seconds: 35
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+    sensor:
+      - name: kitchen_motion_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/hall-motion
+
+    binary_sensor:
+      - name: hall_motion
+        device_class: motion
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+      - name: hall_occupancy
+        device_class: occupancy
+        delay_off:
+          seconds: 35
+        state: >-
+          {{
+              trigger.payload_json.occupancy
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+    sensor:
+      - name: hall_motion_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/living-window-lux
+
+    sensor:
+      - name: living_window_lux
+        device_class: illuminance
+        state: >-
+          {{
+              trigger.payload_json.illuminance
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+      - name: living_window_lux_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/shutter-vibration
+
+    binary_sensor:
+      - name: shutters_vibration
+        device_class: vibration
+        delay_on:
+          milliseconds: 100
+        delay_off:
+          milliseconds: 100
+        icon: >-
+          {{
+              'mdi:window-shutter-alert'
+            }}
+        state: >-
+          {{
+              trigger.payload_json.vibration and
+                is_state("binary_sensor.shutter_move", 'off')
+            }}
+        attributes:
+          last_update: >-
+            {{
+                now().isoformat()
+              }}
+          speed: >-
+            {%- if trigger.payload_json.vibration -%}
+              {{
+                  float(states('sensor.local_wind_speed'), 0)
+                }}
+            {%- else -%}
+              {{
+                  float(state_attr('binary_sensor.shutters_vibration', 'speed'), 0)
+                }}
+            {%- endif -%}
+          forecast_speed: >-
+            {%- if trigger.payload_json.vibration -%}
+              {{
+                  float(states('sensor.local_forecast_wind_speed'), 0)
+                }}
+            {%- else -%}
+              {{
+                  float(state_attr('binary_sensor.shutters_vibration', 'forecast_speed'), 0)
+                }}
+            {%- endif -%}
+          strength: >-
+            {%- if trigger.payload_json.strength -%}
+              {{
+                  float(trigger.payload_json.strength, 0)
+                }}
+            {%- else -%}
+              {{
+                  float(state_attr('binary_sensor.shutters_vibration', 'strength'), 0)
+                }}
+            {%- endif -%}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+    sensor:
+      - name: shutter_vibration_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/wind-vibration
+
+    binary_sensor:
+      - name: wind_vibration
+        device_class: vibration
+        icon: >-
+          {{
+              'mdi:heat-pump-outline'
+            }}
+        state: >-
+          {{
+              trigger.payload_json.vibration
+            }}
+        attributes:
+          last_update: >-
+            {{
+                now().isoformat()
+              }}
+          speed: >-
+            {%- if trigger.payload_json.vibration -%}
+              {{
+                  float(states('sensor.local_wind_speed'), 0)
+                }}
+            {%- else -%}
+              {{
+                  float(state_attr('binary_sensor.wind_vibration', 'speed'), 0)
+                }}
+            {%- endif -%}
+          forecast_speed: >-
+            {%- if trigger.payload_json.vibration -%}
+              {{
+                  float(states('sensor.local_forecast_wind_speed'), 0)
+                }}
+            {%- else -%}
+              {{
+                  float(state_attr('binary_sensor.wind_vibration', 'forecast_speed'), 0)
+                }}
+            {%- endif -%}
+          strength: >-
+            {%- if trigger.payload_json.strength -%}
+              {{
+                  float(trigger.payload_json.strength, 0)
+                }}
+            {%- else -%}
+              {{
+                  float(state_attr('binary_sensor.wind_vibration', 'strength'), 0)
+                }}
+            {%- endif -%}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+    sensor:
+      - name: wind_vibration_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/living-sofa-vibration
+
+    binary_sensor:
+      - name: living_sofa_vibration
+        device_class: occupancy
+        delay_on:
+          seconds: 1
+        delay_off:
+          seconds: 15
+        state: >-
+          {{
+              trigger.payload_json.vibration
+            }}
+        icon: >-
+          {{
+              'mdi:sofa'
+            }}
+        attributes:
+          last_update: >-
+            {{
+                now().isoformat()
+              }}
+          strength: >-
+            {%- if trigger.payload_json.vibration -%}
+              {{
+                  float(trigger.payload_json.vibration, 0)
+                }}
+            {%- else -%}
+              {{
+                  float(state_attr('binary_sensor.living_sofa_vibration', 'strength'), 0)
+                }}
+            {%- endif -%}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+    sensor:
+      - name: living_sofa_vibration_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/door
+
+    binary_sensor:
+      - name: door
+        device_class: door
+        delay_off:
+          seconds: 10
+        state: >-
+          {{
+              not trigger.payload_json.contact
+            }}
+        icon: >-
+          {{
+              'mdi:door'
+            }}
+        attributes:
+          last_update: >-
+            {{
+                now().isoformat()
+              }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+    sensor:
+      - name: door_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/wash-door
+
+    binary_sensor:
+      - name: wash_door
+        device_class: door
+        delay_off:
+          seconds: 10
+        state: >-
+          {{
+              trigger.payload_json.contact
+            }}
+        attributes:
+          last_update: >-
+            {{
+                now().isoformat()
+              }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+
+    sensor:
+      - name: wash_door_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        icon: >-
+          {{
+              'mdi:door-open'
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/living-cube
+
+    sensor:
+      - name: living_cube_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        attributes:
+          last_update: >-
+            {{
+                now().isoformat()
+              }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/kitchen-button
+
+    sensor:
+      - name: kitchen_button_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        attributes:
+          last_update: >-
+            {{
+                now().isoformat()
+              }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/office-button
+
+    sensor:
+      - name: office_button_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        attributes:
+          last_update: >-
+            {{
+                now().isoformat()
+              }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/bed-button
+
+    sensor:
+      - name: bed_button_batt
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        attributes:
+          last_update: >-
+            {{
+                now().isoformat()
+              }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/bath-tvr
+
+    sensor:
+      - name: bath_tvr_batt
+        device_class: battery
+        state: >-
+          {%- if trigger.payload_json.battery_low -%}
+            5
+          {%- else -%}
+            95
+          {%- endif -%}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+
+  - trigger:
+    - trigger: mqtt
+      topic: zigbee2mqtt/out-temp
+
+    sensor:
+      - name: temp_out
+        device_class: temperature
+        state: >-
+          {{
+              trigger.payload_json.temperature
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: °C
+      - name: hum_out
+        device_class: humidity
+        state: >-
+          {{
+              trigger.payload_json.humidity
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        unit_of_measurement: '%'
+      - name: batt_out
+        device_class: battery
+        state: >-
+          {{
+              trigger.payload_json.battery
+            }}
+        availability: >-
+          {{
+              is_state( 'binary_sensor.zigbee_bridge', 'on' )
+            }}
+        attributes:
+          mV: >-
+            {{
+                trigger.payload_json.voltage
+              }}
+          linkquality: >-
+            {{
+                trigger.payload_json.linkquality
+              }}
+        unit_of_measurement: '%'
+
+mqtt:
+  light:
+    - name: bed_1
+      schema: template
+      command_topic: zigbee2mqtt/bed-light-1/set
+      state_topic: zigbee2mqtt/bed-light-1
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bed_2
+      schema: template
+      command_topic: zigbee2mqtt/bed-light-2/set
+      state_topic: zigbee2mqtt/bed-light-2
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bed_3
+      schema: template
+      command_topic: zigbee2mqtt/bed-light-3/set
+      state_topic: zigbee2mqtt/bed-light-3
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bed_4
+      schema: template
+      command_topic: zigbee2mqtt/bed-light-4/set
+      state_topic: zigbee2mqtt/bed-light-4
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bed_5
+      schema: template
+      command_topic: zigbee2mqtt/bed-light-5/set
+      state_topic: zigbee2mqtt/bed-light-5
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bed_6
+      schema: template
+      command_topic: zigbee2mqtt/bed-light-6/set
+      state_topic: zigbee2mqtt/bed-light-6
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bed_7
+      schema: template
+      command_topic: zigbee2mqtt/bed-light-7/set
+      state_topic: zigbee2mqtt/bed-light-7
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bed_8
+      schema: template
+      command_topic: zigbee2mqtt/bed-light-8/set
+      state_topic: zigbee2mqtt/bed-light-8
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: office_1
+      schema: template
+      command_topic: zigbee2mqtt/office-light-1/set
+      state_topic: zigbee2mqtt/office-light-1
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: office_2
+      schema: template
+      command_topic: zigbee2mqtt/office-light-2/set
+      state_topic: zigbee2mqtt/office-light-2
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: office_3
+      schema: template
+      command_topic: zigbee2mqtt/office-light-3/set
+      state_topic: zigbee2mqtt/office-light-3
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: office_4
+      schema: template
+      command_topic: zigbee2mqtt/office-light-4/set
+      state_topic: zigbee2mqtt/office-light-4
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: office_5
+      schema: template
+      command_topic: zigbee2mqtt/office-light-5/set
+      state_topic: zigbee2mqtt/office-light-5
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: office_6
+      schema: template
+      command_topic: zigbee2mqtt/office-light-6/set
+      state_topic: zigbee2mqtt/office-light-6
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: office_7
+      schema: template
+      command_topic: zigbee2mqtt/office-light-7/set
+      state_topic: zigbee2mqtt/office-light-7
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: office_8
+      schema: template
+      command_topic: zigbee2mqtt/office-light-8/set
+      state_topic: zigbee2mqtt/office-light-8
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: kitchen_1
+      schema: template
+      command_topic: zigbee2mqtt/kitchen-light-1/set
+      state_topic: zigbee2mqtt/kitchen-light-1
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: kitchen_2
+      schema: template
+      command_topic: zigbee2mqtt/kitchen-light-2/set
+      state_topic: zigbee2mqtt/kitchen-light-2
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: kitchen_3
+      schema: template
+      command_topic: zigbee2mqtt/kitchen-light-3/set
+      state_topic: zigbee2mqtt/kitchen-light-3
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: kitchen_4
+      schema: template
+      command_topic: zigbee2mqtt/kitchen-light-4/set
+      state_topic: zigbee2mqtt/kitchen-light-4
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: kitchen_5
+      schema: template
+      command_topic: zigbee2mqtt/kitchen-light-5/set
+      state_topic: zigbee2mqtt/kitchen-light-5
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: kitchen_6
+      schema: template
+      command_topic: zigbee2mqtt/kitchen-light-6/set
+      state_topic: zigbee2mqtt/kitchen-light-6
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: kitchen_7
+      schema: template
+      command_topic: zigbee2mqtt/kitchen-light-7/set
+      state_topic: zigbee2mqtt/kitchen-light-7
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: living_1
+      schema: template
+      command_topic: zigbee2mqtt/living-light-1/set
+      state_topic: zigbee2mqtt/living-light-1
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: living_2
+      schema: template
+      command_topic: zigbee2mqtt/living-light-2/set
+      state_topic: zigbee2mqtt/living-light-2
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: living_3
+      schema: template
+      command_topic: zigbee2mqtt/living-light-3/set
+      state_topic: zigbee2mqtt/living-light-3
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: living_4
+      schema: template
+      command_topic: zigbee2mqtt/living-light-4/set
+      state_topic: zigbee2mqtt/living-light-4
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: living_5
+      schema: template
+      command_topic: zigbee2mqtt/living-light-5/set
+      state_topic: zigbee2mqtt/living-light-5
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: living_6
+      schema: template
+      command_topic: zigbee2mqtt/living-light-6/set
+      state_topic: zigbee2mqtt/living-light-6
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: living_7
+      schema: template
+      command_topic: zigbee2mqtt/living-light-7/set
+      state_topic: zigbee2mqtt/living-light-7
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness }}
+          {%- endif -%}
+          {%- if color_temp is defined -%}
+          , "color_temp": "{{ color_temp }}"
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+          {%- if effect is defined -%}
+          , "effect": "{{ effect }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      color_temp_template: >-
+        {{
+            value_json.color_temp | int
+          }}
+      effect_list:
+        - blink
+        - breathe
+        - okay
+        - channel_change
+        - stop_effect
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: kitchen_led
+      icon: mdi:led-strip-variant
+      schema: template
+      command_topic: zigbee2mqtt/kitchen-led/set
+      state_topic: zigbee2mqtt/kitchen-led
+      max_mireds: 454
+      min_mireds: 250
+      command_on_template: >-
+        {"state": "on"
+          {%- if brightness is defined -%}
+          , "brightness": {{ brightness}}
+          {%- endif -%}
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      command_off_template: >-
+        {"state": "off"
+          {%- if transition is defined -%}
+          , "transition": "{{ transition }}"
+          {%- endif -%}
+        }
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      brightness_template: >-
+        {{
+            value_json.brightness | int
+          }}
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: hall_1
+      icon: mdi:led-strip-variant
+      schema: template
+      command_topic: zigbee2mqtt/hall-light/set
+      state_topic: zigbee2mqtt/hall-light
+      command_on_template: >-
+        {"state_l1": "on"}
+      command_off_template: >-
+        {"state_l1": "off"}
+      state_template: >-
+        {{
+            value_json.state_l1 | lower
+          }}
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: hall_2
+      icon: mdi:led-strip-variant
+      schema: template
+      command_topic: zigbee2mqtt/hall-light/set
+      state_topic: zigbee2mqtt/hall-light
+      command_on_template: >-
+        {"state_l2": "on"}
+      command_off_template: >-
+        {"state_l2": "off"}
+      state_template: >-
+        {{
+            value_json.state_l2 | lower
+          }}
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bath_1
+      icon: mdi:led-strip-variant
+      schema: template
+      command_topic: zigbee2mqtt/bath-light/set
+      state_topic: zigbee2mqtt/bath-light
+      command_on_template: >-
+        {"state_l1": "on"}
+      command_off_template: >-
+        {"state_l1": "off"}
+      state_template: >-
+        {{
+            value_json.state_l1 | lower
+          }}
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bath_2
+      icon: mdi:led-strip-variant
+      schema: template
+      command_topic: zigbee2mqtt/bath-light/set
+      state_topic: zigbee2mqtt/bath-light
+      command_on_template: >-
+        {"state_l2": "on"}
+      command_off_template: >-
+        {"state_l2": "off"}
+      state_template: >-
+        {{
+            value_json.state_l2 | lower
+          }}
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bath_mirror
+      icon: mdi:led-strip-variant
+      schema: template
+      command_topic: zigbee2mqtt/bath-mirror/set
+      state_topic: zigbee2mqtt/bath-mirror
+      command_on_template: >-
+        {"state_l1": "on"}
+      command_off_template: >-
+        {"state_l1": "off"}
+      state_template: >-
+        {{
+            value_json.state_l1 | lower
+          }}
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: wash_1
+      schema: template
+      command_topic: zigbee2mqtt/wash-switch/set
+      state_topic: zigbee2mqtt/wash-switch
+      command_on_template: >-
+        {"state_l2": "on"}
+      command_off_template: >-
+        {"state_l2": "off"}
+      state_template: >-
+        {{
+            value_json.state_l2 | lower
+          }}
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bath_mirror
+      icon: mdi:led-strip-variant
+      schema: template
+      command_topic: zigbee2mqtt/bath-mirror/set
+      state_topic: zigbee2mqtt/bath-mirror
+      command_on_template: >-
+        {"state_l1": "on"}
+      command_off_template: >-
+        {"state_l1": "off"}
+      state_template: >-
+        {{
+            value_json.state_l1 | lower
+          }}
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: office_wardrobe
+      schema: template
+      icon: mdi:wardrobe
+      command_topic: zigbee2mqtt/office-wardrobe/set
+      state_topic: zigbee2mqtt/office-wardrobe
+      command_on_template: >-
+        {"state": "on"}
+      command_off_template: >-
+        {"state": "off"}
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bed_wardrobe
+      schema: template
+      icon: mdi:wardrobe
+      command_topic: zigbee2mqtt/bed-wardrobe/set
+      state_topic: zigbee2mqtt/bed-wardrobe
+      command_on_template: >-
+        {"state": "on"}
+      command_off_template: >-
+        {"state": "off"}
+      state_template: >-
+        {{
+            value_json.state | lower
+          }}
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+  switch:
+    - name: water_valve
+      icon: mdi:pipe-valve
+      command_topic: zigbee2mqtt/bath-water/set
+      state_topic: zigbee2mqtt/bath-water
+      payload_on: >-
+        {"state_l2": "on"}
+      payload_off: >-
+        {"state_l2": "off"}
+      value_template: >-
+        {{
+            value_json.state_l2 | lower
+          }}
+      state_on: 'on'
+      state_off: 'off'
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bath_fan
+      icon: mdi:fan
+      command_topic: zigbee2mqtt/bath-water/set
+      state_topic: zigbee2mqtt/bath-water
+      payload_on: >-
+        {"state_l1": "on"}
+      payload_off: >-
+        {"state_l1": "off"}
+      value_template: >-
+        {{
+            value_json.state_l1 | lower
+          }}
+      state_on: 'on'
+      state_off: 'off'
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: wash_fan
+      icon: mdi:fan
+      command_topic: zigbee2mqtt/wash-switch/set
+      state_topic: zigbee2mqtt/wash-switch
+      payload_on: >-
+        {"state_l1": "on"}
+      payload_off: >-
+        {"state_l1": "off"}
+      value_template: >-
+        {{
+            value_json.state_l1 | lower
+          }}
+      state_on: 'on'
+      state_off: 'off'
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: living_tv
+      icon: mdi:amplifier
+      command_topic: zigbee2mqtt/living-switch-tv/set
+      state_topic: zigbee2mqtt/living-switch-tv
+      payload_on: >-
+        {"state": "on"}
+      payload_off: >-
+        {"state": "off"}
+      value_template: >-
+        {{
+            value_json.state | lower
+          }}
+      state_on: 'on'
+      state_off: 'off'
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bath_tvr_lock
+      command_topic: zigbee2mqtt/bath-tvr/set
+      state_topic: zigbee2mqtt/bath-tvr
+      payload_on: >-
+        {"child_lock": "lock"}
+      payload_off: >-
+        {"child_lock": "unlock"}
+      value_template: >-
+        {{
+            value_json.child_lock | lower
+          }}
+      state_on: 'lock'
+      state_off: 'unlock'
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bath_tvr_boost
+      command_topic: zigbee2mqtt/bath-tvr/set
+      state_topic: zigbee2mqtt/bath-tvr
+      payload_on: >-
+        {"boost_timeset_countdown": 360}
+      payload_off: >-
+        {"boost_timeset_countdown": 0}
+      value_template: >-
+          {%- if value_json.boost_timeset_countdown | int > 0 -%}
+            on
+          {%- else -%}
+            off
+          {%- endif -%}
+      state_on: 'on'
+      state_off: 'off'
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bed_switch_1
+      icon: mdi:power-socket-de
+      command_topic: zigbee2mqtt/bed-switch-1/set
+      state_topic: zigbee2mqtt/bed-switch-1
+      payload_on: >-
+        {"state_l1": "on"}
+      payload_off: >-
+        {"state_l1": "off"}
+      value_template: >-
+        {{
+            value_json.state_l1 | lower
+          }}
+      state_on: 'on'
+      state_off: 'off'
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+    - name: bed_switch_2
+      icon: mdi:power-socket-de
+      command_topic: zigbee2mqtt/bed-switch-1/set
+      state_topic: zigbee2mqtt/bed-switch-1
+      payload_on: >-
+        {"state_l2": "on"}
+      payload_off: >-
+        {"state_l2": "off"}
+      value_template: >-
+        {{
+            value_json.state_l2 | lower
+          }}
+      state_on: 'on'
+      state_off: 'off'
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+  climate:
+    - name: bath_tvr
+      icon: mdi:thermostat
+      max_temp: 26.0
+      min_temp: 10.0
+      precision: 0.1
+      temp_step: 0.5
+      modes:
+        - 'heat'
+        - 'off'
+      mode_command_topic: zigbee2mqtt/bath-tvr/set
+      mode_command_template: >-
+        {%-
+            set cmnd = {
+                'system_mode': value
+              }
+          -%}
+        {{ cmnd | to_json }}
+      mode_state_topic: zigbee2mqtt/bath-tvr
+      mode_state_template: >-
+        {{
+            value_json.system_mode
+          }}
+      temperature_command_topic: zigbee2mqtt/bath-tvr/set
+      temperature_command_template: >-
+        {%- set cmnd =
+            {
+                'current_heating_setpoint': value | float
+              }
+          -%}
+        {{ cmnd | to_json }}
+      temperature_state_topic: zigbee2mqtt/bath-tvr
+      temperature_state_template: >-
+        {{
+            value_json.current_heating_setpoint | float
+          }}
+      preset_modes:
+        - 'auto'
+        - 'manual'
+        - 'holiday'
+      preset_mode_command_topic: zigbee2mqtt/bath-tvr/set
+      preset_mode_command_template: >-
+        {%- set cmnd =
+            {
+                'preset': value
+              }
+          -%}
+        {{ cmnd | to_json }}
+      preset_mode_state_topic: zigbee2mqtt/bath-tvr
+      preset_mode_value_template: >-
+        {{
+            value_json.preset
+          }}
+      current_temperature_topic: zigbee2mqtt/bath-tvr
+      current_temperature_template: >-
+        {{
+            value_json.local_temperature | float
+          }}
+      availability_topic: zigbee2mqtt/bridge/state
+      availability_template: >-
+        {{
+            value_json.state
+          }}
+
+automation:
+  - alias: zigbee2mqtt_start
+    id: zigbee2mqtt_start
+    triggers:
+      - trigger: mqtt
+        topic: zigbee2mqtt/bridge/state
+    actions:
+      - repeat:
+          for_each:
+            - device: bed-light-1
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: bed-light-2
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: bed-light-3
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: bed-light-4
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: bed-light-5
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: bed-light-6
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: bed-light-7
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: bed-light-8
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: office-light-1
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: office-light-2
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: office-light-3
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: office-light-4
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: office-light-5
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: office-light-6
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: office-light-7
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: office-light-8
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: kitchen-light-1
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: kitchen-light-2
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: kitchen-light-3
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: kitchen-light-4
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: kitchen-light-5
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: kitchen-light-6
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: kitchen-light-7
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: living-light-1
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: living-light-2
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: living-light-3
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: living-light-4
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: living-light-5
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: living-light-6
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: living-light-7
+              payload: {"state": "",  "brightness": "", "color_temp": ""}
+            - device: kitchen-led
+              payload: {"state": "",  "brightness": ""}
+            - device: hall-light
+              payload: {"state_l1": "",  "state_l2": ""}
+            - device: bath-light
+              payload: {"state_l1": "",  "state_l2": ""}
+            - device: bath-mirror
+              payload: {"state_l1": "",  "state_l2": ""}
+            - device: wash-switch
+              payload: {"state_l1": "",  "state_l2": ""}
+            - device: bath-mirror
+              payload: {"state_l1": "",  "state_l2": ""}
+            - device: office-wardrobe
+              payload: {"state": ""}
+            - device: bed-wardrobe
+              payload: {"state": ""}
+            - device: bath-water
+              payload: {"state_l1": "",  "state_l2": ""}
+            - device: wash-switch
+              payload: {"state_l1": "",  "state_l2": ""}
+            - device: living-switch-tv
+              payload: {"state": ""}
+            - device: bed-switch-1
+              payload: {"state_l1": "",  "state_l2": ""}
+          sequence:
+            - action: mqtt.publish
+              data_template:
+                topic: >-
+                  zigbee2mqtt/{{ repeat.item.device }}/get
+                payload: >-
+                  {{ repeat.item.payload | to_json }}
+            # - delay:
+            #     milliseconds: 50
+      - action: mqtt.publish
+        data:
+          topic: zigbee2mqtt/bath-tvr/set
+          payload: >-
+            {"online": "on"}
+      - delay:
+          seconds: 1
+      - action: mqtt.publish
+        data:
+          topic: zigbee2mqtt/bath-tvr/set
+          payload: >-
+            {"online": "off"}
+
+script:
+  z2m_restart:
+    alias: 'z2m restart'
+    icon: mdi:zigbee
+    mode: single
+    sequence:
+      - action: mqtt.publish
+        data:
+          topic: zigbee2mqtt/bridge/request/restart
+          payload: ''

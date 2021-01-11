@@ -1,0 +1,11 @@
+#!/bin/bash
+source /config/set_env
+
+#p=$(ping -q -c4 192.168.5.5)
+p=$(ping -q -c4 8.8.8.8)
+if [ $? -eq 0 ]
+then
+  echo $p | awk -F '/' 'END {print $4}'
+else
+  echo '-1'
+fi

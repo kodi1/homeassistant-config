@@ -1,0 +1,101 @@
+sensor:
+  - platform: max31856
+    id: temp_sens
+    thermocouple_type: K
+    mains_filter: 50Hz
+    cs_pin: $gpio_cs
+    update_interval: 250ms
+    filters:
+      - exponential_moving_average:
+          alpha: 0.1
+          send_every: 4
+          send_first_at: 1
+
+  - platform: wifi_signal
+    id: wifi_signal_db
+    update_interval: 30s
+
+  - platform: copy
+    id: wifi_signal_prc
+    source_id: wifi_signal_db
+    filters:
+      - lambda: |-
+          return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: '%'
+
+  - platform: internal_temperature
+    id: temp_cpu
+
+  - platform: copy
+    id: temp_speed
+    source_id: temp_sens
+    filters:
+      - lambda: |
+          float rate_of_change = x - id(last_temp_value);
+          id(last_temp_value) = x;
+          return rate_of_change;
+      - skip_initial: 1
+
+  - platform: copy
+    id: predicted_err
+    source_id: temp_speed
+    filters:
+      - lambda: |
+          float T_current = id(temp_sens).state;
+          float V_current = x;
+          float dt = id(temp_delay).state;
+          return id(temp_target).state - (T_current + (V_current * dt));
+      - exponential_moving_average:
+          alpha: 0.3
+          send_every: 1
+      - skip_initial: 1
+
+  - platform: copy
+    id: predicted_rate
+    source_id: predicted_err
+    filters:
+      - lambda: |
+          float rate = id(predicted_err_value) - x;
+          id(predicted_err_value) = x;
+          return  rate;
+      - exponential_moving_average:
+          alpha: 0.3
+          send_every: 1
+      - skip_initial: 1
+
+  - platform: copy
+    id: fuzzy_sens
+    source_id: predicted_rate
+    filters:
+      - lambda: |-
+          auto fuzzy = id(fuzzy_controller).get();
+          if (!fuzzy) {
+              ESP_LOGE("fuzzy", "Fuzzy is not created");
+              return 0.0;
+          }
+
+
+          float in1 = id(predicted_err).state;
+          float in2 = id(predicted_rate).state;
+
+          fuzzy->setInput(1, in1);
+          fuzzy->setInput(2, in2);
+
+          fuzzy->fuzzify();
+
+          float output = fuzzy->defuzzify(1);
+
+          ESP_LOGV("fuzzy", "in1: %0.2f in2: %0.2f output: %.3f",
+                      in1, in2, output);
+
+          return output;
+
+    on_value:
+      - output.set_level:
+          id: heater_output
+          level: !lambda "return x;"
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      id: ip_address_sensor

@@ -1,0 +1,110 @@
+homeassistant:
+  customize:
+    alert.low_battery:
+      icon: mdi:battery-10
+    sensor.root_battery:
+      friendly_name: batt root
+    binary_sensor.batts_low:
+      friendly_name: Batts
+
+alert:
+  low_battery:
+    name: batt
+    title: batt
+    message: >-
+      {%- set level = states('input_number.slider_batt_level') | float(0) -%}
+      {%- set devs = states.sensor |
+            selectattr('attributes.device_class', 'defined') |
+            selectattr('attributes.device_class', 'eq', 'battery')
+          -%}
+      {{'low: '}}
+      {% for d in devs -%}
+        {%- if (d.state | float(0) <= level or d.state in ['unavailable', 'undefined']) and d.state not in ['charging', 'discharging', 'full'] -%}
+          {%- if d.attributes.friendly_name %}
+            {{ d.attributes.friendly_name }}
+          {%- else %}
+            {{ d.entity_id | regex_replace(find='sensor.', replace='') }}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+    done_message: ok
+    entity_id: binary_sensor.batts_low
+    state: 'on'
+    repeat:
+      - 60
+      - 120
+      - 360
+    notifiers:
+      - kodi
+      - gmail
+
+template:
+  - sensor:
+    - name: root_battery
+      icon: mdi:gauge
+      device_class: battery
+      unit_of_measurement: '%'
+      state: >-
+        {%- set batt = state_attr('device_tracker.root', 'battery_level') -%}
+        {%- if batt  %}
+            {{ batt | int(0) }}
+        {% else %}
+            {{ states('sensor.root_battery') }}
+        {%- endif %}
+
+  - binary_sensor:
+    - name: batts_low
+      icon: mdi:battery-alert
+      device_class: problem
+      delay_on:
+        seconds: 30
+      delay_off:
+        seconds: 5
+      state: >-
+        {%- set level = states('input_number.slider_batt_level') | float(0) -%}
+        {%- if states('sensor.batt_living') != 'unavailable' -%}
+          {{
+              states('sensor.batt_living') | float(0) <= level or
+              states('sensor.batt_out') | float(0) <= level or
+              states('sensor.batt_lock') | float(0) <= level or
+              states('sensor.living_cube_batt') | float(0) <= level or
+              states('sensor.bed_in_batt') | float(0) <= level or
+              states('sensor.bed_motion_batt') | float(0) <= level or
+              states('sensor.living_motion_batt') | float(0) <= level or
+              states('sensor.office_motion_batt') | float(0) <= level or
+              states('sensor.bath_temp_batt') | float(0) <= level or
+              states('sensor.office_temp_batt') | float(0) <= level or
+              states('sensor.hall_temp_batt') | float(0) <= level or
+              states('sensor.bed_temp_batt') | float(0) <= level or
+              states('sensor.bath_motion_1_batt') | float(0) <= level or
+              states('sensor.bath_motion_2_batt') | float(0) <= level or
+              states('sensor.kitchen_motion_batt') | float(0) <= level or
+              states('sensor.hall_motion_batt') | float(0) <= level or
+              states('sensor.living_window_lux_batt') | float(0) <= level or
+              states('sensor.shutter_vibration_batt') | float(0) <= level or
+              states('sensor.wind_vibration_batt') | float(0) <= level or
+              states('sensor.living_sofa_vibration_batt') | float(0) <= level or
+              states('sensor.door_batt') | float(0) <= level or
+              states('sensor.wash_door_batt') | float(0) <= level or
+              states('sensor.kitchen_button_batt') | float(0) <= level or
+              states('sensor.office_button_batt') | float(0) <= level or
+              states('sensor.bed_button_batt') | float(0) <= level or
+              states('sensor.bath_tvr_batt') | float(0) <= level or
+              states('sensor.wash_temp_batt') | float(0) <= level or
+              (
+                  states('sensor.root_battery') | float(0) <= level and
+                  is_state_attr('device_tracker.root', 'charging', 'false')
+              )
+            }}
+        {%- else -%}
+          {{ is_state('timer.start_up_delay', 'idle') }}
+        {%- endif %}
+
+input_number:
+  slider_batt_level:
+    name: 'alert %'
+    unit_of_measurement: '%'
+    min: 3
+    max: 10
+    step: 1
+    icon: mdi:battery-alert

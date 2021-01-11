@@ -1,0 +1,39 @@
+script:
+  - id: measure
+    then:
+      - component.update: dhts
+      - wait_until:
+          condition:
+            lambda: |-
+              return (id(updates) >= 5);
+          timeout: 1s
+      - mqtt.publish_json:
+          topic: ${devicename}/state
+          payload: |-
+            root["batt_v"] = id(batt_v).state;
+            root["batt_p"] = id(batt_p).state;
+            root["temperature"] = id(temperature).state;
+            root["humidity"] = id(humidity).state;
+            root["rssi"] = id(rssi).state;
+
+sensor:
+  - platform: dht
+    id: dhts
+    model: DHT22
+    pin:
+      number: 12
+    temperature:
+      id: temperature
+      accuracy_decimals: 1
+      on_value:
+        lambda: |-
+          id(updates)++;
+      internal: true
+    humidity:
+      id: humidity
+      accuracy_decimals: 1
+      on_value:
+        lambda: |-
+          id(updates)++;
+      internal: true
+    update_interval: never

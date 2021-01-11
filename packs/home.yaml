@@ -1,0 +1,166 @@
+homeassistant:
+  customize:
+    automation.living_tv:
+      friendly_name: living tv
+      icon: mdi:kodi
+    automation.root_home:
+      friendly_name: home
+      icon: mdi:home
+    automation.n0ll_home:
+      friendly_name: pc
+      icon: mdi:monitor-speaker
+    automation.home_near:
+      friendly_name: city
+      icon: mdi:home-city
+    automation.just_home:
+      friendly_name: enter
+      icon: mdi:home-import-outline
+
+automation:
+  - alias: n0ll_home
+    id: n0ll_home
+    triggers:
+      - trigger: state
+        entity_id: device_tracker.n0ll
+        from: not_home
+        to: home
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: media_player.livingtv
+            state: 'idle'
+          sequence:
+            - action: >-
+                {%-
+                    set scr = {
+                      'off': 'shell_command.kodi_screensaver',
+                      'on': 'script.radio_on'
+                    }
+                  -%}
+                {{ scr[states('binary_sensor.kodi_screen_saver')] }}
+            - condition: state
+              entity_id: media_player.ht_mt500_501_b34d6a
+              state: 'playing'
+            - action: timer.pause
+              entity_id: timer.sound_bar
+
+  - alias: home_near
+    id: home_near
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.home_root_distance
+        below: 35
+      - trigger: numeric_state
+        entity_id: sensor.home_root_distance
+        below: 10
+
+    mode: restart
+    actions:
+      - action: notify.gmail
+        data:
+          message: home near trigger
+          title: 'hass'
+      - action: automation.turn_on
+        data:
+          entity_id:
+            - automation.home_away
+            - automation.living_tv
+      - action: switch.turn_on
+        data:
+          entity_id:
+            - switch.living_tv
+            - switch.bed_switch_1
+      - action: automation.turn_off
+        data:
+          entity_id: automation.home_near
+
+  - alias: root_home
+    id: root_home
+    initial_state: off
+    triggers:
+      - trigger: zone
+        entity_id: device_tracker.root
+        zone: zone.home
+        event: enter
+    conditions:
+      - condition: template
+        value_template: >-
+          {{
+              trigger.from_state != None
+            }}
+    actions:
+      - action: automation.turn_on
+        entity_id: automation.just_home
+
+  - alias: just_home
+    id: just_home
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.hall_motion
+        to: 'on'
+      - trigger: state
+        entity_id: binary_sensor.living_motion
+        to: 'on'
+      - trigger: state
+        entity_id: binary_sensor.door
+        to: 'on'
+
+    mode: single
+    max_exceeded: silent
+    actions:
+      - action: input_boolean.turn_off
+        entity_id: input_boolean.home_motion
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: media_player.livingtv
+            state: 'idle'
+          sequence:
+            - action: script.turn_on
+              data:
+                entity_id:
+                  - script.radio_on
+      - choose:
+        - conditions:
+          - condition: state
+            entity_id: input_boolean.lumi_double_switch_1
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.day
+            state: 'off'
+          sequence:
+            - action: script.turn_on
+              target:
+                entity_id: script.lumi_all_lights_on
+              data:
+                variables:
+                  bri_t: 85
+                  time_t: >-
+                    {{ (states('input_number.just_home_light_timer') | float(2) * 60.0) | int(60) }}
+      - action: automation.turn_off
+        data:
+          entity_id:
+            - automation.just_home
+
+  - alias: living_tv
+    id: living_tv
+    triggers:
+      - trigger: state
+        entity_id: device_tracker.livingtv
+        to: home
+        for:
+          seconds: 45
+    actions:
+      - action: notify.gmail
+        data:
+          message: living near trigger
+          title: 'hass'
+      - action: automation.turn_off
+        data:
+          entity_id: automation.living_tv
+      # - delay:
+      #     seconds: 30
+      # - action: homeassistant.restart

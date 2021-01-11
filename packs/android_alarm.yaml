@@ -1,0 +1,84 @@
+automation:
+  - alias: event_android_alarm
+    id: event_android_alarm
+    triggers:
+      - trigger: event
+        event_type: android_alarm
+    actions:
+      - action: timer.start
+        entity_id: timer.post_android_alarm
+        data:
+          duration: >-
+            {{states.input_number.post_android_alarm.state|int}}
+      - action: logbook.log
+        data:
+          name: ha_alarm
+          message: 'timer arm {{states.input_number.post_android_alarm.state}} seconds'
+
+  - alias: post_android_alarm
+    id: post_android_alarm
+    triggers:
+      - trigger: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.post_android_alarm
+    conditions:
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: >-
+              {{
+                  not is_state('media_player.bedroom_speaker', 'playing')
+                }}
+    actions:
+      - action: script.android_post_alarm
+
+script:
+  android_post_alarm_swich:
+    sequence:
+      - action: input_select.select_option
+        data:
+          entity_id: input_select.select_radio_bed
+          option: 1Mix Radio
+
+  android_post_alarm:
+    sequence:
+      - condition: state
+        entity_id: device_tracker.root
+        state: home
+      - action: logbook.log
+        data:
+          name: ha_alarm
+          message: run
+      - action: >-
+          {%- if '1Mix Radio' == states("input_select.select_radio_bed") -%}
+            script.bed_music_on
+          {%- else -%}
+            script.android_post_alarm_swich
+          {%- endif -%}
+      - wait_template: >-
+          {{
+              is_state('media_player.bedroom_speaker', 'playing')
+            }}
+        timeout:
+          seconds: 15
+        continue_on_timeout: true
+      - action: media_player.volume_set
+        data:
+          entity_id: media_player.bedroom_speaker
+          volume_level: 0.16
+
+input_number:
+  post_android_alarm:
+    name: delay
+    unit_of_measurement: s
+    min: 30
+    max: 300
+    step: 10
+    icon: mdi:alarm-multiple
+
+timer:
+  post_android_alarm:
+    name: time delay
+    icon: mdi:timer-outline
+    duration: 00:05:00

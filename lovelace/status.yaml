@@ -1,0 +1,84 @@
+title: status
+icon: mdi:monitor-dashboard
+path: status
+
+cards:
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - sensor.batt_living
+      - sensor.root_battery
+      - sensor.eink_eink_battery
+      - sensor.hts_recording_sensor
+      - sensor.video_rec
+      - sensor.transmission_state
+      - type: divider
+      - binary_sensor.bravia
+      - binary_sensor.sound_bar_active
+      - binary_sensor.kodi_screen_saver
+      - binary_sensor.kodi_idle
+      - binary_sensor.isp_conn
+      - binary_sensor.ext_port
+      - binary_sensor.main_conn
+      - binary_sensor.thermostat_pump
+      - binary_sensor.village_conn
+      - binary_sensor.city_conn
+      - binary_sensor.city_waterheater_conn
+      - binary_sensor.village_pump_conn
+      - binary_sensor.village_waterheater_conn
+      - binary_sensor.batts_low
+      - binary_sensor.cpu_overheat
+      - binary_sensor.home_motion
+      - binary_sensor.w_alert
+      - binary_sensor.temp_ventilaton
+      - binary_sensor.zigbee_bridge
+      - type: divider
+      - sensor.wifi_rssi
+      # - type: divider
+      # - sensor.work_acc
+      - type: divider
+      - sensor.car_fines
+
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - sensor.cpu_usage
+      - sensor.cpu_temp
+      - sensor.mem_free
+      - sensor.disk_free
+      - sensor.ping_isp
+      - sensor.owrt_disk_free
+
+  # - type: conditional
+  #   conditions:
+  #     - entity: input_boolean.at_work
+  #       state: 'on'
+  #   card:
+  #     type: entities
+  #     show_header_toggle: false
+  #     state_color: true
+  #     entities:
+  #       - automation.root_work
+  #       - automation.work_end_notify
+  #       - input_boolean.at_work
+  #       - binary_sensor.work_acc
+  #       - script.root_to_work
+  #       - script.root_from_work
+  #       - alert.work_acc_update
+
+  - type: conditional
+    conditions:
+      - entity: binary_sensor.batts_low
+        state: 'on'
+    card:
+      type: markdown
+      # **{{b.entity_id | regex_replace(find='sensor.', replace='') }}:** {{b.state}}</br>
+      content: >-
+        {%- for b in states.sensor |
+              selectattr('attributes.device_class', 'defined') |
+              selectattr('attributes.device_class', 'eq', 'battery') |
+              selectattr('state')
+          -%}
+        **{{state_attr(b.entity_id, 'friendly_name') }}:** {{b.state}}</br>
+        {%- endfor -%}

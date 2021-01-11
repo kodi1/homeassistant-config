@@ -1,0 +1,66 @@
+title: other
+icon: mdi:nuke
+path: other
+
+cards:
+  - type: history-graph
+    hours_to_show: 1
+    refresh_interval: 60
+    entities:
+      - binary_sensor.living_motion
+      - binary_sensor.kitchen_motion
+      - binary_sensor.hall_motion
+      - binary_sensor.bed_motion
+      - binary_sensor.bed_in
+      - binary_sensor.living_sofa_vibration
+      - binary_sensor.office_motion
+      - binary_sensor.bath_motion
+      - binary_sensor.home_light_extend
+      - light.living
+      - light.kitchen
+      - light.hall
+      - light.bed
+      - light.bath
+      - switch.water_valve
+      - switch.bath_fan
+      - light.office
+      - light.wash
+
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - input_boolean.in_call
+      - type: divider
+      - input_select.select_spotify
+      - script.spot_living
+      - script.spot_bed
+
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - input_boolean.eink_disable_sleep
+      - binary_sensor.eink_notification
+
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - switch.living_tv
+      - switch.sonoff_1
+      - type: divider
+      - input_select.power_down_restart
+      - timer.start_up_delay
+      - automation.startup
+      - type: divider
+
+  - type: vertical-stack
+    cards:
+      - type: conditional
+        conditions:
+          - entity: switch.living_tv
+            state: 'on'
+        card:
+          type: media-control
+          entity: media_player.soundbar

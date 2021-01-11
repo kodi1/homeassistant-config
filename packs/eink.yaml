@@ -1,0 +1,71 @@
+homeassistant:
+  customize:
+    sensor.eink_eink_battery:
+      friendly_name: eink
+
+input_boolean:
+  eink_disable_sleep:
+     initial: false
+     icon: mdi:zip-box
+     name: eink ota
+
+template:
+  - trigger:
+    - trigger: event
+      event_type: call_service
+      event_data:
+        domain: script
+        service: all_notify
+      id: notify
+
+    - trigger: event
+      event_type: call_service
+      event_data:
+        domain: persistent_notification
+        service: dismiss_all
+      id: clear
+
+    - trigger: event
+      event_type: call_service
+      event_data:
+        domain: persistent_notification
+        service: dismiss
+      id: clear
+
+    - trigger: homeassistant
+      event: start
+      id: clear
+
+    binary_sensor:
+      - name: eink_notification
+        unique_id: eink_notification
+        icon: mdi:projector-screen-variant-outline
+        state: >-
+          {%-
+              set _map = {
+                  'clear': False,
+                  'notify': True,
+                }
+            -%}
+          {{ _map[trigger.id] }}
+        attributes:
+          title: >-
+            {%- if 'notify' == trigger.id -%}
+              {{ trigger.event.data.service_data.tit }}
+            {%- else -%}
+              {{ state_attr('binary_sensor.eink_notification', 'title') }}
+            {%- endif -%}
+          message: >-
+            {%- if 'notify' == trigger.id -%}
+              {{ trigger.event.data.service_data.msg }}
+            {%- else -%}
+              {{ state_attr('binary_sensor.eink_notification', 'message') }}
+            {%- endif -%}
+          icon_notify: >-
+            {%- if 'notify' == trigger.id -%}
+              {{ trigger.event.data.service_data.icon_notify | default('alert-octagon-outline')}}
+            {%- else -%}
+              {{ state_attr('binary_sensor.eink_notification', 'icon_notify') }}
+            {%- endif -%}
+        auto_off:
+          minutes: 30
