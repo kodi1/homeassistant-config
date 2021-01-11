@@ -1,0 +1,57 @@
+{%- macro to_temp(ct) -%}
+    {{ (1000000 / ct) | round(0) }}
+{%- endmacro -%}
+
+{%- macro light_cfg(high) -%}
+    {%-
+            set cfg = {
+                'brightness': iif(high, range(85, 95, 2) | random , range(1, 11, 2) | random, 3),
+                'temp': iif(high, range(3400, 4000, 100) | random, range(2200, 2900, 100) | random, 3000),
+                'transition': iif(high, 5, 1, 3),
+            }
+        -%}
+    {{ cfg | to_json }}
+{%- endmacro -%}
+
+{%- macro radio_urls() -%}
+    {%-
+        set urls = {
+                "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
+                "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
+                "State Of Trance": "http://de-hz-fal-stream07.rautemusik.fm/trance",
+                "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
+                "Ocean Radio": "http://philae.shoutca.st:8446/stream",
+                "Costa Del Mar": "http://sc-costadelmar.1.fm:10156",
+                "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
+                "Lounge FM": "http://cast.loungefm.com.ua/chillout128",
+                "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
+                "Eilo Ambient": "http://eilo.org:8000/ambient",
+                "Milano Lounge": "http://178.32.62.154:9739/stream",
+                "Lounge": "http://live.radioart.com:80/fLounge.mp3",
+                "Smooth Lounge": "http://live.radioart.com:80/fSmooth_lounge.mp3",
+                "Vocal Lounge": "http://live.radioart.com:80/fVocal_lounge.mp3",
+                "Sleep": "http://live.radioart.com:80/fSleep.mp3",
+                "New Age": "http://live.radioart.com:80/fNew_age.mp3",
+                "Ambient": "http://live.radioart.com:80/fAmbient.mp3",
+                "Ambient Sleep": "https://radio.stereoscenic.com/asp-s",
+                "Calm Radio": "http://streams.calmradio.com/api/39/128/stream",
+                "Ambi Nature Radio": "http://94.23.252.14:8067/stream",
+                "Chroma Ambient": "http://148.251.184.14:8004/;539699463556254stream.nsv"
+            }
+        -%}
+    {{ urls | to_json }}
+{%- endmacro -%}
+
+{%- macro name_to_url(name) -%}
+    {%-
+            set play= radio_urls() | from_json
+        -%}
+    {{ play[states(name)] }}
+{%- endmacro -%}
+
+{%- macro radio_names() -%}
+    {%-
+            set play = radio_urls() | from_json
+        -%}
+    {{ play.keys() | list }}
+{%- endmacro -%}

@@ -1,0 +1,74 @@
+i2c:
+  frequency: 400kHz
+  scan: false
+  id: bus_1
+
+script:
+  - id: measure
+    then:
+      - if:
+          condition:
+            mqtt.connected:
+          then:
+            - lambda: |-
+                id(updates) = 0;
+                id(batt_v).update();
+                id(batt_p).update();
+                id(bme280s).update();
+                id(rssi).update();
+            - wait_until:
+                condition:
+                  lambda: |-
+                    return (id(updates) >= 6);
+                timeout: ${wait_timeout}
+            - mqtt.publish_json:
+                topic: ${devicename}/state
+                payload: |-
+                  root["batt_v"] = id(batt_v).state;
+                  root["batt_p"] = id(batt_p).state;
+                  root["temperature"] = id(temperature).state;
+                  root["pressure"] = id(pressure).state;
+                  root["humidity"] = id(humidity).state;
+                  root["rssi"] = id(rssi).state;
+            - delay: ${wait_mqtt}
+            - deep_sleep.enter:
+                id: sleep_1
+          else:
+            - deep_sleep.enter:
+                id: sleep_1
+
+# hack bmp setuo fail
+# --- a/bme280.cpp
+# +++ b/bme280.cpp
+# @@ -83,6 +83,7 @@ static const char *iir_filter_to_str(BME280IIRFilter filter) {
+#  }
+
+#  void BME280Component::setup() {
+# +  delay(100);
+#    ESP_LOGCONFIG(TAG, "Setting up BME280...");
+#    uint8_t chip_id = 0;
+sensor:
+  - platform: bme280
+    id: bme280s
+    i2c_id: bus_1
+    temperature:
+      id: temperature
+      accuracy_decimals: 2
+      on_value:
+        lambda: |-
+          id(updates)++;
+    pressure:
+      id: pressure
+      accuracy_decimals: 2
+      on_value:
+        lambda: |-
+          id(updates)++;
+    humidity:
+      id: humidity
+      accuracy_decimals: 2
+      on_value:
+        lambda: |-
+          id(updates)++;
+    address: 0x76
+    update_interval: never
+
