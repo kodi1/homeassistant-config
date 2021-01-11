@@ -1,0 +1,288 @@
+homeassistant:
+  customize:
+    automation.bed_sleep_on:
+      icon: mdi:youtube
+    automation.bed_sleep_on_spot:
+      icon: mdi:spotify
+
+binary_sensor:
+  - platform: template
+    sensors:
+      bedmusic:
+        icon_template: 'mdi:cast-audio'
+        device_class: sound
+        delay_on:
+          seconds: 1
+        delay_off:
+          seconds: 1
+        value_template: >-
+          {{
+              is_state('input_boolean.in_bed_dummy_switch', 'on')
+            }}
+
+automation:
+  - alias: bed_sleep_on_spot
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.bedmusic
+        to: 'on'
+    action:
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.select_spotify
+          option: sleep
+      - service: script.spot_bed
+      - wait_template: "{{ is_state('media_player.bedroom_speaker', 'playing')}}"
+        timeout: '00:01:00'
+        continue_on_timeout: 'true'
+      - service: media_player.volume_set
+        data:
+          entity_id: media_player.bedroom_speaker
+          volume_level: 0.14
+      - service: timer.start
+        entity_id: timer.bed_music
+        data:
+          duration: 00:45:00
+
+  - alias: bed_sleep_on
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.bedmusic
+        to: 'on'
+    condition:
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: >-
+              {{
+                  not is_state('media_player.bedroom_speaker', 'playing')
+                }}
+    action:
+      - service: input_select.select_option
+        data_template:
+          entity_id: input_select.select_sleep_sound
+          option: >-
+            {%- set c = states('input_select.select_sleep_sound') -%}
+            {%- set a = state_attr('input_select.select_sleep_sound', 'options') -%}
+            {{ (((a | join("|")) | regex_replace(c, replace='')) | regex_replace('\|\|', replace='|')).split('|') | random }}
+
+  - alias: bed_sleep_on_select
+    trigger:
+      - platform: state
+        entity_id: input_select.select_sleep_sound
+    condition:
+      condition: and
+      conditions:
+        - condition: template
+          value_template: '{{trigger.from_state.state != trigger.to_state.state}}'
+    action:
+      - service: script.bed_sleep_on
+
+  - alias: bed_music_on
+    trigger:
+      - platform: state
+        entity_id: media_player.bedroom_speaker
+        from: 'off'
+        to: 'idle'
+        for:
+          seconds: 3
+      - platform: state
+        entity_id: input_select.select_radio_bed
+    condition:
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: >-
+              {{
+                  ('input_select.select_radio_bed' == trigger.entity_id) or
+                    not is_state('media_player.bedroom_speaker', 'playing')
+                }}
+    action:
+      - service: script.bed_music_on
+
+  - alias: bed_music_off
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.bedmusic
+        to: 'off'
+        for:
+          seconds: 300
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.bed_music
+    condition:
+      - condition: template
+        value_template: "{{(as_timestamp(now()) - as_timestamp(state_attr('automation.event_android_alarm', 'last_triggered'))) / 60 > 10 }}"
+    action:
+      - service: media_player.turn_off
+        entity_id: media_player.bedroom_speaker
+
+  - alias: bed_music_clear_timer
+    trigger:
+      - platform: state
+        entity_id: media_player.bedroom_speaker
+        to: 'off'
+        for:
+          seconds: 3
+    condition:
+      - condition: template
+        value_template: "{{ not is_state('timer.bed_music', 'idle') }}"
+    action:
+      - service: timer.cancel
+        entity_id: timer.bed_music
+
+input_select:
+  select_radio_bed:
+    name: bed online radio
+    options:
+      - 1Mix Radio
+      - Nova Bg
+      - State Of Trance
+      - 1FM Amsterdam
+      - Ocean Radio
+      - Costa Del Mar
+      - 1FM Lounge Radio
+      - Lounge FM
+      - Absolute Chillout
+      - Eilo Ambient
+      - Milano Lounge
+      - Lounge
+      - Smooth Lounge
+      - Vocal Lounge
+      - Sleep
+      - New Age
+      - Ambient
+      - Ambient Sleep
+      - Calm Radio
+      - Ambi Nature Radio
+      - Chroma Ambient
+    icon: mdi:radio
+
+  select_sleep_sound:
+    options:
+      - '-i8IMw5WeXc'
+      - 'AsD5u6k6dKI'
+      - 'hwsEjtlr9yw'
+      - 'kygoJiJAWG4'
+      - 'T9IJKwEspI8'
+      - 'Mr9T-943BnE'
+      - 'cO_IFJaWmhA'
+      - 'V9Xu6mkacg8'
+      - 'EgzGy9fadpM'
+      - 'XVBOtQHKVzQ'
+      - 'kdKCqJUGCgM'
+      - 'b57XWNLEflY'
+      - 'gD0HYrLhT1Q'
+      - 'y4h_4NIOxuY'
+      - '_zLxFb4Tly4'
+      - 'sEbg8CUiUFw'
+      - 'gGo5Rcrb6m0'
+      - 'cmVq2Lwbz58'
+      - '5rP9tvoiTtQ'
+      - 'NLQdBROU5aE'
+      - 'qH8S9_m2N3o'
+      - '-L2C44_Qqo0'
+      - 'xkfSDRZm3tA'
+      - 'oUE9V9-yPR4'
+      - 'otFfC9L9UwY'
+      - 'FnQfhSgLj_0'
+
+script:
+  bed_sleep_on:
+    sequence:
+      - service: logbook.log
+        data_template:
+          name: 'sleep on'
+          message: >-
+            https://www.youtube.com/watch?v={{ states("input_select.select_sleep_sound") }}
+      - service: media_extractor.play_media
+        data_template:
+          entity_id: media_player.bedroom_speaker
+          media_content_type: 'audio/mp3'
+          media_content_id: >-
+            https://www.youtube.com/watch?v={{ states("input_select.select_sleep_sound") }}
+      - wait_template: "{{ is_state('media_player.bedroom_speaker', 'playing')}}"
+        timeout: '00:01:00'
+        continue_on_timeout: 'true'
+      - service: media_player.volume_set
+        data:
+          entity_id: media_player.bedroom_speaker
+          volume_level: 0.14
+      - service: timer.start
+        entity_id: timer.bed_music
+        data:
+          duration: 00:45:00
+
+  bed_music_on:
+    sequence:
+      - service: logbook.log
+        data_template:
+          name: 'bed music on'
+          message: '{{ states("input_select.select_radio_bed") }}'
+      - service: media_player.play_media
+        data_template:
+          entity_id: media_player.bedroom_speaker
+          media_content_type: 'audio/mp3'
+          media_content_id: >-
+            {%-
+                set play=
+                {
+                "1Mix Radio": "http://fr1.1mix.co.uk:8060/192",
+                "Nova Bg": "http://stream.radioreklama.bg:80/nova128",
+                "State Of Trance": "http://de-hz-fal-stream07.rautemusik.fm/trance",
+                "1FM Amsterdam": "http://strm112.1.fm/atr_mobile_mp3",
+                "Ocean Radio": "http://philae.shoutca.st:8446/stream",
+                "Costa Del Mar": "http://sc-costadelmar.1.fm:10156",
+                "1FM Lounge Radio": "http://strm112.1.fm/chilloutlounge_mobile_mp3",
+                "Lounge FM": "http://cast.loungefm.com.ua/chillout128",
+                "Absolute Chillout": "http://streaming.radionomy.com/ABSOLUTECHILLOUT",
+                "Eilo Ambient": "http://eilo.org:8000/ambient",
+                "Milano Lounge": "http://178.32.62.154:9739/stream",
+                "Lounge": "http://live.radioart.com:80/fLounge.mp3",
+                "Smooth Lounge": "http://live.radioart.com:80/fSmooth_lounge.mp3",
+                "Vocal Lounge": "http://live.radioart.com:80/fVocal_lounge.mp3",
+                "Sleep": "http://live.radioart.com:80/fSleep.mp3",
+                "New Age": "http://live.radioart.com:80/fNew_age.mp3",
+                "Ambient": "http://live.radioart.com:80/fAmbient.mp3",
+                "Ambient Sleep": "https://radio.stereoscenic.com/asp-s",
+                "Calm Radio": "http://streams.calmradio.com/api/39/128/stream",
+                "Ambi Nature Radio": "http://94.23.252.14:8067/stream",
+                "Chroma Ambient": "http://148.251.184.14:8004/;539699463556254stream.nsv"
+                }
+            -%}
+            {{ play[states("input_select.select_radio_bed")] }}
+      - wait_template: "{{ is_state('media_player.bedroom_speaker', 'playing')}}"
+        timeout: '00:01:00'
+        continue_on_timeout: 'true'
+      - service: media_player.volume_set
+        data:
+          entity_id: media_player.bedroom_speaker
+          volume_level: 0.12
+      - service: timer.start
+        entity_id: timer.bed_music
+        data_template:
+          duration: "00:{{ states('input_number.bed_music_timer') | int }}:00"
+
+  start_up_bedroom_speaker:
+    sequence:
+      - condition: state
+        entity_id: media_player.bedroom_speaker
+        state: 'playing'
+      - service: timer.start
+        entity_id: timer.bed_music
+
+timer:
+  bed_music:
+    name: 'music time'
+    icon: mdi:timer-sand
+    duration: '00:01:30'
+
+input_number:
+  bed_music_timer:
+    name: 'music time'
+    unit_of_measurement: 'min'
+    min: 5
+    max: 90
+    step: 5
+    icon: mdi:av-timer

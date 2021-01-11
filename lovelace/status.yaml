@@ -1,0 +1,89 @@
+title: status
+icon: mdi:monitor-dashboard
+path: status
+
+cards:
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - sensor.batt_living
+      - sensor.batt_out
+      - sensor.root_battery
+      - sensor.hts_recording_sensor
+      - sensor.video_rec
+      - sensor.transmission_state
+      - type: divider
+      - binary_sensor.bravia
+      - binary_sensor.sound_bar_active
+      - binary_sensor.kodi_screen_saver
+      - binary_sensor.smb_online
+      - binary_sensor.isp_conn
+      - binary_sensor.ext_port
+      - binary_sensor.village
+      - binary_sensor.city_conn
+      - binary_sensor.batts_low
+      - binary_sensor.cpu_overheat
+      - binary_sensor.open_living
+      - binary_sensor.home_heating
+      - binary_sensor.climate_online
+      - binary_sensor.home_motion
+      - type: divider
+      - sensor.wifi_rssi
+      - type: divider
+      - sensor.work_acc
+
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - sensor.cpu_usage
+      - sensor.cpu_temp
+      - sensor.mem_free
+      - sensor.disk_free
+      - sensor.ping_isp
+      - sensor.tomato_disk_free
+      - sensor.home_assistant_v2_db
+
+  - type: conditional
+    conditions:
+      - entity: binary_sensor.climate_online
+        state: 'on'
+      - entity: input_boolean.control_heating
+        state: 'on'
+    card:
+      type: history-graph
+      hours_to_show: 8
+      refresh: 300
+      entities:
+        - sensor.temp_living
+        - sensor.temp_out
+        - sensor.temperature_living
+        - sensor.valve_living
+
+  - type: conditional
+    conditions:
+      - entity: input_boolean.at_work
+        state: 'on'
+    card:
+      type: entities
+      show_header_toggle: false
+      state_color: true
+      entities:
+        - automation.root_work
+        - automation.work_end_notify
+        - input_boolean.at_work
+        - binary_sensor.work_acc
+        - script.root_to_work
+        - script.root_from_work
+        - alert.work_acc_update
+
+  - type: conditional
+    conditions:
+      - entity: binary_sensor.batts_low
+        state: 'on'
+    card:
+      type: markdown
+      content: >-
+        {%- for b in states | selectattr('attributes.device_class', 'eq', 'battery') | selectattr('state') -%}
+        **{{b.entity_id | regex_replace(find='sensor.', replace='') }}:** {{b.state}}</br>
+        {%- endfor -%}

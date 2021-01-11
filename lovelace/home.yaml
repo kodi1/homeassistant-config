@@ -1,0 +1,171 @@
+title: home
+icon: mdi:city-variant
+path: home
+
+badges:
+  - device_tracker.root
+  - sensor.change_pressure
+  - sensor.w_alert
+
+cards:
+  - type: vertical-stack
+    cards:
+      - type: custom:weather-card-chart
+        title: ' '
+        weather: weather.dark_skym
+        mode: daily
+
+      - type: entities
+        show_header_toggle: false
+        entities:
+          - sensor.temp_out
+          - sensor.hum_out
+          - sensor.sea_level_pressure
+          - sensor.temp_idx
+          - sensor.darksky_clouds
+          - type: divider
+          - sensor.temp_living
+          - sensor.hum_living
+          - sensor.press_living
+          - type: divider
+          - sensor.temp_bed
+          - sensor.hum_bed
+          - type: divider
+          - sensor.ewelink_th01_dedf9d23_temperature
+          - sensor.ewelink_th01_dedf9d23_humidity
+
+
+  - type: vertical-stack
+    cards:
+      - type: conditional
+        conditions:
+          - entity: switch.av_switch
+            state: 'on'
+        card:
+          type: media-control
+          entity: media_player.kodi_tv
+
+      - type: conditional
+        conditions:
+          - entity: switch.av_switch
+            state: 'on'
+        card:
+          type: media-control
+          entity: media_player.ht_mt500_501_b34d6a
+
+      - type: conditional
+        conditions:
+          - entity: switch.av_switch
+            state: 'on'
+        card:
+          type: entities
+          show_header_toggle: false
+          entities:
+            - input_select.select_sound_bar
+            - input_number.sound_bar_music_timer
+            - timer.sound_bar
+            - input_boolean.enable_sleep
+
+  - type: custom:upcoming-media-card
+    entity: sensor.hts_recording_sensor
+    image_style: fanart
+    date: ddmm
+    clock: 24
+    hide_empty: true
+
+  - type: conditional
+    conditions:
+      - entity: alert.low_battery
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.low_battery
+
+  - type: conditional
+    conditions:
+      - entity: alert.home_motion
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.home_motion
+
+  - type: conditional
+    conditions:
+      - entity: alert.cpu_overheat
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.cpu_overheat
+
+  - type: conditional
+    conditions:
+      - entity: alert.tasmota_update
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.tasmota_update
+        - script.tasmota_ota
+
+  - type: conditional
+    conditions:
+      - entity: alert.wled_update
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.wled_update
+
+  - type: conditional
+    conditions:
+      - entity: alert.work_acc_update
+        state_not: 'idle'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - alert.work_acc_update
+
+  - type: conditional
+    conditions:
+      - entity: input_boolean.in_call
+        state: 'on'
+    card:
+      type: entities
+      show_header_toggle: false
+      entities:
+        - binary_sensor.in_call
+        - input_boolean.in_call
+        - automation.in_call
+        - input_number.sound_bar_save_volume
+        - script.in_call_on
+        - script.in_call_off
+
+  - type: conditional
+    conditions:
+      - entity: sensor.w_alert
+        state_not: '0'
+    card:
+      type: markdown
+      content: >-
+        {%- if not is_state('sensor.w_alert', '0') -%}
+          {%- for s  in ['today', 'tomorrow'] -%}
+            {%- set v = state_attr('sensor.w_alert', s) -%}
+              {%- if v -%}
+                {%- for d  in v %}
+          ### {{s}}: **{{d['event']}}**
+          **Severity:** {{d['code']}}
+          **Description:** {{d['txt']}}
+          **Time:** {{d['start']}} - {{d['end']}}
+                {%- endfor -%}
+              {%- endif -%}
+          {%- endfor -%}
+        {%- endif -%}

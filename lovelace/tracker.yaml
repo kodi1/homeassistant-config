@@ -1,0 +1,40 @@
+title: tracker
+icon: mdi:radar
+path: tracker
+
+badges:
+  - device_tracker.qq2a_200405_005
+  - device_tracker.google_maps_107209225675467950565
+  - device_tracker.livingtv
+  - device_tracker.n0ll
+
+cards:
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - automation.track_merge_startup
+      - automation.track_merge
+      - input_number.tracker_delay
+      - input_number.tracker_accuracy
+      - input_number.tracker_force_update
+
+  - type: picture-entity
+    entity: camera.tracker
+
+  - type: map
+    entities:
+      - device_tracker.root
+    hours_to_show: 6
+
+  - type: history-graph
+    hours_to_show: 6
+    refresh: 300
+    entities:
+      - sensor.gps_accuracy_g
+      - sensor.gps_accuracy_t
+
+  - type: history-graph
+    hours_to_show: 6
+    refresh: 300
+    entities:
+      - proximity.home

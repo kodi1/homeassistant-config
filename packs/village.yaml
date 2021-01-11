@@ -1,0 +1,144 @@
+homeassistant:
+  customize:
+    sensor.village_pressure_in:
+      friendly_name: pressure
+
+sensor:
+  - platform: mqtt
+    name: village_humidity_out
+    state_topic: village_temp_out/sensor/humidity/state
+    value_template: '{{ value | round(1) }}'
+    device_class: humidity
+    unit_of_measurement: '%'
+    expire_after: 660
+
+  - platform: mqtt
+    name: village_temp_out
+    state_topic: village_temp_out/sensor/temperature/state
+    device_class: temperature
+    unit_of_measurement: '°C'
+    expire_after: 660
+
+  - platform: mqtt
+    name: 'vbatt out'
+    state_topic: village_temp_out/sensor/percent/state
+    value_template: '{{ value | round(0) }}'
+    json_attributes_topic: village_temp_out/sensor/percent/state #hack
+    json_attributes_template: >-
+      {%-
+        set attrs = {
+        'rssi': states('sensor.village_signal_out'),
+        'mv': states('sensor.village_voltage_out')
+        }
+        -%}
+      {{ attrs | to_json }}
+    device_class: 'battery'
+    unit_of_measurement: '%'
+    expire_after: 660
+
+  - platform: mqtt
+    name: village_voltage_out
+    state_topic: village_temp_out/sensor/battery/state
+    expire_after: 660
+
+  - platform: mqtt
+    name: village_signal_out
+    state_topic: village_temp_out/sensor/signal/state
+    expire_after: 660
+
+  - platform: mqtt
+    name: village_pressure_in
+    state_topic: village_temp_in/sensor/pressure/state
+    device_class: pressure
+    unit_of_measurement: hPa
+    expire_after: 660
+
+  - platform: mqtt
+    name: village_humidity_in
+    state_topic: village_temp_in/sensor/humidity/state
+    value_template: '{{ value | round(1) }}'
+    device_class: humidity
+    unit_of_measurement: '%'
+    expire_after: 660
+
+  - platform: mqtt
+    name: village_temp_in
+    state_topic: village_temp_in/sensor/temperature/state
+    device_class: temperature
+    unit_of_measurement: '°C'
+    expire_after: 660
+
+  - platform: mqtt
+    name: 'vbatt in'
+    state_topic: village_temp_in/sensor/percent/state
+    value_template: '{{ value | round(0) }}'
+    json_attributes_topic: village_temp_in/sensor/percent/state #hack
+    json_attributes_template: >-
+      {%-
+        set attrs = {
+        'rssi': states('sensor.village_signal_in'),
+        'mv': states('sensor.village_voltage_in')
+        }
+        -%}
+      {{ attrs | to_json }}
+    device_class: 'battery'
+    unit_of_measurement: '%'
+    expire_after: 660
+
+  - platform: mqtt
+    name: village_voltage_in
+    state_topic: village_temp_in/sensor/battery/state
+    expire_after: 660
+
+  - platform: mqtt
+    name: village_signal_in
+    state_topic: village_temp_in/sensor/signal/state
+    expire_after: 660
+
+  - platform: derivative
+    name: village_pressure_derivative
+    source: sensor.village_pressure_in
+    round: 2
+    unit_time: 'h'
+    time_window: '03:00:00'
+
+  - platform: template
+    sensors:
+      village_sea_level_pressure:
+        friendly_name: sea pressure
+        icon_template: mdi:gauge
+        unit_of_measurement: 'hPa'
+        value_template: >-
+            {%- if states('sensor.village_pressure_in') != 'unavailable' and
+                    states('sensor.village_temp_in') != 'unavailable' %}
+                {% set p1 = states('sensor.village_pressure_in') | float %}
+                {% set t = states('sensor.village_temp_in') | float %}
+                {% set h = 133 | float %}
+                {{ (p1 *  ( (1 - (0.0065 * h) / (t + (0.0065 * h) + 273.15)) **  -5.257)) | round(2) }}
+            {% else %}
+                {{ states('sensor.village_sea_level_pressure') }}
+            {%- endif %}
+
+      village_change_pressure:
+        friendly_name: change
+        icon_template: >-
+          {%if states('sensor.village_pressure_derivative') | float > 0.33 %}
+            {{'mdi:trending-up'}}
+          {% elif states('sensor.village_pressure_derivative') | float < -0.33 %}
+            {{'mdi:trending-down'}}
+          {% else %}
+            {{'mdi:trending-neutral'}}
+          {% endif %}
+        value_template: >-
+          {{ states('sensor.village_pressure_derivative') }}
+        unit_of_measurement: 'hPa/h'
+
+script:
+  village_reboot:
+    alias: village reboot
+    icon: mdi:router-wireless
+    sequence:
+      - service: shell_command.village_reboot
+
+shell_command:
+  village_reboot: '/config/cmds/village_reboot'

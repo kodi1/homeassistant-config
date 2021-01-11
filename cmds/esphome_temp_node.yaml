@@ -1,0 +1,158 @@
+substitutions:
+  devicename: env
+  power: '15'
+  sleep_time: 10min
+  expire_time: 20min
+  update_time: 30s
+  timeout: 30s
+  v_max: '4100'
+  v_min: '2750'
+
+esphome:
+  name: ${devicename}
+  platform: ESP8266
+  board: esp01
+  on_boot:
+    priority: 799
+    then:
+      - switch.turn_on: sensor_power
+  # on_shutdown:
+  #   then:
+  #     - switch.turn_off: sensor_power
+  #     - deep_sleep.enter: sleep_1
+
+mqtt:
+  broker: !secret mqtt_host
+  username: !secret mqtt_user
+  password: !secret mqtt_pass
+  discovery: False
+  reboot_timeout: ${timeout}
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+  output_power: ${power}
+  reboot_timeout: ${timeout}
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: ${devicename}
+    password: !secret wifi_password
+
+i2c:
+  frequency: 50kHz
+
+sensor:
+  - platform: adc
+    pin: A0
+    name: battery
+    id: batt
+    update_interval: ${update_time}
+    accuracy_decimals: 1
+    filters:
+      - multiply: 4305
+    unit_of_measurement: mV
+    expire_after: ${expire_time}
+    #state_topic: ${devicename}/battery
+    retain: False
+    on_value:
+      then:
+        - wait_until:
+            mqtt.connected:
+        - mqtt.publish:
+            topic: ${devicename}/sensor/percent/state
+            payload: !lambda |-
+              const float min = ${v_min};
+              const float max = ${v_max};
+              char val[6];
+              x = min < x ? x : min;
+              x = max > x ? x : max;
+              snprintf(val, sizeof(val), "%.1f", ((x - min) * 100) / (max - min));
+              return val;
+
+  # - platform: template
+  #   name: percent
+  #   lambda: |-
+  #     const float min = ${v_min};
+  #     const float max = ${v_max};
+  #     return (((id(batt).state) - min) * 100) / (max - min);
+  #   accuracy_decimals: 1
+  #   update_interval: ${update_time}
+  #   unit_of_measurement: '%'
+  #   expire_after: ${expire_time}
+  #   #state_topic: ${devicename}/percent
+  #   retain: False
+
+  - platform: bme280
+    temperature:
+      name: temperature
+      accuracy_decimals: 2
+      expire_after: ${expire_time}
+      #state_topic: ${devicename}/temperature
+      retain: False
+    pressure:
+      name: pressure
+      accuracy_decimals: 2
+      expire_after: ${expire_time}
+      #state_topic: ${devicename}/pressure
+      retain: False
+    humidity:
+      name: humidity
+      accuracy_decimals: 2
+      expire_after: ${expire_time}
+      #state_topic: ${devicename}/humidity
+      retain: False
+    address: 0x76
+    update_interval: ${update_time}
+
+# diff --git a/dht.cpp b/dht_.cpp
+# index 625a546..86681ae 100644
+# --- a/dht.cpp
+# +++ b/dht_.cpp
+# @@ -80,6 +80,7 @@ bool HOT ICACHE_RAM_ATTR DHT::read_sensor_(float *temperature, float *humidity,
+#    uint8_t data[5] = {0, 0, 0, 0, 0};
+
+#    {
+# +    delayMicroseconds(1 * 1000 * 1000);
+#      InterruptLock lock;
+
+#      this->pin_->digital_write(false);
+
+  - platform: dht
+    model: DHT22
+    pin:
+      number: 12
+    temperature:
+      name: temperature
+      accuracy_decimals: 1
+      retain: False
+    humidity:
+      name: humidity
+      accuracy_decimals: 1
+      retain: False
+    update_interval: ${update_time}
+
+  - platform: wifi_signal
+    name: signal
+    expire_after: ${expire_time}
+    update_interval: ${update_time}
+    #state_topic: ${devicename}/signal
+    retain: False
+
+switch:
+  - platform: gpio
+    id: sensor_power
+    pin:
+      number: 13
+      inverted: yes
+
+deep_sleep:
+  id: sleep_1
+  run_duration: 1s
+  sleep_duration: ${sleep_time}
+
+# debug:
+
+# logger:
+#   level: debug

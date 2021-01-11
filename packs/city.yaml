@@ -1,0 +1,332 @@
+homeassistant:
+  customize:
+    automation.heat_city_2:
+      icon: mdi:fireplace
+
+sensor:
+  - platform: derivative
+    name: city_pressure_derivative
+    source: sensor.city_sea_level_pressure
+    round: 2
+    unit_time: 'h'
+    time_window: '03:00:00'
+
+  - platform: template
+    sensors:
+      city_change_pressure:
+        friendly_name: change
+        icon_template: >-
+          {%if states('sensor.city_pressure_derivative') | float > 0.33 %}
+            {{'mdi:trending-up'}}
+          {% elif states('sensor.city_pressure_derivative') | float < -0.33 %}
+            {{'mdi:trending-down'}}
+          {% else %}
+            {{'mdi:trending-neutral'}}
+          {% endif %}
+        value_template: >-
+          {{ states('sensor.city_pressure_derivative') }}
+        unit_of_measurement: 'hPa/h'
+
+automation:
+  - alias: ligth_city_2
+    trigger:
+      - platform: state
+        entity_id: light.city_2
+        to: 'on'
+        for:
+          minutes: 5
+          seconds: 30
+      - platform: state
+        entity_id: binary_sensor.motion_city_2
+        to: 'on'
+      - platform: state
+        entity_id: binary_sensor.motion_city_2
+        to: 'off'
+        for:
+          minutes: 1
+          seconds: 10
+      - platform: mqtt
+        topic: 'tele/zha_bridge_city/054B/SENSOR'
+    mode: restart
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{
+                    trigger.platform == "mqtt" and
+                    trigger.payload_json.ZbReceived["0x054B"] is defined and
+                    trigger.payload_json.ZbReceived["0x054B"].Power == 0
+                  }}
+              - condition: state
+                entity_id: light.city_2
+                state: 'on'
+            sequence:
+              - service: light.turn_off
+                data:
+                  entity_id: light.city_2
+
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{
+                    trigger.platform == "mqtt" and
+                    trigger.payload_json.ZbReceived["0x054B"] is defined and
+                    trigger.payload_json.ZbReceived["0x054B"].Power == 1
+                  }}
+              - condition: state
+                entity_id: light.city_2
+                state: 'on'
+            sequence:
+              - service: light.turn_on
+                data:
+                  entity_id: light.city_2
+                data_template:
+                  color_temp: >-
+                    {%- set var = state_attr('light.city_2', 'color_temp') | float + ((454 - 250) / 8) -%}
+                    {%- if var > 454 -%}
+                      {%- set var = 250 -%}
+                    {%- endif -%}
+                    {{ var | int }}
+
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{
+                    trigger.platform == "mqtt" and
+                    trigger.payload_json.ZbReceived["0x054B"] is defined and
+                    trigger.payload_json.ZbReceived["0x054B"].Power == 2
+                  }}
+              - condition: state
+                entity_id: light.city_2
+                state: 'on'
+            sequence:
+              - service: light.turn_on
+                data:
+                  entity_id: light.city_2
+                data_template:
+                  brightness: >-
+                    {%- set var = state_attr('light.city_2', 'brightness') | float + ((254 - 1) / 8) -%}
+                    {%- if var > 254 -%}
+                      {%- set var = 1 -%}
+                    {%- endif -%}
+                    {{ var | int }}
+
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{
+                    trigger.platform == "mqtt" and
+                    trigger.payload_json.ZbReceived["0x054B"] is defined and
+                    trigger.payload_json.ZbReceived["0x054B"].Power == 0
+                  }}
+              - condition: state
+                entity_id: light.city_2
+                state: 'off'
+            sequence:
+              - service: light.turn_on
+                data:
+                  entity_id: light.city_2
+                  brightness_pct: 100
+              - delay:
+                  milliseconds: 250
+              - service: light.turn_on
+                data:
+                  entity_id: light.city_2
+                  color_temp: 352
+
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{
+                    trigger.platform == "mqtt" and
+                    trigger.payload_json.ZbReceived["0x054B"] is defined and
+                    trigger.payload_json.ZbReceived["0x054B"].Power == 1
+                  }}
+              - condition: state
+                entity_id: light.city_2
+                state: 'off'
+            sequence:
+              - service: light.turn_on
+                data:
+                  entity_id: light.city_2
+                  brightness_pct: 85
+
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{
+                    trigger.platform == "mqtt" and
+                    trigger.payload_json.ZbReceived["0x054B"] is defined and
+                    trigger.payload_json.ZbReceived["0x054B"].Power == 2
+                  }}
+              - condition: state
+                entity_id: light.city_2
+                state: 'off'
+            sequence:
+              - service: light.turn_on
+                data:
+                  entity_id: light.city_2
+                  brightness_pct: 1
+
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{
+                    trigger.platform == "state" and
+                    trigger.entity_id == "binary_sensor.motion_city_2" and
+                    trigger.to_state.state == "on"
+                  }}
+              - condition: state
+                entity_id: light.city_2
+                state: 'off'
+              - condition: or
+                conditions:
+                  - condition: sun
+                    after: sunset
+                    after_offset: '-00:30:00'
+                  - condition: time
+                    before: '0:20:00'
+            sequence:
+              - service: light.turn_on
+                data:
+                  entity_id: light.city_2
+
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{
+                    trigger.platform == "state" and
+                    trigger.entity_id == "binary_sensor.motion_city_2" and
+                    trigger.to_state.state == "off"
+                  }}
+              - condition: state
+                entity_id: light.city_2
+                state: 'on'
+            sequence:
+              - service: light.turn_off
+                data:
+                  entity_id: light.city_2
+
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{
+                    trigger.platform == "state" and
+                    trigger.entity_id == "light.city_2" and
+                    trigger.to_state.state == "on"
+                  }}
+              - condition: state
+                entity_id: binary_sensor.motion_city_2
+                state: 'off'
+                for:
+                  minutes: 1
+                  seconds: 10
+            sequence:
+              - service: light.turn_off
+                data:
+                  entity_id: light.city_2
+
+  - alias: heat_city_2
+    trigger:
+      - platform: zone
+        entity_id: device_tracker.root
+        zone: zone.city
+        event: enter
+      - platform: zone
+        entity_id: device_tracker.root
+        zone: zone.city
+        event: leave
+      - platform: numeric_state
+        entity_id: proximity.city
+        above: 15
+      - platform: time
+        at: '23:50:00'
+      - platform: time
+        at: '10:45:00'
+    mode: restart
+    action:
+      - choose:
+          - conditions:
+              - condition: or
+                conditions:
+                  - condition: template
+                    value_template: >-
+                      {{
+                        trigger.platform == "zone" and
+                        trigger.event == "enter"
+                      }}
+                  - condition: template
+                    value_template: >-
+                      {{
+                        trigger.platform == "time" and
+                        trigger.now.strftime('%H:%M') == "10:45"
+                      }}
+              - condition: time
+                after: '10:45:00'
+                before: '23:50:00'
+              - condition: zone
+                entity_id: device_tracker.root
+                zone: zone.city
+              - condition: state
+                entity_id: climate.city_2
+                state: 'off'
+            sequence:
+              - service: climate.set_hvac_mode
+                data:
+                  entity_id: climate.city_2
+                  hvac_mode: 'heat'
+
+          - conditions:
+              - condition: or
+                conditions:
+                  - condition: template
+                    value_template: >-
+                      {{
+                        trigger.platform == "zone" and
+                        trigger.event == "leave"
+                      }}
+                  - condition: template
+                    value_template: >-
+                      {{
+                        trigger.platform == "time" and
+                        trigger.now.strftime('%H:%M') == "23:50"
+                      }}
+              - condition: 'state'
+                entity_id: climate.city_2
+                state: 'heat'
+            sequence:
+              - service: climate.set_hvac_mode
+                data:
+                  entity_id: climate.city_2
+                  hvac_mode: 'off'
+
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{
+                    trigger.platform == "numeric_state" and
+                    trigger.entity_id == "proximity.city"
+                  }}
+            sequence:
+              - service: climate.set_hvac_mode
+                data:
+                  entity_id: climate.city_2
+                  hvac_mode: 'off'
+              - service: automation.turn_off
+                data:
+                  entity_id: automation.heat_city_2
+
+climate:
+  - platform: generic_thermostat
+    name: city_2
+    heater: switch.city_1
+    target_sensor: sensor.city_temp_in_2
+    min_temp: 18
+    max_temp: 22
+    ac_mode: false
+    target_temp: 20.0
+    cold_tolerance: 0.1
+    hot_tolerance: 0.0
+    initial_hvac_mode: 'off'
+    precision: 0.1

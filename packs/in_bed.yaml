@@ -1,0 +1,163 @@
+homeassistant:
+  customize:
+    automation.night_light_switch:
+      friendly_name: night
+      icon: mdi:track-light
+    automation.in_bed:
+      icon: mdi:bed-king
+    automation.in_bed_clear:
+      icon: mdi:bed-king-outline
+    automation.in_bed_light:
+      icon: mdi:lightbulb-on-outline
+
+automation:
+  - alias: in_bed
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.lumi_lumi_vibration_aq1_e5c69d03_ias_zone
+        to: 'on'
+      - platform: state
+        entity_id: binary_sensor.lumi_lumi_sensor_motion_c56e2702_ias_zone
+        to: 'on'
+      - platform: event
+        event_type: android_alarm
+    mode: restart
+    action:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{
+                    trigger.platform == "state" and
+                    trigger.entity_id == "binary_sensor.lumi_lumi_vibration_aq1_e5c69d03_ias_zone" and
+                    trigger.to_state.state == "on"
+                  }}
+              - condition: state
+                entity_id: input_boolean.in_bed_dummy_switch
+                state: 'off'
+              - condition: state
+                entity_id: device_tracker.root
+                state: 'home'
+              - condition: state
+                entity_id: media_player.livingtv
+                state: 'idle'
+              - condition: state
+                entity_id: device_tracker.n0ll
+                state: 'not_home'
+              - condition: time
+                after: '22:30:00'
+                before: '06:00:00'
+            sequence:
+              - service: script.light_extend_clear
+              - wait_template: "{{ is_state('timer.lumi_double_switch_1_timer', 'idle') }}"
+                timeout: '00:00:30'
+                continue_on_timeout: 'true'
+              - service: script.finish_lights_clear_timers
+              - wait_template: "{{ is_state('timer.bed_light_timer', 'idle') }}"
+                timeout: '00:00:30'
+                continue_on_timeout: 'true'
+              - service: input_boolean.turn_on
+                data:
+                  entity_id: input_boolean.in_bed_dummy_switch
+              - service: automation.turn_off
+                data:
+                  entity_id: automation.bed_light_trigger
+              - delay: '00:00:01'
+              - service: timer.start
+                entity_id: timer.dummy_in_bed
+                data:
+                  duration: '00:05:00'
+
+      - choose:
+          - conditions:
+              - condition: or
+                conditions:
+                  - condition: template
+                    value_template: >-
+                      {{
+                        trigger.platform == "state" and
+                        trigger.entity_id == "binary_sensor.lumi_lumi_sensor_motion_c56e2702_ias_zone" and
+                        trigger.to_state.state == "on"
+                      }}
+                  - condition: template
+                    value_template: >-
+                      {{
+                        trigger.platform == "event" and
+                          trigger.event.event_type == "android_alarm"
+                      }}
+              - condition: and
+                conditions:
+                  - condition: state
+                    entity_id: input_boolean.in_bed_dummy_switch
+                    state: 'on'
+                  - condition: state
+                    entity_id: device_tracker.root
+                    state: 'home'
+            sequence:
+              - service: input_boolean.turn_off
+                data:
+                  entity_id: input_boolean.in_bed_dummy_switch
+              - service: automation.turn_on
+                data:
+                  entity_id: automation.bed_light_trigger
+
+  - alias: night_light_switch
+    trigger:
+      - platform: event
+        event_type: zha_event
+        event_data:
+          device_ieee: '00:15:8d:00:02:b0:7a:42'
+          command: 'single'
+    action:
+      - service_template: >-
+          {%-
+              set scr = {
+                'on': 'script.bed_lights_off',
+                'off': 'script.bed_lights_on'
+              }
+            -%}
+          {{ scr[states('light.bed_led')] }}
+
+  - alias: in_bed_light
+    trigger:
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.dummy_in_bed
+      - platform: event
+        event_type: timer.restarted
+        event_data:
+          entity_id: timer.dummy_in_bed
+      - platform: event
+        event_type: timer.started
+        event_data:
+          entity_id: timer.dummy_in_bed
+    condition:
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: >-
+              {{
+                  is_state('binary_sensor.day', 'off') or
+                    is_state('light.bed_led', 'on')
+                }}
+    action:
+      - service_template: >-
+          {%-
+              set scr = {
+                'timer.finished': 'script.bed_lights_off',
+                'timer.started': 'script.bed_lights_on',
+                'timer.restarted': 'script.bed_lights_on'
+              }
+            -%}
+          {{ scr[trigger.event.event_type] }}
+
+input_boolean:
+  in_bed_dummy_switch:
+    initial: off
+
+timer:
+  dummy_in_bed:
+    name: sleep
+    icon: mdi:clock
+    duration: '00:03:00'

@@ -1,0 +1,5 @@
+#!/bin/bash
+source /config/set_env
+
+sshpass -p ${TOMATOPASS} ssh ${TOMATOUSER}@${TOMATOHOST} \
+reboot &

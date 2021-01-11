@@ -1,0 +1,183 @@
+homeassistant:
+  customize:
+    light.ikea_of_sweden_tradfri_bulb_e27_cws_opal_600lm_c66d14fe_level_light_color_on_off:
+      friendly_name: bed main
+      icon: mdi:wall-sconce-flat
+    light.bed_led:
+      friendly_name: bed led
+      icon: mdi:wall-sconce
+    automation.bed_light_trigger:
+      friendly_name: light on
+      icon: mdi:lightbulb-outline
+    automation.bed_light_other_clear:
+      friendly_name: other off
+      icon: mdi:lightbulb-multiple-outline
+
+automation:
+  - alias: bed_light_trigger
+    initial_state: true
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.lumi_lumi_sensor_motion_c6632702_ias_zone
+        to: 'on'
+    action:
+      - service: script.bed_auto_on_light
+
+  - alias: bed_light_other_clear
+    initial_state: true
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.lumi_lumi_sensor_motion_c6632702_occupancy
+        to: 'on'
+        for:
+          seconds: 3
+    action:
+      - service: script.hall_clear_timer
+      - service: script.living_clear_timer
+
+  - alias: bed_light_on
+    trigger:
+      - platform: state
+        entity_id: timer.bed_light_timer
+        to: 'active'
+        from: 'idle'
+    action:
+      - service: script.bed_lights_on
+
+  - alias: bed_light_off
+    trigger:
+      - platform: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.bed_light_timer
+    action:
+      - service: script.bed_lights_off
+
+input_number:
+  bed_light_time:
+    name: 'bed'
+    unit_of_measurement: 'sec'
+    min: 30
+    max: 180
+    step: 5
+    icon: mdi:camera-timer
+
+script:
+  bed_lights_off:
+    sequence:
+      - service: light.turn_off
+        entity_id: light.bed_led
+        data:
+          transition: 15
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: binary_sensor.night_mode
+            state: 'off'
+          - condition: state
+            entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_opal_600lm_c66d14fe_level_light_color_on_off
+            state: 'on'
+      - service: light.turn_off
+        entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_opal_600lm_c66d14fe_level_light_color_on_off
+        data:
+          transition: 3
+
+  bed_lights_on:
+    sequence:
+      - service: light.turn_on
+        entity_id: light.bed_led
+        data_template:
+          rgb_color: ['{{(range(50, 100)|random)}}','{{(range(200, 250)|random)}}','{{(range(100, 150)|random)}}']
+          transition: '{{5}}'
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: binary_sensor.night_mode
+            state: 'off'
+      # transition not work if current and
+      # target brightness are diffrent
+      - service: light.turn_on
+        data:
+          entity_id: light.ikea_of_sweden_tradfri_bulb_e27_cws_opal_600lm_c66d14fe_level_light_color_on_off
+          rgb_color: [ 255, 218, 182]
+          brightness_pct: 1
+      - service: light.turn_on
+        data:
+          entity_id:
+            - light.ikea_of_sweden_tradfri_bulb_e27_cws_opal_600lm_c66d14fe_level_light_color_on_off
+          brightness_pct: 85
+          transition: 5
+
+  bed_auto_on_light:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: binary_sensor.day
+            state: 'off'
+      - service: logbook.log
+        data:
+          name: 'Bed light'
+          message: 'On'
+      - service: timer.start
+        entity_id: timer.bed_light_timer
+        data_template:
+          duration: "{{ states('input_number.bed_light_time') | int }}"
+
+  bed_clear_timer:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: timer.bed_light_timer
+            state: 'active'
+      - service: timer.finish
+        entity_id: timer.bed_light_timer
+
+timer:
+  bed_light_timer:
+    name: light
+    icon: mdi:timer-sand
+    duration: '00:01:00'
+
+light:
+  - platform: mqtt
+    schema: template
+    name: 'bed led'
+    effect_list:
+      - cycle
+      - none
+    command_topic: 'bedroom_led/cmd'
+    state_topic: 'bedroom_led/status/led'
+    command_on_template: >-
+      {{"rgb_json,{'state':'on'"}}
+      {%- if brightness is defined -%}
+      ,'brightness':{{brightness}}
+      {%- endif -%}
+      {%- if red is defined and green is defined and blue is defined -%}
+        ,'r':{{red}},'g':{{green}},'b':{{blue}}
+      {%- endif -%}
+      {%- if transition is defined -%}
+        ,'transition':{{transition |int * 1000}}
+      {%- else -%}
+        ,'transition':{{3000}}
+      {%- endif -%}
+      {%- if effect is defined -%}
+        ,'eff':'{{effect}}','eff_time': {{45}}
+      {%- endif -%}
+      {{"}"}}
+    command_off_template: >-
+      {{"rgb_json,{'state':'off'"}}
+      {%- if transition is defined -%}
+      ,'transition':{{transition |int * 1000}}
+      {%- endif -%}
+      {{"}"}}
+    state_template: '{{ value_json.state }}'
+    brightness_template: '{{ value_json.brightness }}'
+    red_template: '{{ value_json.r }}'
+    green_template: '{{ value_json.g }}'
+    blue_template: '{{ value_json.b }}'
+    effect_template: '{{ value_json.eff }}'
+    availability_topic: 'bedroom_led/status'
+    payload_available: 'Connected'
+    payload_not_available: 'Connection Lost'

@@ -1,0 +1,149 @@
+homeassistant:
+  customize:
+    alert.vacuum_clean:
+      icon: mdi:spray-bottle
+
+sensor:
+  - platform: mqtt
+    name: vacuum_map
+    state_topic: valetudo/rockrobo/state
+    json_attributes_topic: valetudo/rockrobo/map_data_parsed
+    value_template: OK
+
+binary_sensor:
+  - platform: template
+    sensors:
+      clean_vacuum:
+        icon_template: mdi:delete-sweep
+        device_class: problem
+        delay_on:
+          seconds: 5
+        delay_off:
+          seconds: 10
+        value_template: >-
+          {%- if is_state('vacuum.rockrobo', 'docked') -%}
+            {{
+              states('counter.clean_counter') |int  >= 6 or
+              state_attr('vacuum.rockrobo', 'mainBrush') |float < 3 or
+              state_attr('vacuum.rockrobo', 'sideBrush') |float < 3 or
+              state_attr('vacuum.rockrobo', 'filter') |float < 3 or
+              state_attr('vacuum.rockrobo', 'sensor') |float < 0.5
+            }}
+          {%- else -%}
+            False
+          {%- endif -%}
+
+counter:
+  clean_counter:
+    icon: mdi:delete-alert
+
+alert:
+  vacuum_clean:
+    name: vacuum
+    entity_id: binary_sensor.clean_vacuum
+    state: 'on'
+    repeat:
+      - 60
+      - 90
+      - 120
+      - 240
+    can_acknowledge: true
+    title: roborock
+    message: cleanup
+    done_message: done
+    notifiers:
+      - gmail
+
+script:
+  bed_clean:
+    alias: bed
+    icon: mdi:bed-king
+    sequence:
+      - service: vacuum.send_command
+        data:
+          entity_id: vacuum.rockrobo
+          command: segmented_cleanup
+          params:
+            segment_ids:
+              - bed
+            repeats: 1
+
+  living_clean:
+    alias: living
+    icon: mdi:sofa
+    sequence:
+      - service: vacuum.send_command
+        data:
+          entity_id: vacuum.rockrobo
+          command: segmented_cleanup
+          params:
+            segment_ids:
+              - living
+            repeats: 1
+
+  hall_clean:
+    alias: hall
+    icon: mdi:shoe-print
+    sequence:
+      - service: vacuum.send_command
+        data:
+          entity_id: vacuum.rockrobo
+          command: segmented_cleanup
+          params:
+            segment_ids:
+              - hall
+            repeats: 1
+
+  all_clean:
+    alias: all
+    icon: mdi:floor-plan
+    sequence:
+      - service: scene.create
+        data:
+          scene_id: cleaning_vaccum
+          snapshot_entities:
+            - automation.home_motion_detect
+      - service: automation.turn_off
+        data:
+          entity_id: automation.home_motion_detect
+      - service: script.all_notify
+        data:
+          tit: clean
+          msg: start
+      - service: vacuum.send_command
+        data:
+          entity_id: vacuum.rockrobo
+          command: segmented_cleanup
+          params:
+            segment_ids:
+              - bed
+              - hall
+              - living
+            repeats: 1
+      - wait_template: "{{ is_state('vacuum.rockrobo', 'cleaning') }}"
+      - wait_template: "{{ is_state('vacuum.rockrobo', 'docked') }}"
+      - service: counter.increment
+        data:
+          entity_id: counter.clean_counter
+      - service: script.all_notify
+        data:
+          tit: clean
+          msg: end
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: device_tracker.root
+            state: not_home
+      - service: scene.turn_on
+        data:
+          entity_id: scene.cleaning_vaccum
+
+  roborock_reboot:
+    alias: reboot
+    icon: mdi:restart-alert
+    sequence:
+      - service: shell_command.roborock_reboot
+
+#/opt/rockrobo/wlan/wifi_start.sh - udhcpc -b -i wlan0 -x hostname:$(hostname) >/dev/null 2>&1
+shell_command:
+  roborock_reboot: /config/cmds/roborock_cmd "nohup bash -c 'sleep 300; /sbin/reboot' > /dev/null&"

@@ -1,0 +1,598 @@
+homeassistant:
+  customize:
+    switch.tv_cec:
+      icon: mdi:video-input-hdmi
+    script.tv_hdmi1:
+      icon: mdi:television
+    script.tv_hdmi1_audio:
+      icon: mdi:surround-sound
+    binary_sensor.bravia:
+      icon: mdi:television
+    automation.kodi_auto_out:
+      icon: mdi:high-definition-box
+    automation.kodi_paly:
+      friendly_name: kodi play
+      icon: mdi:television-play
+    automation.kodi_pause:
+      friendly_name: kodi pause
+      icon: mdi:television-pause
+    automation.kodi_events:
+      friendly_name: kodi events
+      icon: mdi:arrow-right-bold
+    automation.tv_off:
+      friendly_name: tv off
+      icon: mdi:television-off
+    automation.tv_on:
+      friendly_name: tv on
+      icon: mdi:television
+
+automation:
+  - alias: kodi sleep timer
+    trigger:
+      - platform: event
+        event_type: kodi_sleep_timer
+    condition:
+      - condition: state
+        entity_id: switch.tv_cec
+        state: 'on'
+    action:
+      - service: switch.turn_off
+        entity_id: switch.tv_cec
+      - delay: '00:01:45'
+      - service: media_player.volume_set
+        data:
+          entity_id: media_player.livingtv
+          volume_level: 1.0
+      - service: script.all_notify
+        data:
+          tit: 'kodi'
+          msg: 'restore volume'
+
+  - alias: kodi_events
+    trigger:
+      - platform: event
+        event_type: kodi_living_saver_on
+      - platform: event
+        event_type: kodi_living_saver_off
+      - platform: state
+        entity_id: media_player.livingtv
+        to: playing
+        for:
+          seconds: 3
+    action:
+      - service_template: >-
+          {%- if trigger.event and
+                  (trigger.event.event_type == 'kodi_living_saver_on') -%}
+            input_boolean.turn_on
+          {%- endif -%}
+          {%- if trigger.event and
+                  (
+                    (trigger.event.event_type == 'kodi_living_saver_off') or
+                    (trigger.event.event_type == 'kodi_living_startup')
+                  ) -%}
+            input_boolean.turn_off
+          {%- endif -%}
+          {%- if trigger.to_state and
+                (trigger.to_state.state == 'playing') -%}
+            input_boolean.turn_off
+          {%- endif -%}
+        data:
+          entity_id: input_boolean.dummy_screen_saver
+
+  - alias: tv off
+    initial_state: off
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.kodi_screen_saver
+        to: 'on'
+        for:
+          seconds: 45
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: media_player.livingtv
+          state: idle
+        # radio will not start if kodi_sleep_timer is fired
+        - condition: state
+          entity_id: switch.tv_cec
+          state: 'on'
+    action:
+      - service: script.tv_off
+
+  - alias: tv on
+    initial_state: off
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.kodi_screen_saver
+        to: 'off'
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: media_player.livingtv
+          state: idle
+        - condition: state
+          entity_id: switch.tv_cec
+          state: 'off'
+    action:
+      - service: script.tv_on
+
+  - alias: kodi paly
+    trigger:
+      - platform: state
+        entity_id: media_player.livingtv
+        to: playing
+        for:
+          seconds: 3
+    action:
+      - service: script.finish_lights
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.hyperion_select_effect
+          option: None
+
+  # - alias: kodi chek fps
+  #   trigger:
+  #     - platform: state
+  #       entity_id: media_player.kodi
+  #       to: playing
+  #       for:
+  #         seconds: 10
+  #   action:
+  #     - service: kodi.call_method
+  #       data:
+  #         entity_id: media_player.kodi
+  #         method: XBMC.GetInfoLabels
+  #         labels:
+  #           - Player.Process(VideoFPS)
+
+  # - alias: kodi auto out
+  #   trigger:
+  #     - platform: event
+  #       event_type: kodi_call_method_result
+  #   condition:
+  #     condition: and
+  #     conditions:
+  #       - condition: template
+  #         value_template: '{{trigger.event.data.result_ok}}'
+  #       - condition: template
+  #         value_template: >-
+  #           {{
+  #             trigger.event.data.input.params.labels[0] == 'Player.Process(VideoFPS)'
+  #             }}
+  #   action:
+  #     - service: logbook.log
+  #       data_template:
+  #         name: 'Kodi call back'
+  #         message: "VideoFPS: {{ trigger.event.data.result['Player.Process(VideoFPS)'] }}"
+  #     - service_template: >-
+  #         {% if trigger.event.data.result['Player.Process(VideoFPS)'] | float > 30.0 %}
+  #           script.turn_off_uhd
+  #         {% else %}
+  #           script.turn_on_uhd
+  #         {% endif %}
+
+  - alias: kodi pause
+    trigger:
+      - platform: state
+        entity_id: media_player.livingtv
+        from: playing
+        to: idle
+        for:
+          seconds: 1
+      - platform: state
+        entity_id: media_player.livingtv
+        to: paused
+        for:
+          seconds: 1
+    action:
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.hyperion_select_effect
+          option: Trails
+
+  - alias: kodi pause long
+    trigger:
+      - platform: state
+        entity_id: media_player.livingtv
+        to: paused
+        for:
+          seconds: 3
+    action:
+      - service: script.state_kodi
+      - service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: Addons.ExecuteAddon
+          addonid: plugin.program.braviacontrol
+          params: VolumeDown
+      - delay: '00:00:01'
+      - service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: Addons.ExecuteAddon
+          addonid: plugin.program.braviacontrol
+          params: VolumeUp
+
+  - alias: kodi_toggle
+    trigger:
+      - platform: event
+        event_type: kodi_toggle
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: script.tv_on
+          state: 'off'
+        - condition: state
+          entity_id: script.tv_off
+          state: 'off'
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: device_tracker.root
+            state: 'home'
+          - condition: state
+            entity_id: device_tracker.n0ll
+            state: 'home'
+    action:
+      - service: media_player.toggle
+        data:
+          entity_id: media_player.kodi_tv
+
+media_player:
+  - platform: kodi
+    host: !secret kodi_host
+    port: !secret kodi_port
+    timeout: 15
+    username: !secret kodi_user
+    password: !secret kodi_pass
+    turn_off_action:
+      service: script.kodi_turn_off
+    turn_on_action:
+      service: script.kodi_turn_on
+
+  - platform: universal
+    name: 'Kodi Tv'
+    children:
+      - media_player.livingtv
+    state_template: >
+      {% if is_state('media_player.livingtv', 'idle') and is_state('switch.tv_cec', 'off') %}
+        off
+      {% else %}
+        {{ states('media_player.livingtv') }}
+      {% endif %}
+    commands:
+      turn_on:
+        service: script.kodi_turn_on
+        # service: media_player.turn_on
+        # data:
+        #   entity_id: media_player.livingtv
+      turn_off:
+        service: script.kodi_turn_off
+        # service: media_player.turn_off
+        # data:
+        #   entity_id: media_player.livingtv
+      volume_up:
+        service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: Input.ExecuteAction
+          action: volumeup
+      volume_down:
+        service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: Input.ExecuteAction
+          action: volumedown
+      volume_mute:
+        service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: Input.ExecuteAction
+          action: mute
+    attributes:
+      is_volume_muted: media_player.livingtv|is_volume_muted
+      volume_level: media_player.livingtv|volume_level
+
+binary_sensor:
+  - platform: template
+    sensors:
+      kodi_notify:
+        value_template: >-
+          {{
+            is_state('binary_sensor.kodi_screen_saver', 'off') and
+            (
+              is_state('media_player.livingtv', 'playing') or
+              is_state('media_player.livingtv', 'paused')
+            )
+          }}
+
+      kodi_screen_saver:
+        friendly_name: Kodi saver
+        icon_template: mdi:movie-roll
+        value_template: >-
+          {{
+            is_state('input_boolean.dummy_screen_saver', 'on')
+          }}
+
+script:
+  kodi_restart_if:
+    sequence:
+      - condition: and
+        conditions:
+        - condition: or
+          conditions:
+            - condition: state
+              entity_id: switch.tv_cec
+              state: 'on'
+      - service: script.all_notify
+        data:
+          tit: 'living tv'
+          msg: 'restart'
+      - delay: '00:01:30'
+      - service: script.living_tv_reboot
+
+  # turn_on_uhd:
+  #   sequence:
+  #     - condition: and
+  #       conditions:
+  #       - condition: or
+  #         conditions:
+  #           - condition: state
+  #             entity_id: switch.tv_mode_uhd
+  #             state: 'off'
+  #     - service: switch.turn_on
+  #       entity_id: switch.tv_mode_uhd
+
+  # turn_off_uhd:
+  #   sequence:
+  #     - condition: state
+  #       entity_id: switch.tv_mode_uhd
+  #       state: 'on'
+  #     - service: switch.turn_off
+  #       entity_id: switch.tv_mode_uhd
+
+  tv_hdmi1:
+    sequence:
+      - service: shell_command.tv_hdmi1
+
+  tv_hdmi1_audio:
+    sequence:
+      - service: shell_command.tv_hdmi1_audio
+
+  kodi_turn_off:
+    sequence:
+      - condition: and
+        conditions:
+        - condition: or
+          conditions:
+            - condition: state
+              entity_id: switch.tv_cec
+              state: 'on'
+      - service: media_player.media_stop
+        entity_id: media_player.livingtv
+      - delay: '00:00:03'
+      - service: shell_command.kodi_screensaver
+      - service: automation.trigger
+        entity_id: automation.tv_off
+
+  kodi_turn_on:
+    sequence:
+      - condition: template
+        value_template: "{{ is_state('binary_sensor.kodi_screen_saver', 'on') }}"
+      - service: script.kodi_wakeup
+
+  start_up_delay_av_off:
+    sequence:
+      - delay: '00:00:03'
+      - service: switch.turn_off
+        entity_id: switch.tv_cec
+      - condition: template
+        value_template: "{{ not is_state('media_player.ht_mt500_501_b34d6a', 'playing') }}"
+      - service: script.sound_bar_off
+
+  tv_on:
+    sequence:
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.hyperion_select_effect
+          option: Sparks
+      - service: switch.turn_on
+        entity_id: switch.tv_cec
+      - wait_template: "{{ is_state('switch.tv_cec', 'on') }}"
+        timeout: '00:00:15'
+        continue_on_timeout: 'true'
+      - delay: '00:00:03'
+      - service: script.tv_hdmi1_audio
+      - delay: '00:00:15'
+      - service: script.tv_hdmi1
+      - delay: '00:00:05'
+      - service: script.tv_hdmi1_audio
+      - delay: '00:00:15'
+      - service: script.tv_hdmi1
+      - service: script.state_kodi
+      - delay: '00:00:05'
+      - service: script.tv_hdmi1_audio
+      - delay: '00:00:15'
+      - service: script.tv_hdmi1
+      - delay: '00:00:05'
+      - service: script.tv_hdmi1_audio
+      - service: script.finish_lights
+      - service: songpal.set_sound_setting
+        data:
+          entity_id: media_player.soundbar
+          name: subwooferLevel
+          value: 6
+      - service: songpal.set_sound_setting
+        data:
+          entity_id: media_player.soundbar
+          name: voice
+          value: type2
+      - service: media_player.volume_set
+        data:
+          entity_id: media_player.soundbar
+          volume_level: 0.18
+      - service: notify.kodi
+        data:
+          title: 'cec on'
+          message: 'sequnce finised'
+          data:
+            icon: 'info'
+            displaytime: 5000
+      - event: tv_cec_control_done
+        event_data:
+          cec: 'on'
+
+  tv_off:
+    sequence:
+      - service: switch.turn_off
+        entity_id: switch.tv_cec
+      - wait_template: "{{ is_state('switch.tv_cec', 'off') }}"
+        timeout: '00:00:15'
+        continue_on_timeout: 'true'
+      - service: media_player.volume_set
+        data:
+          entity_id: media_player.soundbar
+          volume_level: 0.18
+      - delay: '00:00:03'
+      - service: script.radio_on
+      - service: input_select.select_option
+        data:
+          entity_id: input_select.hyperion_select_effect
+          option: Trails color
+      - service: script.kodi_restart_if
+      - event: tv_cec_control_done
+        event_data:
+          cec: 'off'
+
+  kodi_wakeup:
+    sequence:
+      - service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: Input.ExecuteAction
+          action: noop
+      - delay:
+          milliseconds: 500
+      - service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: Input.ExecuteAction
+          action: volumedown
+      - delay:
+          milliseconds: 500
+      - service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: Input.ExecuteAction
+          action: volumeup
+      - delay:
+          milliseconds: 500
+      - service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: GUI.ActivateWindow
+          window: home
+
+  kodi_seek_back:
+    sequence:
+      - service: kodi.call_method
+        data:
+          entity_id: media_player.livingtv
+          method: Input.ExecuteAction
+          action: stepback
+
+  # tv_2160p:
+  #   sequence:
+  #     - service: shell_command.tv_2160p_b
+  #     - service: kodi.call_method
+  #       data:
+  #         entity_id: media_player.kodi
+  #         method: Input.Left
+  #     - service: kodi.call_method
+  #       data:
+  #         entity_id: media_player.kodi
+  #         method: Input.Select
+  #     - service: input_boolean.turn_on
+  #       data:
+  #         entity_id: input_boolean.dummy_uhd_switch
+
+  # tv_1080p:
+  #   sequence:
+  #     - service: shell_command.tv_1080p_b
+  #     - service: kodi.call_method
+  #       data:
+  #         entity_id: media_player.kodi
+  #         method: Input.Left
+  #     - service: kodi.call_method
+  #       data:
+  #         entity_id: media_player.kodi
+  #         method: Input.Select
+  #     - service: input_boolean.turn_off
+  #       data:
+  #         entity_id: input_boolean.dummy_uhd_switch
+
+  state_kodi:
+    sequence:
+      - service: notify.kodi
+        data:
+          title: 'ha states'
+          data:
+            icon: 'info'
+            displaytime: 10000
+        data_template:
+          message: >-
+            c:{{states('sensor.cpu_usage')}}/{{states('sensor.cpu_temp')|round}}
+            n:{{states('sensor.ping_isp')|round(2)}}
+            b:{{states('sensor.root_battery')|round}}
+      - delay: '00:00:11'
+      - service: notify.kodi
+        data:
+          title: 'ha env'
+          data:
+            icon: 'info'
+            displaytime: 10000
+        data_template:
+          message: >-
+            t:{{states('sensor.temp_out')}}/{{states('sensor.temp_living')}}
+            p:{{states('sensor.sea_level_pressure')}}/{{states('sensor.change_pressure')}}
+            w:{{state_attr('weather.dark_skym', 'cloud_cover')|int}}/{{states('weather.dark_skym')}}
+
+shell_command:
+  kodi_screensaver: '/config/cmds/kodi_screensaver'
+  living_tv_reboot: '/config/cmds/living_tv_reboot {{ value }}'
+  tv_hdmi1: '/config/cmds/cec_cmd "as"'
+  tv_hdmi1_audio: '/config/cmds/cec_cmd "tx 15:70:10:00"'
+  # tv_2160p_b: '/config/cmds/tv_2160p'
+  # tv_1080p_b: '/config/cmds/tv_1080p'
+  #tv_volumedown: '/config/cmds/cec_cmd "tx 10:44:42"'
+  #tv_volumeup: '/config/cmds/cec_cmd "tx 10:44:41"'
+
+input_boolean:
+  # dummy_uhd_switch:
+  dummy_screen_saver:
+    initial: off
+
+switch:
+  - platform: command_line
+    switches:
+      tv_cec:
+        command_on: '/config/cmds/cec_cmd "tx 10:04"'
+        command_off: '/config/cmds/cec_cmd "tx 10:36"'
+
+  # - platform: template
+  #   switches:
+  #     tv_mode_uhd:
+  #       value_template: "{{ is_state('input_boolean.dummy_uhd_switch', 'on') }}"
+  #       turn_on:
+  #         service: script.tv_2160p
+  #       turn_off:
+  #         service: script.tv_1080p
+  #       icon_template: >-
+  #         {% if  is_state('input_boolean.dummy_uhd_switch', 'on') %}
+  #           mdi:ultra-high-definition
+  #         {% else %}
+  #           mdi:high-definition
+  #         {% endif %}

@@ -1,0 +1,86 @@
+title: other
+icon: mdi:robot-vacuum
+path: vacuum
+
+cards:
+  - type: vertical-stack
+    cards:
+      - type: custom:xiaomi-vacuum-card
+        entity: vacuum.rockrobo
+        image: false
+        name: false
+        vendor: valetudo
+        buttons:
+          start:
+            show: true
+            icon: mdi:death-star-variant
+          pause:
+            show: true
+          stop:
+            show: false
+          spot:
+            show: false
+          locate:
+            show: true
+            icon: mdi:emoticon-devil
+          return:
+            show: true
+            icon:  mdi:transmission-tower
+          all:
+            icon: mdi:floor-plan
+            label: all
+            service: script.turn_on
+            service_data:
+              entity_id: script.all_clean
+          sofa:
+            icon: mdi:sofa
+            label: living
+            service: script.turn_on
+            service_data:
+              entity_id: script.living_clean
+          hall:
+            icon: mdi:shoe-print
+            label: hall
+            service: script.turn_on
+            service_data:
+              entity_id: script.hall_clean
+          bed:
+            icon: mdi:bed-king
+            label: bed
+            service: script.turn_on
+            service_data:
+              entity_id: script.bed_clean
+          reboot:
+            icon: mdi:restart-alert
+            label: reboot
+            service: script.turn_on
+            service_data:
+              entity_id: script.roborock_reboot
+
+      - type: conditional
+        conditions:
+          - entity: binary_sensor.clean_vacuum
+            state: 'on'
+        card:
+          type: entities
+          show_header_toggle: false
+          state_color: true
+          entities:
+          - binary_sensor.clean_vacuum
+          - type: divider
+          - counter.clean_counter
+          - alert.vacuum_clean
+
+      - type: custom:valetudo-map-card
+        entity: sensor.vacuum_map
+        vacuum_icon: mdi:death-star-variant
+        dock_icon: mdi:gas-station
+        title: false
+        rotate: 0
+        map_scale: 2.5
+        crop:
+          top: 200
+          bottom: 0
+          left: 200
+          right: 0
+        min_height: 0

@@ -1,0 +1,171 @@
+homeassistant:
+  customize:
+    automation.living_tv:
+      friendly_name: living tv
+      icon: mdi:kodi
+    automation.root_home:
+      friendly_name: home
+      icon: mdi:home
+    automation.n0ll_home:
+      friendly_name: pc
+      icon: mdi:monitor-speaker
+    automation.home_near:
+      friendly_name: city
+      icon: mdi:home-city
+    automation.just_home:
+      friendly_name: enter
+      icon: mdi:home-import-outline
+
+automation:
+  - alias: n0ll_home
+    trigger:
+      - platform: state
+        entity_id: device_tracker.n0ll
+        from: not_home
+        to: home
+    action:
+      - service: script.n0ll_home
+
+  - alias: home_near
+    trigger:
+      - platform: numeric_state
+        entity_id: proximity.home
+        below: 35
+    condition:
+      - condition: template
+        value_template: >-
+          {{
+            is_state_attr('proximity.home', 'dir_of_travel', 'towards') or
+            is_state_attr('proximity.home', 'dir_of_travel', 'arrived')
+          }}
+    action:
+      - service: script.turn_on
+        data:
+          entity_id: script.home_near
+
+  - alias: root_home
+    initial_state: off
+    trigger:
+      - platform: zone
+        entity_id: device_tracker.root
+        zone: zone.home
+        event: enter
+    action:
+      - service: automation.turn_on
+        entity_id: automation.just_home
+
+  - alias: just_home
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.lumi_lumi_sensor_motion_c56e2702_ias_zone
+        to: 'on'
+    action:
+      - service: input_boolean.turn_off
+        entity_id: input_boolean.home_motion
+      - service: automation.turn_on
+        data:
+          entity_id:
+            - automation.motion_light_extend
+      - service: script.just_home_radio
+      - service: script.just_home_lumi_double_switch_on
+      - service: automation.turn_off
+        data:
+          entity_id:
+            - automation.just_home
+
+  - alias: living_tv
+    trigger:
+      - platform: state
+        entity_id: device_tracker.livingtv
+        to: home
+        for:
+          seconds: 45
+    action:
+      - service: script.turn_on
+        data:
+          entity_id: script.living_tv
+
+script:
+  just_home_radio:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: media_player.livingtv
+            state: 'idle'
+      - service: script.radio_on
+
+  n0ll_home:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: media_player.livingtv
+            state: 'idle'
+      - service_template: >-
+          {%-
+              set scr = {
+                'off': 'shell_command.kodi_screensaver',
+                'on': 'script.radio_on'
+              }
+            -%}
+          {{ scr[states('binary_sensor.kodi_screen_saver')] }}
+      - condition: state
+        entity_id: media_player.ht_mt500_501_b34d6a
+        state: 'playing'
+      - service: timer.pause
+        entity_id: timer.sound_bar
+
+  home_near_turnon:
+    sequence:
+      - service: switch.turn_on
+        data:
+          entity_id:
+            - switch.av_switch
+            - switch.bed_switch
+
+  home_near:
+    sequence:
+      - service: notify.gmail
+        data:
+          message: home near trigger
+          title: 'hass'
+      - service: automation.turn_off
+        data:
+          entity_id: automation.home_near
+      - service: automation.turn_on
+        data:
+          entity_id:
+            - automation.home_away
+            - automation.living_tv
+      - service: script.home_near_heating
+      - service: script.home_near_turnon
+
+  living_tv:
+    sequence:
+      - service: notify.gmail
+        data:
+          message: living near trigger
+          title: 'hass'
+      - service: automation.turn_off
+        data:
+          entity_id: automation.living_tv
+      - delay: '00:00:30'
+      - service: homeassistant.restart
+
+  just_home_lumi_double_switch_on:
+    sequence:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: input_boolean.lumi_double_switch_1
+            state: 'off'
+          - condition: state
+            entity_id: binary_sensor.day
+            state: 'off'
+      - service: script.lumi_all_lights_on
+        data:
+          bri_t: 85
+        data_template:
+          time_t: >-
+            {{ (states('input_number.just_home_light_timer') | float * 60.0) | int }}

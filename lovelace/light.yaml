@@ -1,0 +1,70 @@
+title: light
+icon: mdi:ceiling-light
+path: light
+
+cards:
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - sensor.lumi_lumi_sensor_motion_aq2_eca7ed02_illuminance
+      - type: divider
+      - input_number.just_home_light_timer
+      - type: divider
+      - binary_sensor.day
+      - binary_sensor.night_mode
+      - type: divider
+      - binary_sensor.wled_living
+      - binary_sensor.grabber_living
+      - binary_sensor.light_h
+      - binary_sensor.light_video_pause
+      - binary_sensor.home_light_extend
+
+  - type: entities
+    state_color: true
+    show_header_toggle: false
+    entities:
+      - binary_sensor.lumi_lumi_sensor_motion_c6632702_ias_zone
+      - automation.bed_light_trigger
+      - automation.bed_light_other_clear
+      - input_number.bed_light_time
+      - timer.bed_light_timer
+      - light.bed_led
+      - light.ikea_of_sweden_tradfri_bulb_e27_cws_opal_600lm_c66d14fe_level_light_color_on_off
+
+  - type: entities
+    state_color: true
+    show_header_toggle: false
+    entities:
+      - binary_sensor.lumi_lumi_sensor_motion_aq2_eca7ed02_ias_zone
+      - automation.living_light_trigger
+      - automation.living_light_other_clear
+      - input_number.living_light_time
+      - timer.living_light_timer
+      - light.hama_living
+      - light.living_light
+
+  - type: entities
+    state_color: true
+    show_header_toggle: false
+    entities:
+      - binary_sensor.lumi_lumi_sensor_motion_c56e2702_ias_zone
+      - automation.hall_light_trigger
+      - automation.hall_light_other_clear
+      - input_number.hall_light_time
+      - timer.hall_light_timer
+      - light.hall_light
+
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - input_select.hyperion_select_effect
+      - input_number.slider_effect_time
+      - timer.hyperion_effect_timer
+      - type: divider
+      - light.wled_living
+      - input_select.wled_effects
+      - input_select.wled_colors_palette
+      - input_number.wled_video_brightness
+      - type: divider
+      - automation.wled_turn_time_on

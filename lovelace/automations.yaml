@@ -1,0 +1,46 @@
+title: automations
+icon: mdi:chemical-weapon
+path: automations
+
+cards:
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - automation.root_home
+      - automation.root_not_home
+      - automation.root_work
+      - automation.n0ll_home
+      - automation.n0ll_not_home
+      - automation.home_away
+      - automation.home_near
+      - automation.just_home
+      - type: divider
+      - automation.change_pressure
+      - automation.weather_alert
+      - type: divider
+      - automation.video_grabber
+      - automation.kodi_pause
+      - automation.kodi_events
+      - automation.tv_off
+      - automation.tv_on
+      - automation.kodi_paly
+      - automation.living_tv
+      - type: divider
+      - automation.tomato_smb_restart
+      - automation.open_ports
+      - automation.auto_reboot_all
+      - type: divider
+      - automation.send_effect_hyperion
+      - automation.updates_notify
+      - automation.home_motion_detect
+      - type: divider
+      - automation.once_week_reboot
+
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - script.local_reboot
+      - script.living_tv_reboot
+      - script.tomato_reboot
+      - script.village_reboot

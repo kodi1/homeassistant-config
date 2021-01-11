@@ -1,0 +1,70 @@
+homeassistant:
+  customize:
+    binary_sensor.fan_1:
+      friendly_name: fan
+      device_class: heat
+      icon: mdi:weather-windy
+    automation.fan_1:
+      friendly_name: auto fan
+      icon: mdi:fan-auto
+
+binary_sensor:
+  - platform: template
+    sensors:
+      fan_1:
+        device_class: heat
+        delay_on:
+          seconds: 5
+        delay_off:
+          seconds: 180
+        value_template: >-
+          {{
+            states('sensor.temp_living') | float > 26.5 and
+            is_state('device_tracker.root', 'home') and
+            (
+              is_state('media_player.ht_mt500_501_b34d6a', 'playing') or
+              is_state('device_tracker.n0ll', 'home') or
+              not is_state('media_player.kodi_tv', 'off')
+            )
+          }}
+
+automation:
+  - alias: fan_1
+    initial_state: true
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.fan_1
+      - platform: event
+        event_type: up_down_my
+        event_data:
+          data: 'stop'
+
+    mode: restart
+    action:
+      - choose:
+          - conditions:
+              - condition: or
+                conditions:
+                  - condition: template
+                    value_template: >-
+                      {{
+                        trigger.platform == "event" and
+                        trigger.event.event_type == "up_down_my" and
+                        trigger.event.data == "stop"
+                      }}
+                  - condition: state
+                    entity_id: binary_sensor.fan_1
+                    state: 'off'
+            sequence:
+              - service: switch.turn_off
+                data:
+                  entity_id: switch.fan_living
+
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.fan_1
+                state: 'on'
+            sequence:
+              - service: switch.turn_on
+                data:
+                  entity_id: switch.fan_living
