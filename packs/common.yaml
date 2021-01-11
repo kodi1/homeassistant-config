@@ -1,0 +1,132 @@
+notify:
+  - platform: kodi
+    name: kodi
+    host: !secret kodi_host
+    port: !secret kodi_port
+    username: !secret kodi_user
+    password: !secret kodi_pass
+
+  - platform: smtp
+    name: gmail
+    server: smtp.gmail.com
+    port: 587
+    timeout: 15
+    sender: hass@gmail.com
+    encryption: starttls
+    username: !secret g_user
+    password: !secret g_pass
+    recipient:
+      - !secret smtp_recp
+
+input_select:
+  current_theme:
+    options:
+      - default
+      - midnight
+    initial: default
+    icon: mdi:theme-light-dark
+
+script:
+  all_notify:
+    mode: parallel
+    sequence:
+      - action: script.turn_on
+        entity_id:
+          - script.kodi_notify
+          - script.mail_notify
+          - script.web_notify
+        data_template:
+          variables:
+            t: '{{ tit }}'
+            m: '{{ msg }}'
+      - action: logbook.log
+        data_template:
+          name: '{{ tit }}'
+          message: '{{ msg }}'
+
+  mail_notify:
+    mode: queued
+    sequence:
+      - condition: template
+        value_template: >-
+          {{states('device_tracker.root') != 'home'}}
+      - action: notify.gmail
+        data_template:
+          title: '{{ t }}'
+          message: '{{ m }}'
+
+  kodi_notify:
+    mode: queued
+    sequence:
+      - condition: state
+        entity_id: binary_sensor.kodi_active
+        state: 'on'
+      - action: notify.kodi
+        data:
+          data:
+            icon: 'info'
+            displaytime: 15000
+        data_template:
+          title: '{{ t }}'
+          message: '{{ m }}'
+
+  web_notify:
+    mode: queued
+    sequence:
+      - condition: state
+        entity_id: binary_sensor.kodi_active
+        state: 'off'
+      - action: persistent_notification.create
+        data_template:
+          title: '{{ t }}'
+          message: '{{ m }}'
+
+  local_reboot:
+    alias: local reboot
+    icon: mdi:docker
+    sequence:
+      - action: input_select.select_option
+        data:
+          entity_id: input_select.power_down_restart
+          option: 'off'
+      - action: shell_command.local_reboot
+        data:
+          value: '+1'
+
+  living_tv_reboot:
+    alias: kodi reboot
+    icon: mdi:kodi
+    sequence:
+      - action: shell_command.living_tv_reboot
+        data:
+          value: '+0'
+
+  reboot_all:
+    sequence:
+      - action: script.turn_on
+        data:
+          entity_id: script.all_notify
+          variables:
+            icon_notify: restart-alert
+            tit: 'hass'
+            msg: 'restart all - 5 min wait'
+      - action: input_select.select_option
+        data:
+          entity_id: input_select.power_down_restart
+          option: 'off'
+      - action: script.turn_on
+        entity_id:
+          - script.kodi_turn_off
+      - action: shell_command.roborock_reboot
+      - action: shell_command.living_tv_reboot
+        data:
+          value: '+3'
+      - action: shell_command.local_reboot
+        data:
+          value: '+5'
+      - delay:
+          seconds: 5
+      - action: script.turn_on
+        data:
+          entity_id:
+            - script.owrt_reboot

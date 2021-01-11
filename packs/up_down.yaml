@@ -1,0 +1,182 @@
+automation:
+  - alias: timer_startup
+    id: timer_startup
+    triggers:
+      - trigger: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.start_up_delay
+    conditions:
+      condition: or
+      conditions:
+        - condition: state
+          entity_id: input_select.power_down_restart
+          state: pending
+    actions:
+      - action: homeassistant.restart
+
+  - alias: restart
+    id: restart
+    triggers:
+      - trigger: event
+        event_type: call_service
+        event_data:
+          domain: homeassistant
+          service: restart
+    conditions:
+      condition: or
+      conditions:
+        - condition: state
+          entity_id: input_select.power_down_restart
+          state: 'on'
+    actions:
+      - event: up_down_my
+        event_data:
+          data: stop
+      - action: input_select.select_option
+        data:
+          entity_id: input_select.power_down_restart
+          option: 'off'
+      - action: logbook.log
+        data_template:
+          name: restart
+          message: power down restart off
+
+  - alias: startup
+    id: startup
+    triggers:
+      - trigger: homeassistant
+        event: start
+    actions:
+      - action: >
+          {%-
+              set scr = {
+                'off': 'script.startup',
+                'on': 'script.restart',
+                'pending': 'script.powerup'
+              }
+            -%}
+          {{ scr[states('input_select.power_down_restart')] }}
+
+script:
+  restart:
+    sequence:
+      - action: script.all_notify
+        data:
+          icon_notify: restart-alert
+          tit: hass
+          msg: restart in 3 min
+      - action: input_select.select_option
+        data:
+          entity_id: input_select.power_down_restart
+          option: pending
+      - action: timer.start
+        data:
+          entity_id: timer.start_up_delay
+          duration: '00:03:00'
+
+  powerup:
+    sequence:
+      - action: script.all_notify
+        data:
+          icon_notify: home-lightning-bolt-outline
+          tit: hass
+          msg: power start up
+      - action: script.startup
+
+  startup_mqtt:
+    sequence:
+      - repeat:
+          for_each:
+            - topic: cmnd/tasmotas/json
+              payload: { 'state': '' }
+            - topic: cmnd/tasmotas/json
+              payload: { 'Status': '2' }
+            - topic: cmnd/tasmotas/json
+              payload: { 'shutterposition': '' }
+            - topic: cmnd/tasmotas/json
+              payload: { 'timers': '' }
+            - topic: cmnd/watermeter/json
+              payload: { 'water': '' }
+            - topic: cmnd/zha-bridge-city/json
+              payload: { 'ZbInfo': '' }
+            - topic: cmnd/zha-bridge-village/json
+              payload: { 'ZbInfo': '' }
+          sequence:
+            - action: mqtt.publish
+              data_template:
+                topic: >-
+                  {{repeat.item.topic}}
+                payload: >-
+                  {{repeat.item.payload | to_json }}
+
+  startup:
+    sequence:
+      - action: input_select.select_option
+        data:
+          entity_id: input_select.power_down_restart
+          option: 'on'
+      - action: timer.start
+        data:
+          entity_id: timer.start_up_delay
+          duration: '00:10:00'
+      - action: script.turn_on
+        data:
+          entity_id:
+            - script.startup_mqtt
+      - delay:
+          milliseconds: 1500
+      - event: up_down_my
+        event_data:
+          data: start
+      - action: script.all_notify
+        data:
+          icon_notify: home-outline
+          tit: hass
+          msg: start
+      - action: automation.turn_on
+        data:
+          entity_id:
+            - automation.living_light
+            - automation.kitchen_light
+            - automation.bed_light
+            - automation.office_light
+            - automation.hall_light
+            - automation.bath_light
+            - automation.wash_light
+      - delay:
+          seconds: 3
+      - event: lights_check
+        event_data:
+          light: turn_off
+      - action: automation.turn_on
+        entity_id:
+          - automation.root_home
+          - automation.root_not_home
+      - action: script.turn_on
+        data:
+          entity_id:
+            - script.start_up_sound_bar
+            - script.start_up_bedroom_speaker
+      - action: script.kodi_wakeup
+      - delay:
+          seconds: 3
+      - action: shell_command.kodi_screensaver
+      - delay:
+          seconds: 3
+      - action: automation.turn_on
+        entity_id:
+          - automation.tv_ctrl
+      - action: script.start_up_delay_av_off
+
+input_select:
+  power_down_restart:
+    name: restart
+    icon: mdi:restart-alert
+    options:
+      - 'off'
+      - 'pending'
+      - 'on'
+
+timer:
+  start_up_delay:

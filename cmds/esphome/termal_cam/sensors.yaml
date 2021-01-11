@@ -1,0 +1,30 @@
+sensor:
+  - platform: wifi_signal
+    id: wifi_signal_db
+    update_interval: 30s
+
+  - platform: copy
+    id: wifi_signal_prc
+    source_id: wifi_signal_db
+    filters:
+      - lambda: |-
+          return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: '%'
+
+  - platform: internal_temperature
+    id: temp_cpu
+
+  - platform: adc
+    pin: $vcc_sens
+    id: vcc_sens
+    attenuation: 0dB
+    update_interval: 1s
+    filters:
+      - lambda: |-
+          float out = x * ((91 + 18) / 18);
+          return out + 0.421; // input diode drop
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      id: ip_address_sensor

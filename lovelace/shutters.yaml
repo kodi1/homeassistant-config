@@ -1,0 +1,53 @@
+title: shutters
+icon: mdi:window-shutter-auto
+path: shutters
+panel: true
+
+cards:
+  - type: vertical-stack
+    cards:
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - sensor.local_wind_speed
+          - sensor.local_forecast_wind_speed
+          - sensor.shutters_open_speed_wind
+          - type: divider
+          - binary_sensor.shutters_vibration
+          - sensor.shutters_vibration
+          - type: divider
+          - binary_sensor.wind_vibration
+          - sensor.wind_vibration
+          - type: divider
+          - input_number.shutters_tilt_position_1
+          - entity: script.shutters_position_1
+            secondary_info: last-triggered
+          - type: divider
+          - entity: automation.shutter_wind
+            secondary_info: last-triggered
+
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - entity: cover.living_1
+            secondary_info: tilt-position
+          - entity: cover.living_2
+            secondary_info: tilt-position
+          - entity: cover.bed
+            secondary_info: tilt-position
+          - entity: cover.office
+            secondary_info: tilt-position
+
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - entity: input_boolean.shutter_wind_vibration_en
+          - type: divider
+          - entity: input_boolean.shutter_position_living_2
+          - entity: input_boolean.shutter_position_office
+          - type: divider
+          - entity: automation.shutter_position_ctrl
+            secondary_info: last-triggered

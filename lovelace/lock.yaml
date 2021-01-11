@@ -1,0 +1,34 @@
+title: door
+icon: mdi:door
+path: door
+
+cards:
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - lock.door
+      - lock.building
+      - type: divider
+      - script.doors_full_lock
+      - script.doors_full_unlock
+      - script.door_building_open
+      - type: divider
+      - sensor.batt_lock
+      - sensor.batt_max_current
+      - sensor.batt_drain
+      - binary_sensor.batt_lock_critical
+      - binary_sensor.batt_building_critical
+      - binary_sensor.building_ring
+
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - input_boolean.auto_lock
+      - type: divider
+      - binary_sensor.door
+      - type: divider
+      - automation.auto_lock
+      - type: divider
+      - script.reboot_nuki_hub

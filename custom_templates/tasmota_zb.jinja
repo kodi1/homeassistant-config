@@ -1,0 +1,50 @@
+{%- macro get_val(payload, id, val_id, sensor) -%}
+    {%- if payload[id][val_id] is defined -%}
+        {{ payload[id][val_id] }}
+    {%- else -%}
+        {{ states(sensor) }}
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro get_attrs(payload, id, sensor) -%}
+    {%- {%- if payload is defined and payload[id]['BatteryVoltage'] is defined -%} -%}
+        {%- set v = {
+            'voltage': payload[id]['BatteryVoltage']
+        }
+        -%}
+     {%- elif states(sensor) and state_attr(sensor, 'voltage') -%}
+        {%- set v = {
+            'voltage': float(state_attr(sensor, 'voltage'), -1)
+        }
+        -%}
+    {%- else -%}
+        {%- set v = {
+            'voltage': 'err'
+        }
+        -%}
+    {%- endif -%}
+
+    {%- if payload is defined and payload[id]['LinkQuality'] is defined -%}
+        {%- set l = {
+            'link': payload[id]['LinkQuality']
+        }
+        -%}
+     {%- elif states(sensor) and state_attr(sensor, 'link') -%}
+        {%- set l = {
+            'link': float(state_attr(sensor, 'link'), -1111)
+        }
+        -%}
+    {%- else -%}
+        {%- set l = {
+            'link': 'err'
+        }
+        -%}
+    {%- endif -%}
+    {{ dict(l.items(), **v) | to_json }}
+{%- endmacro -%}
+
+{#
+tele/zha-bridge-city/A536/SENSOR
+{"ZbReceived":{"0xA536":{"Device":"0xA536","BatteryVoltage":3.2,"BatteryPercentage":100,"Endpoint":1,"LinkQuality":102}}}
+{"ZbReceived":{"0xA536":{"Device":"0xA536","Temperature":21.19,"Endpoint":1,"LinkQuality":102}}}
+#}

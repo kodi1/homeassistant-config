@@ -1,0 +1,34 @@
+title: automations
+icon: mdi:chemical-weapon
+path: automations
+
+cards:
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - automation.change_pressure
+      - automation.weather_alert
+      - automation.temp_vent_notify
+      - type: divider
+      - automation.living_tv
+      - type: divider
+      - automation.open_ports
+      - automation.auto_reboot_all
+      - type: divider
+      - automation.updates_notify
+      - automation.home_motion_detect
+      - type: divider
+      - automation.once_week_reboot
+      - type: divider
+      - automation.ligths_auto_off
+      - automation.zigbee2mqtt_start
+
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - script.local_reboot
+      - script.owrt_reboot
+      - script.village_reboot
+      - script.zha_reboot
+      - script.z2m_restart

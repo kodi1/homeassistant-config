@@ -1,0 +1,35 @@
+title: lora
+icon: mdi:radio-tower
+path: lora
+
+cards:
+  - type: map
+    entities:
+      - device_tracker.mobile
+    hours_to_show: 24
+
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - sensor.mobile_temperature
+      - sensor.mobile_humidity
+      - sensor.mobile_pressure
+      - type: divider
+      - sensor.mobile_rssi
+      - sensor.mobile_snr
+      - type: divider
+      - sensor.mobile_battery_level
+      - type: divider
+      - sensor.sof_gw_temp
+      - sensor.sof_gw_batt
+
+  - type: entities
+    title: lora
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - input_select.lora_gw
+      - type: divider
+      - sensor.mobile_text
+      - type: divider
+      - script.lora_send

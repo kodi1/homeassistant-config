@@ -1,0 +1,452 @@
+title: city
+icon: mdi:home-city
+path: city
+panel: true
+
+cards:
+  - type: vertical-stack
+    cards:
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_temperature_out
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: -5
+                color: '#260CCD'
+              - value: 0
+                color: '#0066FF'
+              - value: 10
+                color: '#00CC99'
+              - value: 20
+                color: '#00CC00'
+              - value: 26
+                color: '#FFCC00'
+              - value: 30
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_humidity_out
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 0
+                color: '#0000CC'
+              - value: 35
+                color: '#00CC00'
+              - value: 85
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_temp_in_1
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 15
+                color: '#0066FF'
+              - value: 20
+                color: '#00CC00'
+              - value: 26
+                color: '#FFCC00'
+              - value: 30
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_sea_level_pressure
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 1015
+                color: '#0CB3CD'
+              - value: 1020
+                color: '#00CC00'
+              - value: 1025
+                color: '#CC0000'
+            # color_thresholds_transition: hard
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_temp_in_1_1
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 15
+                color: '#0066FF'
+              - value: 20
+                color: '#00CC00'
+              - value: 26
+                color: '#FFCC00'
+              - value: 30
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_humidity_in_1_1
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 0
+                color: '#0000CC'
+              - value: 35
+                color: '#00CC00'
+              - value: 85
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_temp_in_2
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 15
+                color: '#0066FF'
+              - value: 20
+                color: '#00CC00'
+              - value: 26
+                color: '#FFCC00'
+              - value: 30
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_humidity_in_2
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 0
+                color: '#0000CC'
+              - value: 35
+                color: '#00CC00'
+              - value: 85
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_voltage_1
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+              legend: false
+            color_thresholds:
+              - value: 215
+                color: '#FFCC00'
+              - value: 230
+                color: '#00CC00'
+              - value: 245
+                color: '#CC0000'
+            # color_thresholds_transition : hard
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_power_1
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 0
+                color: '#00CC00'
+              - value: 1500
+                color: '#FFCC00'
+              - value: 3000
+                color: '#CC0000'
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+      - type: horizontal-stack
+        cards:
+          - type: gauge
+            name: ''
+            entity: sensor.waterheater_city
+            min: 19.0
+            max: 65.0
+            segments:
+              - from: 0
+                color: blue
+              - from: 20
+                color: green
+              - from: 25
+                color: gold
+              - from: 35
+                color: orangered
+              - from: 40
+                color: red
+
+          - type: entities
+            show_header_toggle: false
+            state_color: true
+            entities:
+              - automation.waterheater_city
+              - automation.waterheater_city_reheat
+              - type: divider
+              - switch.waterheater_city_schedule
+              - type: divider
+              - switch.waterheater_city
+
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - binary_sensor.motion_city_2
+          - type: divider
+          - sensor.city_change_pressure
+          - type: divider
+          - automation.remote_city_2
+          - type: divider
+          - binary_sensor.city_door_1
+
+      - type: horizontal-stack
+        cards:
+          - type: entities
+            show_header_toggle: true
+            state_color: true
+            title: auto
+            entities:
+              - automation.av_switch_city_1
+              - automation.heat_city_2
+              - automation.ligth_city_2
+          - type: entities
+            show_header_toggle: true
+            state_color: true
+            title: devices
+            entities:
+              - switch.switch_city_av
+              - switch.city_1
+              - light.city_2
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:simple-thermostat
+            entity: climate.city_1
+            decimals: 1
+            step_size: 1
+            icon: mdi:thermostat
+            name: false
+            layout:
+              step: row
+              mode:
+                headings: false
+                names: false
+            control: false
+          - type: entities
+            show_header_toggle: true
+            state_color: true
+            title: swing
+            entities:
+              - input_select.cliamate_city1_swingv
+              - input_select.cliamate_city1_swingh
+              - automation.cliamate_city1_swing_set
+
+      - type: custom:simple-thermostat
+        entity: climate.city_2
+        decimals: 1
+        step_size: 0.1
+        icon: mdi:thermostat
+        name: false
+        layout:
+          step: row
+          mode:
+            headings: false
+            names: false
+        control: false
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_1_co2
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 0
+                color: '#228B22'
+              - value: 400
+                color: '#00FF7F'
+              - value: 1000
+                color: '#FFD700'
+              - value: 2000
+                color: '#FF0000'
+            color_thresholds_transition: smooth
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_1_pm25
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 0
+                color: '#00E400'
+              - value: 12.1
+                color: '#FFD700'
+              - value: 35.5
+                color: '#FFA500'
+              - value: 55.5
+                color: '#FF0000'
+              - value: 150.5
+                color: '#800080'
+              - value: 250.5
+                color: '#800000'
+            color_thresholds_transition: smooth
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+      - type: horizontal-stack
+        cards:
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_1_voc
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 0
+                color: '#00E400'
+              - value: 220
+                color: '#FFD700'
+              - value: 1000
+                color: '#FF0000'
+            color_thresholds_transition: smooth
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.city_1_pm10
+                state_adaptive_color: true
+            animate: true
+            show:
+              icon: false
+              name: false
+              extrema: true
+            color_thresholds:
+              - value: 0
+                color: '#00E400'
+              - value: 55
+                color: '#FFD700'
+              - value: 155
+                color: '#FFA500'
+              - value: 255
+                color: '#FF0000'
+              - value: 355
+                color: '#800080'
+              - value: 425
+                color: '#800000'
+            color_thresholds_transition: smooth
+            hour24: true
+            align_state: center
+            points_per_hour: 2
+
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - sensor.city_1_aqi_level
+          - sensor.city_humidity
+          - sensor.city_temperature
+          - sensor.city_1_aqi_idx
+
+      - type: entities
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - sensor.city_batt_button_2
+          - sensor.city_batt_motion_2
+          - sensor.city_batt_temp_in_1
+          - sensor.city_batt_temp_in_2
+          - sensor.city_batt_out
+          - sensor.city_batt_door_1

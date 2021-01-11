@@ -1,0 +1,102 @@
+homeassistant:
+  auth_providers:
+    - type: trusted_networks
+      trusted_networks:
+        - 127.0.0.1
+        - 192.168.1.0/24
+    - type: homeassistant
+
+  # Name of the location where Home Assistant is running
+  # name: Home
+  # Location required to calculate the time the sun rises and sets
+  # latitude: !secret home_latitude
+  # longitude: !secret home_longitude
+  # Impacts weather/sunrise data (altitude above sea level in meters)
+  # elevation: !secret home_elevation
+  # metric for Metric, imperial for Imperial
+  # unit_system: metric
+  # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  # time_zone: Europe/Sofia
+  # Customization file
+  customize: !include customize.yaml
+  allowlist_external_dirs: !secret white_dirs
+  packages: !include_dir_named packs
+
+# Show links to resources in log and frontend
+#introduction:
+
+# Enables the frontend
+frontend:
+  themes: !include_dir_merge_named themes
+
+lovelace:
+  mode: yaml
+  resources:
+    - url: /hacsfiles/lovelace-valetudo-map-card/valetudo-map-card.js
+      type: module
+    - url: /hacsfiles/lovelace-xiaomi-vacuum-card/xiaomi-vacuum-card.js
+      type: module
+    - url: /hacsfiles/upcoming-media-card/upcoming-media-card.js
+      type: module
+    - url: /hacsfiles/mini-graph-card/mini-graph-card-bundle.js
+      type: module
+    - url: /hacsfiles/simple-thermostat/simple-thermostat.js
+      type: module
+    - url: /hacsfiles/apexcharts-card/apexcharts-card.js
+      type: module
+    - url: /hacsfiles/weather-chart-card/weather-chart-card.js
+      type: module
+
+  dashboards:
+    lovelace-city-3:
+      mode: yaml
+      title: hidden
+      show_in_sidebar: false
+      filename: city_3.yaml
+
+scene: !include scenes.yaml
+
+# Enables configuration UI
+config:
+
+http:
+  # Secrets are defined in the file secrets.yaml
+  # api_password: !secret http_password
+  # Uncomment this if you are using SSL/TLS, running in Docker container, etc.
+  # base_url: example.duckdns.org:8123
+
+# Checks for available updates
+# Note: This component will send some information about your system to
+# the developers to assist with development of Home Assistant.
+# For more information, please see:
+# https://home-assistant.io/blog/2016/10/25/explaining-the-updater/
+
+# Discover some devices automatically
+#discovery:
+
+# Allows you to issue voice commands from the frontend in enabled browsers
+#conversation:
+
+# Enables support for tracking state changes over time
+history:
+
+# View all events in a logbook
+logbook:
+
+# Track the sun
+sun:
+
+# Allow diagnosing system problems
+system_health:
+
+# Text to speech
+tts:
+  - platform: google_translate
+    service_name: google_say
+
+# Cloud
+#cloud:
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml

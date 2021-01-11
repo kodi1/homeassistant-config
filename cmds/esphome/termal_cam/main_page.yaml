@@ -1,0 +1,42 @@
+  on_swipe_right:
+    - lvgl.page.show: boot_page
+    
+  widgets:
+    # 🖤 Background
+    - obj:
+        width: 100%
+        height: 100%
+        bg_color: 0x000000
+        scrollable: false
+
+    # 🔥 Thermal image (FULL SCREEN, SINGLE INSTANCE)
+    - image:
+        id: thermal_img
+        src: boot_image
+        width: 100%
+        height: 100%
+        align: center
+        scrollable: false
+
+    # 🔝 TOP OVERLAY BAR (one-line labels)
+    - obj:
+        width: 100%
+        height: 10%
+        align: top_mid
+        bg_color: 0x000000
+        bg_opa: 0%
+        pad_left: 6
+        pad_right: 6
+        border_width: 0
+        scrollable: false
+        layout:
+          type: flex
+          flex_flow: row
+          flex_align_main: space_between
+          flex_align_cross: center
+
+        widgets:
+          - label: { id: main_min_lab, text: "Mn: --", text_color: 0xFFFFFF }
+          - label: { id: main_max_lab, text: "Mx: --", text_color: 0xFFFFFF }
+          - label: { id: main_mean_lab, text: "Av: --", text_color: 0xFFFFFF }
+          - label: { id: main_median_lab, text: "Md: --", text_color: 0xFFFFFF }

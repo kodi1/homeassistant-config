@@ -1,0 +1,28 @@
+font:
+  - file: "gfonts://Montserrat"
+    id: montserrat_14
+    size: 14
+  - file: "gfonts://Montserrat"
+    id: montserrat_18
+    size: 18
+  - file: "gfonts://Montserrat"
+    id: montserrat_20
+    size: 20
+
+image:
+  - file: "common/esphome.png"
+    id: boot_image
+    resize: 320x240
+    type: RGB565
+
+lvgl:
+  id: my_lvgl
+  displays: 
+    - lcd
+  touchscreens: 
+    - touch
+  pages:
+    - id: boot_page
+      <<: !include boot_page.yaml
+    - id: main_page
+      <<: !include main_page.yaml

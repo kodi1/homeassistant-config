@@ -1,0 +1,19 @@
+#!/bin/bash
+# audio mute    15:44:65
+# audio unmute  15:44:66
+# audio volup   15:44:41
+# audio voldown 15:44:42
+# audio off     15:44:6c
+# audio on      15:44:6d
+# tv mute       10:44:65
+# tv unmute     10:44:66
+# tv volup      10:44:41
+# tv voldown    10:44:42
+# tv off        10:36
+# tv on         10:04
+# tv src        15:70:10:00
+
+source /config/set_env
+
+sshpass -p ${PASS} ssh ${USERNAME}@${HOST} \
+"echo $1 | cec-client -s -t p -o hass -d 1"

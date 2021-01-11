@@ -1,0 +1,540 @@
+homeassistant:
+  customize:
+    fan.living_climate:
+      icon: mdi:sofa-outline
+    fan.bed_climate:
+      icon: mdi:bed-king-outline
+    fan.office_climate:
+      icon: mdi:desk
+    sensor.ctrl_living_climate:
+      friendly_name: living
+      icon: mdi:gauge
+    sensor.ctrl_bed_climate:
+      friendly_name: bed
+      icon: mdi:gauge
+    sensor.ctrl_office_climate:
+      friendly_name: office
+      icon: mdi:gauge
+    sensor.speed_living_climate:
+      friendly_name: living
+      icon: mdi:fan
+      unit_of_measurement: rpm
+    sensor.speed_bed_climate:
+      friendly_name: bed
+      icon: mdi:fan
+      unit_of_measurement: rpm
+    sensor.speed_office_climate:
+      friendly_name: office
+      icon: mdi:fan
+      unit_of_measurement: rpm
+
+# INN-FR-B32
+modbus:
+  - type: tcp
+    host: gw_rs485
+    port: 8899
+    name: gw_rs485
+    # message_wait_milliseconds: 30
+    # modbus energy spark test workaround
+    delay: 3
+    message_wait_milliseconds: 250
+    timeout: 30
+    #
+    climates:
+      - name: temp_living
+        data_type: uint16
+        slave: 10
+        address: 0
+        max_temp: 28
+        min_temp: 18
+        offset: 0
+        precision: 1
+        scale: 0.1
+        target_temp_register: 231
+        temp_step: 0.5
+        temperature_unit: °C
+        scan_interval: 300
+
+      - name: temp_bed
+        data_type: uint16
+        slave: 20
+        address: 0
+        max_temp: 28
+        min_temp: 18
+        offset: 0
+        precision: 1
+        scale: 0.1
+        target_temp_register: 231
+        temp_step: 0.5
+        temperature_unit: °C
+        scan_interval: 300
+
+      - name: temp_office
+        data_type: uint16
+        slave: 30
+        address: 0
+        max_temp: 28
+        min_temp: 18
+        offset: 0
+        precision: 1
+        scale: 0.1
+        target_temp_register: 231
+        temp_step: 0.5
+        temperature_unit: °C
+        scan_interval: 300
+
+    sensors:
+      - name: water_living_climate
+        slave: 10
+        address: 1
+        offset: 0
+        precision: 1
+        scale: 0.1
+        unit_of_measurement: °C
+        scan_interval: 300
+
+      - name: state_living_climate
+        slave: 10
+        address: 201
+        scan_interval: 300
+
+      - name: ctrl_living_climate
+        slave: 10
+        address: 9
+        scan_interval: 300
+
+      - name: speed_living_climate
+        slave: 10
+        address: 15
+        scan_interval: 300
+
+      - name: state_bed_climate
+        slave: 20
+        address: 201
+        scan_interval: 300
+
+      - name: ctrl_bed_climate
+        slave: 20
+        address: 9
+        scan_interval: 300
+
+      - name: speed_bed_climate
+        slave: 20
+        address: 15
+        scan_interval: 300
+
+      - name: state_office_climate
+        slave: 30
+        address: 201
+        scan_interval: 300
+
+      - name: ctrl_office_climate
+        slave: 30
+        address: 9
+        scan_interval: 300
+
+      - name: speed_office_climate
+        slave: 30
+        address: 15
+        scan_interval: 300
+
+      - name: mains_voltage
+        slave: 40
+        address: 0
+        input_type: input
+        #count: 2
+        precision: 1
+        data_type: float32
+        device_class: voltage
+        unit_of_measurement: V
+        scan_interval: 300
+
+      - name: mains_power
+        slave: 40
+        address: 12
+        input_type: input
+        #count: 2
+        precision: 1
+        data_type: float32
+        device_class: power
+        unit_of_measurement: W
+        scan_interval: 300
+
+      - name: mains_freq
+        slave: 40
+        address: 70
+        input_type: input
+        #count: 2
+        precision: 2
+        data_type: float32
+        device_class: frequency
+        unit_of_measurement: Hz
+        scan_interval: 300
+
+      - name: mains_factor
+        slave: 40
+        address: 30
+        input_type: input
+        #count: 2
+        precision: 2
+        scale: 100
+        data_type: float32
+        device_class: power_factor
+        unit_of_measurement: '%'
+        scan_interval: 300
+
+      - name: mains_energy
+        slave: 40
+        address: 342
+        input_type: input
+        #count: 2
+        precision: 1
+        data_type: float32
+        device_class: energy
+        unit_of_measurement: kW
+        scan_interval: 300
+
+script:
+  climate_ctrl:
+    mode: queued
+    max: 30
+    trace:
+      stored_traces: 30
+    max_exceeded: warning
+    sequence:
+      - action: homeassistant.update_entity
+        data_template:
+          entity_id: >-
+            {{ mod_target }}
+      - delay:
+          milliseconds: 250
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 201
+        data_template:
+          unit: >-
+            {{ unit }}
+          value: >-
+            {%-
+                set val = {
+                    'on': states(mod_target) | int(0) | bitwise_and(0xFF7F),
+                    'off': states(mod_target) | int(0) | bitwise_and(0xFF7F) | bitwise_or(0x80),
+                    'auto': states(mod_target) | int(0) | bitwise_and(0xFFF8),
+                    'max': states(mod_target) | int(0) | bitwise_and(0xFFF8) | bitwise_or(0b011),
+                    'silent': states(mod_target) | int(0) | bitwise_and(0xFFF8) | bitwise_or(0b001),
+                    'night': states(mod_target) | int(0) | bitwise_and(0xFFF8) | bitwise_or(0b010),
+                  }
+              -%}
+            {{ val[ctrl] }}
+      - delay:
+          milliseconds: 500
+      - action: homeassistant.update_entity
+        data_template:
+          entity_id: >-
+            {{ mod_target }}
+      - action: script.turn_on
+        data:
+          entity_id:
+            - script.climate_update_ctrl_speed
+          variables:
+            ctrl_target: >-
+              {{ ctrl_target }}
+            speed_target: >-
+              {{ speed_target }}
+
+  climate_update_ctrl_speed:
+    mode: parallel
+    max: 30
+    trace:
+      stored_traces: 30
+    max_exceeded: warning
+    sequence:
+      - delay:
+          seconds: 65
+      - action: homeassistant.update_entity
+        data_template:
+          entity_id: >-
+            {{ ctrl_target }}
+      - delay:
+          milliseconds: 250
+      - action: homeassistant.update_entity
+        data_template:
+          entity_id: >-
+            {{ speed_target }}
+
+  climate_lock:
+    sequence:
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 247
+          unit: 10
+          value: 64
+
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 247
+          unit: 20
+          value: 64
+
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 247
+          unit: 30
+          value: 64
+
+  climate_unlock:
+    sequence:
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 247
+          unit: 10
+          value: 0
+
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 247
+          unit: 20
+          value: 0
+
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 247
+          unit: 30
+          value: 0
+
+  climate_auto:
+    alias: auto
+    icon: mdi:weather-partly-snowy-rainy
+    sequence:
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 233
+          unit: 10
+          value: 0
+
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 233
+          unit: 20
+          value: 0
+
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 233
+          unit: 30
+          value: 0
+
+  climate_cool:
+    alias: cool
+    icon: mdi:weather-snowy-rainy
+    sequence:
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 233
+          unit: 10
+          value: 5
+
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 233
+          unit: 20
+          value: 5
+
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 233
+          unit: 30
+          value: 5
+
+  climate_heat:
+    alias: heat
+    icon: mdi:weather-sunny
+    sequence:
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 233
+          unit: 10
+          value: 3
+
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 233
+          unit: 20
+          value: 3
+
+      - action: modbus.write_register
+        data:
+          hub: gw_rs485
+          address: 233
+          unit: 30
+          value: 3
+
+template:
+  - fan:
+    - name: living
+      unique_id: living_climate
+      turn_on:
+        action: script.climate_ctrl
+        data:
+          ctrl: 'on'
+          mod_target: sensor.state_living_climate
+          speed_target: sensor.speed_living_climate
+          ctrl_target: sensor.ctrl_living_climate
+          unit: 10
+      turn_off:
+        action: script.climate_ctrl
+        data:
+          ctrl: 'off'
+          mod_target: sensor.state_living_climate
+          speed_target: sensor.speed_living_climate
+          ctrl_target: sensor.ctrl_living_climate
+          unit: 10
+      set_preset_mode:
+          action: script.climate_ctrl
+          data:
+            ctrl: >-
+              {{ preset_mode }}
+            mod_target: sensor.state_living_climate
+            speed_target: sensor.speed_living_climate
+            ctrl_target: sensor.ctrl_living_climate
+            unit: 10
+      preset_mode: >-
+        {%-
+          set val = {
+                0b000: 'auto',
+                0b011: 'max',
+                0b010: 'night',
+                0b001: 'silent'
+              }
+          -%}
+        {{ val[states('sensor.state_living_climate') | int(0) | bitwise_and(0x7)]}}
+      state: >-
+        {%-
+          set val = {
+                0x00: 'on',
+                0x80: 'off',
+              }
+          -%}
+        {{ val[states('sensor.state_living_climate') | int(0) | bitwise_and(0x80)] }}
+      preset_modes:
+        - auto
+        - max
+        - night
+        - silent
+
+    - name: bed
+      unique_id: bed_climate
+      turn_on:
+        action: script.climate_ctrl
+        data:
+          ctrl: 'on'
+          mod_target: sensor.state_bed_climate
+          speed_target: sensor.speed_bed_climate
+          ctrl_target: sensor.ctrl_bed_climate
+          unit: 20
+      turn_off:
+        action: script.climate_ctrl
+        data:
+          ctrl: 'off'
+          mod_target: sensor.state_bed_climate
+          speed_target: sensor.speed_bed_climate
+          ctrl_target: sensor.ctrl_bed_climate
+          unit: 20
+      set_preset_mode:
+          action: script.climate_ctrl
+          data:
+            ctrl: >-
+              {{ preset_mode }}
+            mod_target: sensor.state_bed_climate
+            speed_target: sensor.speed_bed_climate
+            ctrl_target: sensor.ctrl_bed_climate
+            unit: 20
+      preset_mode: >-
+        {%-
+          set val = {
+                0b000: 'auto',
+                0b011: 'max',
+                0b010: 'night',
+                0b001: 'silent'
+              }
+          -%}
+        {{ val[states('sensor.state_bed_climate') | int(0) | bitwise_and(0x7)]}}
+      state: >-
+        {%-
+          set val = {
+                0x00: 'on',
+                0x80: 'off',
+              }
+          -%}
+        {{ val[states('sensor.state_bed_climate') | int(0) | bitwise_and(0x80)] }}
+      preset_modes:
+        - auto
+        - max
+        - night
+        - silent
+
+    - name: office
+      unique_id: office_climate
+      turn_on:
+        action: script.climate_ctrl
+        data:
+          ctrl: 'on'
+          mod_target: sensor.state_office_climate
+          speed_target: sensor.speed_office_climate
+          ctrl_target: sensor.ctrl_office_climate
+          unit: 30
+      turn_off:
+        action: script.climate_ctrl
+        data:
+          ctrl: 'off'
+          mod_target: sensor.state_office_climate
+          speed_target: sensor.speed_office_climate
+          ctrl_target: sensor.ctrl_office_climate
+          unit: 30
+      set_preset_mode:
+          action: script.climate_ctrl
+          data:
+            ctrl: >-
+              {{ preset_mode }}
+            mod_target: sensor.state_office_climate
+            speed_target: sensor.speed_office_climate
+            ctrl_target: sensor.ctrl_office_climate
+            unit: 30
+      preset_mode: >-
+        {%-
+          set val = {
+                0b000: 'auto',
+                0b011: 'max',
+                0b010: 'night',
+                0b001: 'silent'
+              }
+          -%}
+        {{ val[states('sensor.state_office_climate') | int(0) | bitwise_and(0x7)]}}
+      state: >-
+        {%-
+          set val = {
+                0x00: 'on',
+                0x80: 'off',
+              }
+          -%}
+        {{ val[states('sensor.state_office_climate') | int(0) | bitwise_and(0x80)] }}
+      preset_modes:
+        - auto
+        - max
+        - night
+        - silent

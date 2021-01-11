@@ -1,0 +1,39 @@
+title: settings
+icon: mdi:developer-board
+path: settings
+cards:
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - input_number.slider_batt_level
+      - input_number.pressure_speed
+      - input_number.cpu_temp_level
+
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - script.as_hdmi1
+      - script.is_hdmi1
+      - script.tv_hdmi1_audio
+      - script.sound_bar_on
+      - script.sound_bar_off
+      - type: divider
+      - switch.tv_cec
+      - script.living_tv_reboot
+      - type: divider
+      - automation.tv_ctrl
+
+  - type: entities
+    show_header_toggle: false
+    state_color: true
+    entities:
+      - automation.kodi_clear_tv_db
+      - automation.sonarr_radarr_db
+      - automation.update_video_db
+      - automation.bazarr_subs
+
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - input_select.current_theme

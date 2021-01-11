@@ -1,0 +1,78 @@
+homeassistant:
+  customize:
+    sensor.city_1_co2:
+      friendly_name: co2
+    sensor.city_1_pm10:
+      friendly_name: pm10
+    sensor.city_1_pm25:
+      friendly_name: pm25
+    sensor.city_1_voc:
+      friendly_name: voc
+    sensor.city_1_aqi_idx:
+      friendly_name: aqi idx
+    sensor.city_1_aqi_level:
+      friendly_name: aqi
+    sensor.city_humidity:
+      friendly_name: aqi hum
+    sensor.city_temperature:
+      friendly_name: aqi temp
+
+template:
+  - trigger:
+    - trigger: state
+      entity_id:
+        - air_quality.city_air_quality
+    sensor:
+      - name: city_1_co2
+        state: >-
+          {{
+              state_attr('air_quality.city_air_quality', 'carbon_dioxide')
+            }}
+        device_class: carbon_dioxide
+        unit_of_measurement: ppm
+
+      - name: city_1_pm10
+        state: >-
+          {{
+              state_attr('air_quality.city_air_quality', 'particulate_matter_10')
+            }}
+        device_class: pm10
+        unit_of_measurement: µg/m³
+
+      - name: city_1_pm25
+        state: >-
+          {{
+              state_attr('air_quality.city_air_quality', 'particulate_matter_2_5')
+            }}
+        device_class: pm25
+        unit_of_measurement: µg/m³
+
+      - name: city_1_voc
+        state: >-
+          {{
+              state_attr('air_quality.city_air_quality', 'volatile_organic_compounds')
+            }}
+        device_class: volatile_organic_compounds
+        unit_of_measurement: ppm
+
+      - name: city_1_aqi_idx
+        state: >-
+          {{
+              state_attr('air_quality.city_air_quality', 'air_quality_index')
+            }}
+        device_class: aqi
+        unit_of_measurement: ppm
+
+      - name: city_1_aqi_level
+        state: >-
+          {{
+              state_attr('air_quality.city_air_quality', 'air_quality_index_level')
+            }}
+
+kaiterra:
+  api_key: !secret kaiterra_api
+  scan_interval: 300
+  devices:
+    - device_id: !secret kaiterra_id
+      type: laseregg
+      name: city

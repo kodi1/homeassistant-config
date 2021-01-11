@@ -1,0 +1,117 @@
+esphome:
+  name: tst
+  friendly_name: tst
+  platformio_options:
+    lib_deps:
+      - bblanchon/ArduinoJson
+  includes:
+    - eink_common.h
+  on_boot:
+    priority: -100
+    then:
+      - output.turn_on:
+          my_slow_pwm
+      - output.set_level:
+          id: my_slow_pwm
+          level: "50%"
+
+output:
+    platform: slow_pwm
+    pin: GPIO2
+    id: my_slow_pwm
+    period: 1000ms
+
+esp32:
+  board: esp32dev
+  framework:
+    # type: arduino
+    type: esp-idf
+    version: recommended
+    # Custom sdkconfig options
+    sdkconfig_options:
+      COMPILER_OPTIMIZATION_SIZE: y
+
+# Enable logging
+logger:
+
+ota:
+  password: "1234"
+
+api:
+  encryption:
+    key: "0i+Tuxn9pVRkQNm86ityYsw5iF691yHxADAaREALgk4="
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: true
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Tst Fallback Hotspot"
+    password: "NF5LhGfOEXcJ"
+
+captive_portal:
+
+interval:
+  - interval: 5s
+    startup_delay: 2s
+    then:
+      - switch.toggle: xxx
+      - lambda: !lambda |-
+          JsonDocument doc;
+          std::string output;
+          deserializeJson(doc, (id(forecast).state.c_str()));
+          JsonArray root = doc.as<JsonArray>();
+
+          JsonObject root_0 = root[0];
+          serializeJsonPretty(root_0, output);
+          for (int i=0; i <= 2; ++i) {
+              root_0 = root[i+1];
+              const char*  datetime = root_0["datetime"];
+              // ESP_LOGD("custom", "val: %s", datetime);
+          }
+
+switch:
+  - platform: gpio
+    pin: GPIO4
+    id: xxx
+
+sensor:
+  - platform: adc
+    pin: GPIO34
+    name: "${friendly_name} Battery Voltage"
+    id: batt_volt
+    attenuation: 11db
+    update_interval: 5s
+    filters:
+      - multiply: 1
+    internal: true
+    on_value:
+      then:
+        - lambda: !lambda |-
+            ESP_LOGD("custom", "val: %f", x);
+    on_raw_value:
+      then:
+        - lambda: !lambda |-
+            ESP_LOGD("custom", "raw: %f", x);
+
+
+  - platform: template
+    name: "${friendly_name} Battery"
+    id: batt
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    device_class: battery
+    lambda: |-
+      int y = (1-(4.1-id(batt_volt).state)/(4.1-3.3))*100;
+      return std::max(std::min(y, 100), 0);
+    update_interval: 5s
+    internal: true
+
+text_sensor:
+  - platform: homeassistant
+    entity_id: sensor.dummy_local
+    attribute: forecast
+    id: forecast
+    internal: true

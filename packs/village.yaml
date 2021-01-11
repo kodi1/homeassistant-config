@@ -1,0 +1,777 @@
+homeassistant:
+  customize:
+    binary_sensor.village_presence:
+      friendly_name: presence
+    sensor.village_pressure_in:
+      friendly_name: pressure
+    sensor.village_sea_level_pressure:
+      friendly_name: sea pressure
+    sensor.village_change_pressure:
+      friendly_name: change
+    sensor.pump_village_total:
+      icon: mdi:meter-electric
+      friendly_name: total
+    automation.ligth_village_1:
+      friendly_name: living
+      icon: mdi:lightbulb-auto
+    automation.ligth_village_out:
+      friendly_name: out
+      icon: mdi:lightbulb-auto
+    automation.ligth_garage:
+      friendly_name: garage
+      icon: mdi:lightbulb-auto
+    alert.village_water_heater:
+      icon: mdi:water-boiler-alert
+    automation.waterheater_village:
+      icon: mdi:water-boiler-auto
+      friendly_name: waterheater
+    automation.waterheater_village_reheat:
+      icon: mdi:water-boiler-alert
+      friendly_name: reheat
+    automation.ligth_top_1:
+      icon: mdi:lightbulb-auto
+      friendly_name: top 1
+    automation.village_remote_1:
+      icon: mdi:dip-switch
+
+alert:
+  village_water_heater:
+    name: 'water heater'
+    title: 'village WH'
+    message: >-
+      is {{ states('switch.waterheater_village') }}
+    done_message: >-
+      is {{ states('switch.waterheater_village') }}
+    entity_id: binary_sensor.village_wh_warning
+    state: 'on'
+    repeat:
+      - 5
+      - 15
+      - 30
+    skip_first: false
+    can_acknowledge: true
+    notifiers:
+      - gmail
+
+binary_sensor:
+  - platform: tod
+    name: village_wh_time
+    after: '05:00:00'
+    before: '07:00:00'
+
+mqtt:
+  sensor:
+    - name: village_humidity_out
+      state_topic: village_temperature_out/state
+      value_template: '{{ value_json.humidity | round(1) }}'
+      device_class: humidity
+      unit_of_measurement: '%'
+      expire_after: 660
+
+    - name: village_temp_out
+      state_topic: village_temperature_out/state
+      value_template: '{{ value_json.temperature | round(1) }}'
+      device_class: temperature
+      unit_of_measurement: '°C'
+      expire_after: 660
+
+    - name: 'vbatt out'
+      state_topic: village_temperature_out/state
+      value_template: '{{ value_json.batt_p | round(0) }}'
+      json_attributes_topic: village_temperature_out/state
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'rssi': value_json.rssi | float(0),
+          'mv': value_json.batt_v | float(0),
+          }
+          -%}
+        {{ attrs | to_json }}
+      device_class: 'battery'
+      unit_of_measurement: '%'
+      expire_after: 660
+
+    - name: village_pressure_in
+      state_topic: village_temperature_in/state
+      value_template: '{{ value_json.pressure }}'
+      device_class: pressure
+      unit_of_measurement: hPa
+      expire_after: 660
+
+    - name: village_humidity_in
+      state_topic: village_temperature_in/state
+      value_template: '{{ value_json.humidity | round(1) }}'
+      device_class: humidity
+      unit_of_measurement: '%'
+      expire_after: 660
+
+    - name: village_temp_in
+      state_topic: village_temperature_in/state
+      value_template: '{{ value_json.temperature | round(2) }}'
+      device_class: temperature
+      unit_of_measurement: '°C'
+      expire_after: 660
+
+    - name: 'vbatt in'
+      state_topic: village_temperature_in/state
+      value_template: '{{ value_json.batt_p | round(0) }}'
+      json_attributes_topic: village_temperature_in/state
+      json_attributes_template: >-
+        {%-
+          set attrs = {
+          'rssi': value_json.rssi | float(0),
+          'mv': value_json.batt_v | float(0),
+          }
+          -%}
+        {{ attrs | to_json }}
+      device_class: 'battery'
+      unit_of_measurement: '%'
+      expire_after: 660
+
+sensor:
+  - platform: derivative
+    name: village_pressure_derivative
+    source: sensor.village_pressure_in
+    round: 2
+    unit_time: 'h'
+    time_window: '03:00:00'
+
+template:
+  - sensor:
+    - name: village_sea_level_pressure
+      icon: mdi:gauge
+      unit_of_measurement: 'hPa'
+      state: >-
+          {%- if states('sensor.village_pressure_in') != 'unavailable' and
+                  states('sensor.village_temp_in') != 'unavailable' %}
+              {% set p1 = states('sensor.village_pressure_in') | float(0) %}
+              {% set t = states('sensor.village_temp_in') | float(0) %}
+              {% set h = 133 | float(0) %}
+              {{ (p1 *  ( (1 - (0.0065 * h) / (t + (0.0065 * h) + 273.15)) **  -5.257)) | round(2) }}
+          {% else %}
+              {{ states('sensor.village_sea_level_pressure') }}
+          {%- endif %}
+
+    - name: village_change_pressure
+      icon: >-
+        {%if states('sensor.village_pressure_derivative') | float(0) > 0.33 %}
+          {{'mdi:trending-up'}}
+        {% elif states('sensor.village_pressure_derivative') | float(0) < -0.33 %}
+          {{'mdi:trending-down'}}
+        {% else %}
+          {{'mdi:trending-neutral'}}
+        {% endif %}
+      state: >-
+        {{ states('sensor.village_pressure_derivative') }}
+      unit_of_measurement: 'hPa/h'
+
+  - binary_sensor:
+    - name: village_wh_warning
+      state: >-
+        {{
+            is_state('switch.waterheater_village', 'on') and
+              is_state('binary_sensor.village_wh_time', 'off')
+          }}
+      delay_on:
+        minutes: 40
+      delay_off:
+        seconds: 20
+
+  - trigger:
+    - trigger: state
+      entity_id:
+        - binary_sensor.motion_village_1
+        - binary_sensor.motion_village_2
+        - binary_sensor.motion_village_garage
+      to: 'on'
+      id: to_on
+    - trigger: zone
+      entity_id: device_tracker.root
+      zone: zone.village
+      event: leave
+      id: to_off
+
+    binary_sensor:
+      - name: village_presence
+        device_class: occupancy
+        state: >-
+          {%-
+              set _map = {
+                  'to_on': true,
+                  'to_off': false,
+                }
+            -%}
+          {{ _map[trigger.id] }}
+        delay_off:
+          minutes: 45
+        availability: >-
+          {{ is_state('binary_sensor.village_conn', 'on') }}
+
+script:
+  village_reboot:
+    alias: village reboot
+    icon: mdi:router-wireless
+    sequence:
+      - action: shell_command.village_reboot
+
+shell_command:
+  village_reboot: '/config/cmds/village_reboot'
+
+automation:
+  - alias: ligth_village_1
+    id: ligth_village_1
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.motion_village_1
+        to: 'on'
+        id: light_on
+      - trigger: state
+        entity_id: binary_sensor.motion_village_1
+        to: 'off'
+        for:
+          seconds: 90
+        id: light_off
+      - trigger: state
+        entity_id: light.village_1
+        to: 'on'
+        for:
+          minutes: 5
+          seconds: 30
+        id: light_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: light.village_1
+            state: 'off'
+          - condition: sun
+            after: sunset
+            after_offset: '-00:20:00'
+          - condition: time
+            before: '23:15:00'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.village_1
+              data:
+                brightness_pct: 100
+            - delay:
+                milliseconds: 250
+            - action: light.turn_on
+              target:
+                entity_id: light.village_1
+              data:
+                color_temp_kelvin: 3300
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: light.village_1
+            state: 'off'
+          - condition: or
+            conditions:
+              - condition: sun
+                before: sunrise
+                before_offset: '-00:20:00'
+              - condition: time
+                after: '23:15:00'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.village_1
+              data:
+                brightness_pct: 10
+            - delay:
+                milliseconds: 250
+            - action: light.turn_on
+              target:
+                entity_id: light.village_1
+              data:
+                color_temp_kelvin: 2500
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: light.village_1
+                state: 'on'
+              - condition: state
+                entity_id: binary_sensor.motion_village_1
+                state: 'off'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.village_1
+              data:
+                brightness_pct: 10
+            - delay:
+                milliseconds: 250
+            - action: light.turn_off
+              target:
+                entity_id: light.village_1
+
+  - alias: ligth_top_1
+    id: ligth_top_1
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.motion_village_top_1
+        to: 'on'
+        id: light_on
+      - trigger: state
+        entity_id: binary_sensor.motion_village_top_1
+        to: 'off'
+        for:
+          seconds: 90
+        id: light_off
+      - trigger: state
+        entity_id: light.village_top_1
+        to: 'on'
+        for:
+          minutes: 5
+          seconds: 30
+        id: light_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: light.village_top_1
+            state: 'off'
+          - condition: sun
+            after: sunset
+            after_offset: '-00:20:00'
+          - condition: time
+            before: '23:15:00'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.village_top_1
+              data:
+                brightness_pct: 100
+            - delay:
+                milliseconds: 250
+            - action: light.turn_on
+              target:
+                entity_id: light.village_top_1
+              data:
+                color_temp_kelvin: 3300
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: light.village_top_1
+            state: 'off'
+          - condition: or
+            conditions:
+              - condition: sun
+                before: sunrise
+                before_offset: '-00:20:00'
+              - condition: time
+                after: '23:15:00'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.village_top_1
+              data:
+                brightness_pct: 10
+            - delay:
+                milliseconds: 250
+            - action: light.turn_on
+              target:
+                entity_id: light.village_top_1
+              data:
+                color_temp_kelvin: 2500
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: light.village_top_1
+                state: 'on'
+              - condition: state
+                entity_id: binary_sensor.motion_village_top_1
+                state: 'off'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.village_top_1
+              data:
+                brightness_pct: 10
+            - delay:
+                milliseconds: 250
+            - action: light.turn_off
+              target:
+                entity_id: light.village_top_1
+
+  - alias: ligth_village_out
+    id: ligth_village_out
+    triggers:
+      - trigger: sun
+        event: sunset
+        offset: '+00:00:00'
+        id: sunset_on
+      - trigger: sun
+        event: sunset
+        offset: '+01:30:00'
+        id: light_off
+      #- trigger: time
+      #  at: '23:10:00'
+      #  id: light_off
+      - trigger: sun
+        event: sunrise
+        offset: '+00:10:00'
+        id: light_off
+      - trigger: zone
+        entity_id: device_tracker.root
+        zone: zone.village
+        event: enter
+        id: presence_on
+      - trigger: zone
+        entity_id: device_tracker.root
+        zone: zone.village
+        event: leave
+        id: presence_off
+
+    mode: restart
+    actions:
+      - variables:
+          brightness: >-
+            {{ range(45, 65, 2) | random }}
+          color_temp: >-
+            {{ range(300, 350, 10) | random }}
+      - choose:
+        - conditions:
+          - condition: or
+            conditions:
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id:
+                      - sunset_on
+                  - condition: state
+                    entity_id: binary_sensor.village_presence
+                    state: 'on'
+              - condition: and
+                conditions:
+                  - condition: trigger
+                    id:
+                      - presence_on
+                  - condition: or
+                    conditions:
+                      - condition: sun
+                        before: sunrise
+                        before_offset: '+00:30:00'
+                      - condition: sun
+                        after: sunset
+                        after_offset: '-00:30:00'
+          - condition: state
+            entity_id: light.village_out
+            state: 'off'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.village_out
+              data:
+                brightness_pct: >-
+                  {{ brightness }}
+            - delay:
+                milliseconds: 250
+            - action: light.turn_on
+              target:
+                entity_id: light.village_out
+              data:
+                color_temp_kelvin: >-
+                  {{ color_temp }}
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+              - presence_off
+          - condition: state
+            entity_id: light.village_out
+            state: 'on'
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id: light.village_out
+
+  - alias: ligth_garage
+    id: ligth_garage
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.motion_village_garage
+        to: 'on'
+        id: light_on
+      - trigger: zone
+        entity_id: device_tracker.root
+        zone: zone.village
+        event: enter
+        id: light_on
+      - trigger: state
+        entity_id: binary_sensor.motion_village_garage
+        to: 'off'
+        for:
+          seconds: 90
+        id: light_off
+      - trigger: sun
+        event: sunrise
+        offset: '+00:10:00'
+        id: light_off
+      - trigger: zone
+        entity_id: device_tracker.root
+        zone: zone.village
+        event: leave
+        id: presence_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - light_on
+          - condition: state
+            entity_id: light.village_garage
+            state: 'off'
+          - condition: or
+            conditions:
+              - condition: sun
+                before: sunrise
+                before_offset: '+00:30:00'
+              - condition: sun
+                after: sunset
+                after_offset: '-00:30:00'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.village_garage
+
+        - conditions:
+          - condition: trigger
+            id:
+              - light_off
+              - presence_off
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: light.village_garage
+                state: 'on'
+              - condition: state
+                entity_id: binary_sensor.motion_village_garage
+                state: 'off'
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id: light.village_garage
+
+  - alias: waterheater_village
+    id: waterheater_village
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.village_presence
+        to: 'on'
+        id: trigger_on
+      - trigger: state
+        entity_id: binary_sensor.village_presence
+        to: 'off'
+        for:
+          minutes: 15
+        id: trigger_off
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_on
+          - condition: state
+            entity_id: switch.waterheater_village_schedule
+            state: 'off'
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.waterheater_village_schedule
+            - event: waterheater
+              event_data:
+                village: schedule_on
+
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_off
+          - condition: state
+            entity_id: switch.waterheater_village_schedule
+            state: 'on'
+          sequence:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.waterheater_village_schedule
+            - event: waterheater
+              event_data:
+                village: schedule_off
+
+  - alias: waterheater_village_reheat
+    id: waterheater_village_reheat
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.waterheater_village
+        below: 19.5
+        id: trigger_on
+      - trigger: numeric_state
+        entity_id: sensor.waterheater_village
+        above:  35.5
+        id: trigger_off
+      - trigger: event
+        event_type: waterheater
+        event_data:
+          village: schedule_on
+        id: check_on
+      - trigger: event
+        event_type: waterheater
+        event_data:
+          village: trigger_off
+        id: check_off
+
+    conditions:
+      - condition: state
+        entity_id: switch.waterheater_village_schedule
+        state: 'on'
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_on
+          - condition: time
+            after: '08:00:00'
+            before: '19:30:00'
+          - condition: state
+            entity_id: switch.waterheater_village
+            state: 'off'
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.waterheater_village
+
+        - conditions:
+          - condition: trigger
+            id:
+              - trigger_off
+          - condition: time
+            after: '08:00:00'
+          - condition: state
+            entity_id: switch.waterheater_village
+            state: 'on'
+          sequence:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.waterheater_village
+
+      - choose:
+        - conditions:
+          - condition: trigger
+            id:
+              - check_on
+          - condition: time
+            after: '13:00:00'
+            before: '19:30:00'
+          - condition: numeric_state
+            entity_id: sensor.waterheater_village
+            below: 33
+          - condition: state
+            entity_id: switch.waterheater_village
+            state: 'off'
+          sequence:
+            - action: switch.turn_on
+              target:
+                entity_id: switch.waterheater_village
+
+        - conditions:
+          - condition: trigger
+            id:
+              - check_off
+          - condition: state
+            entity_id: switch.waterheater_village
+            state: 'on'
+          sequence:
+            - action: switch.turn_off
+              target:
+                entity_id: switch.waterheater_village
+
+  - alias: village_remote_1
+    id: village_remote_1
+    triggers:
+      - trigger: mqtt
+        topic: 'tele/zha-bridge-city/A79A/SENSOR'
+
+    mode: restart
+    actions:
+      - choose:
+        - conditions:
+          - condition: template
+            # press hold - toggle
+            value_template: >-
+              {{
+                trigger.payload_json.ZbReceived["0xA79A"] is defined and
+                trigger.payload_json.ZbReceived["0xA79A"].Power == 0
+              }}
+          - condition: state
+            entity_id: light.village_out
+            state: 'off'
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.village_out
+              data:
+                brightness_pct: 95
+            - action: light.turn_on
+              target:
+                entity_id: light.village_out
+              data:
+                color_temp_kelvin: 2850
+
+        - conditions:
+          - condition: template
+            # press hold - toggle
+            value_template: >-
+              {{
+                trigger.payload_json.ZbReceived["0xA79A"] is defined and
+                trigger.payload_json.ZbReceived["0xA79A"].Power == 0
+              }}
+          - condition: state
+            entity_id: light.village_out
+            state: 'on'
+          sequence:
+            - action: light.turn_off
+              target:
+                entity_id: light.village_out
+
+utility_meter:
+  pump_village:
+    unique_id: pump_village
+    source: sensor.village_pump_total_power
+    tariffs:
+      - total

@@ -1,0 +1,129 @@
+
+      - lambda: |-
+          float temp_val = id(temp_sens).state;
+          float target_val = id(temp_target).state;
+          float predicted = id(predicted_err).state;
+          float delay = id(temp_delay).state;
+          float out_val = id(fuzzy_sens).state;
+
+          lv_color_t color;
+          char tmp[64];
+
+          // --- Dynamic Color Logic based on Current Temp ---
+          if (temp_val >= 100.0) {
+              color = red;
+          } else if (temp_val > 80.0) {
+              color = orange;
+          } else if (temp_val > 60.0) {
+              color = yellow;
+          } else if (temp_val > 45.0) {
+              color = green;
+          } else if (temp_val > 25.0) {
+              color = blue;
+          } else {
+              color = dark_blue;
+          }
+
+          // Hotplate Temp (temp_sens)
+          snprintf(tmp, sizeof(tmp), "Hotplate: %.1f °C", temp_val);
+          lv_label_set_text(
+            id(temp_sens_label),
+            tmp
+          );
+
+          // CPU Temp (temp_cpu)
+          snprintf(tmp, sizeof(tmp), "CPU Temp: %.1f °C", id(temp_cpu).state);
+          lv_label_set_text(
+            id(temp_cpu_label),
+            tmp
+          );
+
+          // WiFi Signal (wifi_signal_prc)
+          lv_label_set_text(
+            id(wifi_signal_label),
+            ("WiFi: " + std::to_string((int)id(wifi_signal_prc).state) + "%").c_str()
+          );
+
+          // IP Address (Reads the state from the dedicated text_sensor, which handles conversion)
+          lv_label_set_text(
+            id(ip_address_label),
+            ("IP: " + id(ip_address_sensor)[0].state).c_str()
+          );
+
+          // --- Apply Color to the Boot Page Background ---
+          lv_obj_set_style_bg_color(
+              id(boot).obj,
+              color,
+              LV_PART_MAIN | LV_STATE_DEFAULT
+          );
+
+          lv_obj_set_style_text_color(
+              id(current_temp_label),
+              color,
+              LV_PART_MAIN | LV_STATE_DEFAULT
+          );
+
+          // Update Current Temp Label
+          snprintf(tmp, sizeof(tmp), "C: %.1f °C", temp_val);
+          lv_label_set_text(
+            id(current_temp_label),
+            tmp
+          );
+
+          // Update Target Temp Label
+          snprintf(tmp, sizeof(tmp), "T: %.1f °C", target_val);
+          lv_label_set_text(
+            id(target_temp_label),
+            tmp
+          );
+
+          snprintf(tmp, sizeof(tmp), "O: %.3f", out_val);
+          lv_label_set_text(
+            id(out_label),
+            tmp
+          );
+
+          snprintf(tmp, sizeof(tmp), "E: %.1f", predicted);
+          lv_label_set_text(
+            id(err_predicted_label),
+            tmp
+          );
+
+          snprintf(tmp, sizeof(tmp), "W: %.1f",
+                    id(max_power) * id(sd_heater_output).get_max_power());
+          lv_label_set_text(
+            id(out_power_label),
+            tmp
+          );
+
+          snprintf(tmp, sizeof(tmp), "T: %.1f", delay);
+          lv_label_set_text(
+            id(tune_delay_label),
+            tmp
+          );
+
+          {
+            auto color = black;
+            // Synchronize the button text with the current climate mode
+            if (id(enable_fuzzy_control).state) {
+                snprintf(tmp, sizeof(tmp), "Stop", temp_val);
+                color = red;
+            } else {
+                snprintf(tmp, sizeof(tmp), "Start", temp_val);
+                color = green;
+            }
+
+            lv_obj_set_style_bg_color(
+              id(start_stop_button),
+              color,
+              LV_PART_MAIN | LV_STATE_DEFAULT
+            );
+
+            lv_obj_t *label = lv_obj_get_child(id(start_stop_button), 0);
+            // Set the text on the found label object
+            if (label != nullptr) {
+              lv_label_set_text(label, tmp);
+            }
+          }
+
+          update_chart(target_val, temp_val, out_val);

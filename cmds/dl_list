@@ -1,0 +1,427 @@
+#!/usr/local/bin/python
+import os
+import json
+import yt_dlp
+import re
+
+dl_dir='downloads'
+
+ydl_opts = {}
+
+dl_list = [
+	{
+		'url': 'https://www.youtube.com/watch?v=Wx3p_oepEY8',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=uNSA7AaWmQY',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=DiNXAjt3tCg',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=0mQMgRXiUbo',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=PAMjUcTb7Go',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=bfjXHYzk_pY',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=b73VgbB-pNk',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=nd03hUzluks',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=uChTn6OoCvA',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=KQrCC_DWQwc',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=0ltZ1fapNko',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=HkGyQY_j9VE',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=wxd7zvI7K3M',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=qdfi71KnbyY',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=TtCp6SsHWLw',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=w8Gi6rTIRkw',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=i3tfCXGuLhk',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=uF3rPWF21E4',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=9KZfvU7BQhM',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=S9P3-YotFHY',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=NBkVyuDuuio',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=BNe7OrleTlg',
+		're_title': r'(?P<title>.*) - (?P<artist>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=vWQQn9fvYWY',
+		're_title': r'(?P<artist>.*): (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=8nn5eeV4qSU',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=0QkD9zjvjrE',
+		're_title': r'(?P<title>.*) \((?P<artist>.*)\)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=LMseAxnxSUo',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=XjYcy4BLSWQ',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=TeRnrQ1xVx8',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=YRaaorSaaSE',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=UFz0DQAZZ3w',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=lv2RRqqmwpI',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=5S44O9hiV_c',
+		're_title': r'(?P<artist>.*)   (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=4I-E0mJRq5U',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=MTM_XQSCcZw',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=EvNhpZGxZ5o',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=rZwtkVsyWm4',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=Oih0NTj3HAY',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=gxsJq6B045Y',
+		're_title': r'(?P<title>.*) \((?P<artist>.*)\)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=MjEhzRP1gDc',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=PW1aknd-7mk',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=W0N3fq4dpPY',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=4B2tYCaAvzw',
+		'from_metadata': True
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=4-J89m2wY_I',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)\[.*\]'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=wULG18MXKz4',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=HbI8_TQasK0',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=__7nuvRoc0A',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=F0TAGqIVw7o',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=06XLVOpG-ro',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=UTKfLToUDcw',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=gcsvtacDh9g',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=H0m_3Bd1Jfs',
+		're_title': r'(?P<title>.*) \((?P<artist>.*)\)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=trRCBoJz6Nk',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=aUrkvYyu8dE',
+		're_title': r'(?P<title>.*\)) (?P<artist>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=nQbjbZ2mW_c',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=jtpReTTFPfs',
+		'from_fulltitle': True
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=Tv_pvUdnLdY',
+		're_title': r'(?P<artist>.*)   (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=QKf8zrcGCDw',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=P0uD3aM7b7E',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=wCARaJmzwKE',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=npx-riCFa4U',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=1x1t49t7gCk',
+		're_title': r'(?P<artist>.*) - (?P<title>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=ma2R5jH4q3k',
+		're_title': r'(?P<title>.*) - (?P<artist>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=JUlAPp1v-sA',
+		're_title': r'(?P<title>.*) - (?P<artist>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=ooGf0F5_id0',
+		're_title': r'(?P<title>.*) - (?P<artist>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=BVkk-AnWakk',
+		're_title': r'(?P<title>.*) - (?P<artist>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=CBmgTTi6UpA',
+		're_title': r'(?P<title>.*) - (?P<artist>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=gfFXyMSPmHA',
+		're_title': r'(?P<title>.*) - (?P<artist>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=XkQecmwf5Jg',
+		're_title': r'(?P<title>.*) - (?P<artist>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=2fjjkkK171Q',
+		're_title': r'(?P<title>.*) - (?P<artist>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=BoqShOeDIC8',
+		're_title': r'(?P<title>.*) - (?P<artist>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=z2CGhkWnOjU',
+		're_title': r'(?P<title>.*) - (?P<artist>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=F0j1wkNZPcM',
+		're_title': r'(?P<title>.*) - (?P<artist>.*)'
+	},
+	{
+		'url': 'https://www.youtube.com/watch?v=7ppln2_9jRw',
+		're_title': r'(?P<title>.*) - (?P<artist>.*)'
+	},
+]
+
+dl_audio = {
+	'extract_flat': 'discard_in_playlist',
+	'format': 'bestaudio/best',
+	'fragment_retries': 10,
+	'ignoreerrors': 'only_download',
+	'writethumbnail': True
+}
+
+common_args = {
+	'ratelimit': 10000000,
+	'retries': 10,
+	'verbose': False,
+}
+
+def download(ent, dl=False):
+	if not dl:
+		print('Skip download: %s' % (ent.get('name'),))
+		return
+
+	ydl_opts = {
+		'outtmpl': {
+			'default': ent.get('name'),
+			'pl_thumbnail': ''
+		},
+		'paths': {
+			'home': dl_dir
+		},
+		'postprocessors': [
+			{
+				'actions': [
+								(
+									yt_dlp.postprocessor.metadataparser.MetadataParserPP.interpretter,
+									ent.get('name'),
+									'(?P<meta_title>.*) -'
+									),
+								(
+									yt_dlp.postprocessor.metadataparser.MetadataParserPP.interpretter,
+									ent.get('name'),
+									'.*- (?P<meta_artist>.*)'
+									),
+								# (
+								# 	yt_dlp.postprocessor.metadataparser.MetadataParserPP.interpretter,
+								# 	'',
+								# 	'(?P<meta_purl>(.*))'
+								# 	),
+								# (
+								# 	yt_dlp.postprocessor.metadataparser.MetadataParserPP.interpretter,
+								# 	'',
+								# 	'(?P<meta_comment>(.*))'
+								# 	),
+								# (
+								# 	yt_dlp.postprocessor.metadataparser.MetadataParserPP.interpretter,
+								# 	'',
+								# 	'(?P<meta_synopsis>(.*))'
+								# 	)
+								],
+				'key': 'MetadataParser',
+				'when': 'pre_process'
+				},
+			{
+					'key': 'FFmpegExtractAudio',
+					'nopostoverwrites': False,
+					'preferredcodec': 'm4a',
+					'preferredquality': '0'
+				},
+			{
+				'add_chapters': True,
+				'add_infojson': 'if_exists',
+				'add_metadata': True,
+				'key': 'FFmpegMetadata'
+				},
+			{
+				'already_have_thumbnail': False,
+				'key': 'EmbedThumbnail'
+				},
+			{
+				'key': 'FFmpegConcat',
+				'only_multi_video': True,
+				'when': 'playlist'
+				}
+		]
+	}
+
+	ydl_opts.update(dl_audio)
+	ydl_opts.update(common_args)
+
+	with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+		error_code = ydl.download(ent.get('url'))
+
+if __name__=="__main__":
+	os.system ('rm -rf %s' % dl_dir)
+	for o in dl_list[:]:
+		ydl_opts = {}
+		ydl_opts.update(common_args)
+		with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+			info = ydl.sanitize_info(ydl.extract_info(o.get('url'), download=False))
+
+		if o.get('re_title'):
+			_re = re.compile(o.get('re_title'))
+			_title = '%s' % (info.get('title'),)
+			m = _re.match(info.get('title'))
+			if m:
+				name = '%s - %s' % (m.group('title'), m.group('artist'))
+				o.update( { 'name': name } )
+			else:
+				print('Cant find match: %s' % o.get('re_title'))
+				print(_title)
+				break
+		elif o.get('from_metadata') == True:
+			name = '%s - %s' % (info.get('track'), info.get('artist'))
+			o.update( { 'name': name } )
+		elif o.get('from_fulltitle') == True:
+			name = '%s' % (info.get('fulltitle'),)
+			o.update( { 'name': name } )
+		else:
+			print('Cant find re_title')
+			print(json.dumps(info, indent=2))
+			break
+		download(o, True)
+
+	print(json.dumps(dl_list, indent=2))
+	os.system ('chown -R hass:hass %s' % dl_dir)

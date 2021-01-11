@@ -1,0 +1,4 @@
+#!/bin/bash
+source /config/set_env
+
+awk '{print $1 * 100}' /proc/loadavg

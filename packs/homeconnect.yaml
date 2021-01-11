@@ -1,0 +1,172 @@
+homeassistant:
+  customize:
+    button.home_connect_refresh:
+      friendly_name: hc refresh
+      icon: mdi:web-refresh
+    sensor.home_connect_status:
+      friendly_name: hc
+      unit_of_measurement: state
+    binary_sensor.401090521504001587_bsh_common_status_remotecontrolstartallowed:
+      friendly_name: dishwasher
+      icon: mdi:dishwasher
+    switch.401090521504001587_bsh_common_setting_powerstate:
+      friendly_name: power
+    select.401090521504001587_programs:
+      friendly_name: program
+    button.401090521504001587_start_pause:
+      friendly_name: start / pause
+    button.401090521504001587_stop:
+      friendly_name: stop
+    binary_sensor.401090521504001587_bsh_common_status_doorstate:
+      friendly_name: door
+    sensor.401090521504001587_bsh_common_status_operationstate:
+      friendly_name: state
+    select.bosch_wtx87kh1by_68a40e68e621_bsh_common_setting_powerstate:
+      friendly_name: power
+    switch.bosch_wtx87kh1by_68a40e68e621_bsh_common_setting_childlock:
+      friendly_name: lock
+    select.bosch_wtx87kh1by_68a40e68e621_laundrycare_dryer_option_dryingtarget:
+      friendly_name: trget
+    select.bosch_wtx87kh1by_68a40e68e621_programs:
+      friendly_name: program
+    button.bosch_wtx87kh1by_68a40e68e621_start_pause:
+      friendly_name: start / pause
+    button.bosch_wtx87kh1by_68a40e68e621_stop:
+      friendly_name: stop
+    sensor.bosch_wtx87kh1by_68a40e68e621_bsh_common_option_finishinrelative:
+      friendly_name: finish in
+    sensor.bosch_wtx87kh1by_68a40e68e621_bsh_common_status_operationstate:
+      friendly_name: state
+    binary_sensor.bosch_wtx87kh1by_68a40e68e621_bsh_common_status_doorstate:
+      friendly_name: door
+    binary_sensor.bosch_wtx87kh1by_68a40e68e621_bsh_common_status_remotecontrolstartallowed:
+      friendly_name: dryer
+      icon: mdi:tumble-dryer
+    select.bosch_wav28kh1by_68a40e45bfc5_bsh_common_setting_powerstate:
+      friendly_name: power
+    switch.bosch_wav28kh1by_68a40e45bfc5_bsh_common_setting_childlock:
+      friendly_name: lock
+    select.bosch_wav28kh1by_68a40e45bfc5_programs:
+      friendly_name: program
+    button.bosch_wav28kh1by_68a40e45bfc5_start_pause:
+      friendly_name: start / pause
+    button.bosch_wav28kh1by_68a40e45bfc5_stop:
+      friendly_name: stop
+    sensor.bosch_wav28kh1by_68a40e45bfc5_bsh_common_option_finishinrelative:
+      friendly_name: finish in
+    sensor.bosch_wav28kh1by_68a40e45bfc5_bsh_common_status_operationstate:
+      friendly_name: state
+    select.bosch_wav28kh1by_68a40e45bfc5_laundrycare_washer_option_spinspeed:
+      friendly_name: speed
+    select.bosch_wav28kh1by_68a40e45bfc5_laundrycare_washer_option_temperature:
+      friendly_name: temperature
+    binary_sensor.bosch_wav28kh1by_68a40e45bfc5_bsh_common_status_doorstate:
+      friendly_name: door
+    binary_sensor.bosch_wav28kh1by_68a40e45bfc5_bsh_common_status_remotecontrolstartallowed:
+      friendly_name: washer
+      icon: mdi:washing-machine
+    binary_sensor.water_wash:
+      friendly_name: washing
+    binary_sensor.wash_fan:
+      friendly_name: fan
+    automation.reload_homeconect:
+      friendly_name: reload
+      icon: mdi:wifi-refresh
+    alert.water_on:
+      icon: mdi:liquid-spot
+
+alert:
+  water_on:
+    name: water
+    entity_id: binary_sensor.warn_valve_1
+    state: 'on'
+    repeat:
+      - 30
+      - 60
+    can_acknowledge: true
+    skip_first: true
+    title: water
+    message: valve is on
+    done_message: valve is off
+    notifiers:
+      - gmail
+
+template:
+  - binary_sensor:
+    - name: water_wash
+      delay_off:
+        seconds: 30
+      state: >-
+        {{
+          (
+            is_state('input_boolean.water_manual_ctrl', 'on') or
+              (
+                states('sensor.bosch_wav28kh1by_68a40e45bfc5_bsh_common_status_operationstate') in
+                  [
+                      'BSH.Common.EnumType.OperationState.Run',
+                    ] and
+                  is_state('binary_sensor.bosch_wav28kh1by_68a40e45bfc5_bsh_common_status_doorstate', 'off') and
+                  is_state('device_tracker.washer', 'home')
+                ) or
+              (
+                states('sensor.401090521504001587_bsh_common_status_operationstate') in
+                  [
+                      'BSH.Common.EnumType.OperationState.Run',
+                    ] and
+                  is_state('binary_sensor.401090521504001587_bsh_common_status_doorstate', 'off') and
+                  is_state('device_tracker.dishwasher', 'home')
+                )
+            )
+          }}
+      icon: mdi:valve
+
+    - name: wash_fan
+      delay_off:
+        seconds: 30
+      state: >-
+        {{
+            (
+              states('sensor.bosch_wtx87kh1by_68a40e68e621_bsh_common_status_operationstate') in
+                [
+                    'BSH.Common.EnumType.OperationState.Run',
+                  ] or
+                is_state('binary_sensor.bosch_wtx87kh1by_68a40e68e621_bsh_common_status_doorstate', 'on')
+                and is_state('device_tracker.dryer', 'home')
+              ) or
+            (
+              is_state('binary_sensor.bosch_wav28kh1by_68a40e45bfc5_bsh_common_status_doorstate', 'on') and
+                states('sensor.bosch_wav28kh1by_68a40e45bfc5_bsh_common_status_operationstate') in
+                  [
+                      'BSH.Common.EnumType.OperationState.Finished',
+                      'BSH.Common.EnumType.OperationState.Ready'
+                    ] and
+                is_state('device_tracker.washer', 'home')
+              )
+          }}
+      icon: mdi:fan
+
+    - name: warn_valve_1
+      state: >-
+        {{
+            is_state('device_tracker.root', 'not_home') and
+              is_state('switch.water_valve', 'on')
+          }}
+      device_class: problem
+      icon: mdi:liquid-spot
+
+automation:
+  - alias: reload_homeconect
+    id: reload_homeconect
+    triggers:
+      - trigger: state
+        entity_id:
+          - device_tracker.washer
+          - device_tracker.dryer
+          - device_tracker.dishwasher
+        to: home
+        for:
+          seconds: 15
+    actions:
+      - action: button.press
+        data:
+          entity_id: button.home_connect_refresh
