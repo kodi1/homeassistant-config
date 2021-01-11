@@ -1,0 +1,52 @@
+script:
+  - id: measure
+    then:
+      - if:
+          condition:
+            mqtt.connected:
+          then:
+            - lambda: |-
+                id(updates) = 0;
+                id(batt_v).update();
+                id(batt_p).update();
+                id(dhts).update();
+                id(rssi).update();
+            - wait_until:
+                condition:
+                  lambda: |-
+                    return (id(updates) >= 5);
+                timeout: ${wait_timeout}
+            - mqtt.publish_json:
+                topic: ${devicename}/state
+                payload: |-
+                  root["batt_v"] = id(batt_v).state;
+                  root["batt_p"] = id(batt_p).state;
+                  root["temperature"] = id(temperature).state;
+                  root["humidity"] = id(humidity).state;
+                  root["rssi"] = id(rssi).state;
+            - delay: ${wait_mqtt}
+            - deep_sleep.enter:
+                id: sleep_1
+          else:
+            - deep_sleep.enter:
+                id: sleep_1
+
+sensor:
+  - platform: dht
+    id: dhts
+    model: DHT22
+    pin:
+      number: 12
+    temperature:
+      id: temperature
+      accuracy_decimals: 1
+      on_value:
+        lambda: |-
+          id(updates)++;
+    humidity:
+      id: humidity
+      accuracy_decimals: 1
+      on_value:
+        lambda: |-
+          id(updates)++;
+    update_interval: never
